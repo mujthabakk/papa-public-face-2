@@ -53,7 +53,7 @@ class _TopProductScreenState extends State<TopProductScreen> {
                         child: Container(
                           padding: const EdgeInsets.symmetric(horizontal: 20),
                           decoration: const BoxDecoration(
-                            color: ThemeProvider.appColor,
+                            color: ThemeProvider.pink,
                           ),
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -64,7 +64,7 @@ class _TopProductScreenState extends State<TopProductScreen> {
                                     color: ThemeProvider.whiteColor),
                               ),
                               Text(
-                                'Payments'.tr,
+                                'Cart'.tr,
                                 style: const TextStyle(
                                     color: ThemeProvider.whiteColor),
                               ),

@@ -74,10 +74,10 @@ class SlotController extends GetxController implements GetxService {
             .toString();
       }
 
-      var dayName = Jiffy().format("EEEE"); // Tuesday
+      var dayName = Jiffy.now().format(pattern: "EEEE"); // Tuesday
       debugPrint(dayName);
       int index = dayList.indexOf(dayName);
-      var date = Jiffy().format('yyyy-MM-dd');
+      var date = Jiffy.now().format(pattern: 'yyyy-MM-dd');
       savedDate = date;
       update();
       getSlotsForBookings(index, date);
@@ -87,19 +87,26 @@ class SlotController extends GetxController implements GetxService {
     getSpecialist();
   }
 
+// Alternative approach using where() method for cleaner code
   Future<void> getSpecialist() async {
     var response = await parser.getSpecialist({"id": uid});
     apiCalled = true;
+
     if (response.statusCode == 200) {
       Map<String, dynamic> myMap = Map<String, dynamic>.from(response.body);
       var salonSpecialist = myMap['data'];
-      _specialistList = [];
 
-      salonSpecialist.forEach((data) {
-        SpecialistModel specialist = SpecialistModel.fromJson(data);
-        _specialistList.add(specialist);
-      });
-      debugPrint(specialistList.length.toString());
+      // Convert all data to SpecialistModel objects
+      List<SpecialistModel> allSpecialists = salonSpecialist
+          .map<SpecialistModel>((data) => SpecialistModel.fromJson(data))
+          .toList();
+
+      // Filter out specialists with status 0
+      _specialistList =
+          allSpecialists.where((specialist) => specialist.status == 1).toList();
+
+      debugPrint('Total specialists: ${allSpecialists.length}');
+      debugPrint('Active specialists: ${_specialistList.length}');
 
       update();
     } else {
@@ -108,9 +115,10 @@ class SlotController extends GetxController implements GetxService {
     update();
   }
 
+// Updated method with proper time sorting
   Future<void> getSlotsForBookings(int index, String date) async {
     var response = await parser.getSlots(
-      {"week_id": index, "date": date, "uid": uid, "from": "individual"},
+      {"week_id": index, "date": date, "uid": uid, "from": "salon"},
     );
     apiCalled = true;
 
@@ -161,6 +169,28 @@ class SlotController extends GetxController implements GetxService {
           }).toList();
         }
 
+        // Sort slots by start time in ascending order
+        if (datas.slots != null && datas.slots!.isNotEmpty) {
+          datas.slots!.sort((a, b) {
+            try {
+              // Parse time strings to DateTime for proper comparison
+              DateTime timeA = DateFormat('hh:mm a').parse(a.startTime!);
+              DateTime timeB = DateFormat('hh:mm a').parse(b.startTime!);
+              return timeA.compareTo(timeB);
+            } catch (e) {
+              print("Error sorting slots: $e");
+              // If parsing fails, try string comparison as fallback
+              return a.startTime!.compareTo(b.startTime!);
+            }
+          });
+
+          print("Slots after sorting:");
+          for (var slot in datas.slots!) {
+            print(
+                "${slot.startTime} - ${slot.endTime} (Available: ${slot.available})");
+          }
+        }
+
         _slotList = datas;
         update();
       }
@@ -176,6 +206,40 @@ class SlotController extends GetxController implements GetxService {
       ApiChecker.checkApi(response);
     }
     update();
+  }
+
+// Helper method if you want to sort slots separately
+  List<SlotTimeModel> sortSlotsByTime(List<SlotTimeModel> slots) {
+    if (slots.isEmpty) return slots;
+
+    List<SlotTimeModel> sortedSlots = List.from(slots);
+
+    sortedSlots.sort((a, b) {
+      try {
+        // Convert 12-hour format to 24-hour for proper comparison
+        DateTime timeA = DateFormat('hh:mm a').parse(a.startTime!);
+        DateTime timeB = DateFormat('hh:mm a').parse(b.startTime!);
+
+        return timeA.compareTo(timeB);
+      } catch (e) {
+        print("Error parsing time for sorting: $e");
+        // Fallback to string comparison if parsing fails
+        return a.startTime!.compareTo(b.startTime!);
+      }
+    });
+
+    return sortedSlots;
+  }
+
+// Alternative helper method using 24-hour conversion
+  DateTime convertTo24HourFormat(String time12Hour) {
+    try {
+      return DateFormat('hh:mm a').parse(time12Hour);
+    } catch (e) {
+      print("Error converting time format: $e");
+      // Return a default time if parsing fails
+      return DateTime(2000, 1, 1, 0, 0);
+    }
   }
 
   Color getColor(Set<MaterialState> states) {
@@ -202,8 +266,8 @@ class SlotController extends GetxController implements GetxService {
     selectedSlotIndex = '';
     haveData = false;
     debugPrint(date.toString());
-    var dayName = Jiffy(date).format("EEEE");
-    var selectedDate = Jiffy(date).format('yyyy-MM-dd');
+    var dayName = Jiffy.parseFromDateTime(date).format(pattern: "EEEE");
+    var selectedDate = Jiffy.parseFromDateTime(date).format(pattern: 'yyyy-MM-dd');
     savedDate = selectedDate;
     update();
     debugPrint(dayName);

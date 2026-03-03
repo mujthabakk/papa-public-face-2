@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:salon_user/app/controller/product_cart_controller.dart';
 import 'package:salon_user/app/controller/service_cart_controller.dart';
 import 'package:salon_user/app/helper/init.dart';
@@ -19,7 +20,7 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,
-      name: 'ultimate-salon-flutter');
+      name: 'papabear-public-app');
   await MainBinding().dependencies();
   runApp(const MyApp());
 }
@@ -30,17 +31,24 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     Get.find<ServiceCartController>().getCart();
     Get.find<ProductCartController>().getCart();
-    return GetMaterialApp(
-      theme: ThemeData.light(useMaterial3: false),
-      title: AppConstants.appName,
-      color: const Color.fromARGB(225, 140, 87, 238),
-      debugShowCheckedModeBanner: false,
-      navigatorKey: Get.key,
-      initialRoute: AppRouter.splash,
-      getPages: AppRouter.routes,
-      defaultTransition: Transition.native,
-      translations: LocaleString(),
-      locale: const Locale('en', 'US'),
+    return ScreenUtilInit(
+      designSize: const Size(360, 690),
+      minTextAdapt: true,
+      splitScreenMode: true,
+      builder: (context, child) {
+        return GetMaterialApp(
+          theme: ThemeData.light(useMaterial3: false),
+          title: AppConstants.appName,
+          color: const Color.fromARGB(225, 140, 87, 238),
+          debugShowCheckedModeBanner: false,
+          navigatorKey: Get.key,
+          initialRoute: AppRouter.splash,
+          getPages: AppRouter.routes,
+          defaultTransition: Transition.native,
+          translations: LocaleString(),
+          locale: const Locale('en', 'US'),
+        );
+      },
     );
   }
 }

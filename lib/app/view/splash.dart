@@ -19,7 +19,7 @@ class SplashScreen extends StatefulWidget {
 
 class _SplashScreenState extends State<SplashScreen> {
   final Connectivity _connectivity = Connectivity();
-  late StreamSubscription<ConnectivityResult> _connectivitySubscription;
+  late StreamSubscription<List<ConnectivityResult>> _connectivitySubscription;
   @override
   void initState() {
     super.initState();
@@ -78,7 +78,7 @@ class _SplashScreenState extends State<SplashScreen> {
   }
 
   Future<void> initConnectivity() async {
-    late ConnectivityResult result;
+    late List<ConnectivityResult> result;
     try {
       result = await _connectivity.checkConnectivity();
     } on PlatformException catch (e) {
@@ -91,9 +91,9 @@ class _SplashScreenState extends State<SplashScreen> {
     return _updateConnectionStatus(result);
   }
 
-  Future<void> _updateConnectionStatus(ConnectivityResult result) async {
-    bool isNotConnected = result != ConnectivityResult.wifi &&
-        result != ConnectivityResult.mobile;
+  Future<void> _updateConnectionStatus(List<ConnectivityResult> result) async {
+    bool isNotConnected = !result.contains(ConnectivityResult.wifi) &&
+        !result.contains(ConnectivityResult.mobile);
     if (isNotConnected) {
       showToast('No Internet Connection'.tr);
     }

@@ -120,36 +120,45 @@ class _WebProductPaymentState extends State<WebProductPayment> {
                 .createOrder(jsonEncode(payData));
           } else if (Get.find<WebProductPaymentController>().payMethod ==
               'razorpay') {
-            final successCallback = Uri.parse(callback).path;
-            debugPrint(successCallback);
-            if (successCallback.toString().split('/').length >= 5 &&
-                successCallback.toString().split('/')[3].startsWith('pay_')) {
-              final paymentId = successCallback.toString().split('/')[3];
+            // final successCallback = Uri.parse(callback).path;
+            // debugPrint(successCallback);
+            // if (successCallback.toString().split('/').length >= 5 &&
+            //     successCallback.toString().split('/')[3].startsWith('pay_')) {
 
-              Get.find<WebProductPaymentController>()
-                  .verifyRazorpayPurchase(paymentId.toString());
-            }
-          } else if (Get.find<WebProductPaymentController>().payMethod ==
-              'instamojo') {
             final successCallback = Uri.parse(callback);
-            final payId = successCallback.queryParameters['payment_id'];
+
+            final paymentId = successCallback.toString().split('/')[3];
+
             Get.find<WebProductPaymentController>()
-                .createOrder(payId.toString());
-          } else if (Get.find<WebProductPaymentController>().payMethod ==
-              'paystack') {
-            final successCallback = Uri.parse(callback);
-            final payId = successCallback.queryParameters['id'];
-            Get.find<WebProductPaymentController>()
-                .createOrder(payId.toString());
-          } else if (Get.find<WebProductPaymentController>().payMethod ==
-              'flutterwave') {
-            final successCallback = Uri.parse(callback);
-            final taxRef = successCallback.queryParameters['tx_ref'];
-            final orderId = successCallback.queryParameters['transaction_id'];
-            var payData = {'orderId': orderId, 'txtId': taxRef};
-            Get.find<WebProductPaymentController>()
-                .createOrder(jsonEncode(payData));
+                .verifyRazorpayPurchase(paymentId.toString());
           }
+
+          final successCallback = Uri.parse(callback);
+          final paymentId =
+              successCallback.queryParameters['pay_id']; // Extract from query
+
+          if (paymentId != null && paymentId.startsWith('pay_')) {
+            Get.find<WebProductPaymentController>()
+                .verifyRazorpayPurchase(paymentId);
+          }
+        } else if (Get.find<WebProductPaymentController>().payMethod ==
+            'instamojo') {
+          final successCallback = Uri.parse(callback);
+          final payId = successCallback.queryParameters['payment_id'];
+          Get.find<WebProductPaymentController>().createOrder(payId.toString());
+        } else if (Get.find<WebProductPaymentController>().payMethod ==
+            'paystack') {
+          final successCallback = Uri.parse(callback);
+          final payId = successCallback.queryParameters['id'];
+          Get.find<WebProductPaymentController>().createOrder(payId.toString());
+        } else if (Get.find<WebProductPaymentController>().payMethod ==
+            'flutterwave') {
+          final successCallback = Uri.parse(callback);
+          final taxRef = successCallback.queryParameters['tx_ref'];
+          final orderId = successCallback.queryParameters['transaction_id'];
+          var payData = {'orderId': orderId, 'txtId': taxRef};
+          Get.find<WebProductPaymentController>()
+              .createOrder(jsonEncode(payData));
         }
       }
     }

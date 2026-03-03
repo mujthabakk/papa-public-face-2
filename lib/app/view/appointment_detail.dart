@@ -111,7 +111,7 @@ class _AppointmentDetailScreenState extends State<AppointmentDetailScreen> {
                   _buildInfoRow('Distance Cost'.tr,
                       _formatCurrency(value.distanceCost, value)),
                   const SizedBox(height: 4),
-                  _buildInfoRow('Service Tax'.tr,
+                  _buildInfoRow('Service Tax (18%)'.tr,
                       _formatCurrency(value.serviceTax, value)),
                   const SizedBox(height: 4),
                   _buildInfoRow(
@@ -163,16 +163,49 @@ class _AppointmentDetailScreenState extends State<AppointmentDetailScreen> {
 
   Widget _buildGenderIcon(int? gender) {
     if (gender == null) return const SizedBox.shrink();
+
+    IconData icon;
+    Color color;
+    String text;
+
     switch (gender) {
       case 0:
-        return const Icon(Icons.child_care, size: 16, color: Colors.orange);
+        icon = Icons.child_care;
+        color = Colors.orange;
+        text = 'Kids';
+        break;
       case 1:
-        return const Icon(Icons.male, size: 16, color: Colors.blue);
+        icon = Icons.male;
+        color = Colors.blue;
+        text = 'Male';
+        break;
       case 2:
-        return const Icon(Icons.female, size: 16, color: Colors.pink);
+        icon = Icons.female;
+        color = Colors.pink;
+        text = 'Female';
+        break;
       default:
-        return const Icon(Icons.group, size: 16, color: Colors.green);
+        icon = Icons.group;
+        color = Colors.green;
+        text = 'Family';
+        break;
     }
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, size: 16, color: color),
+        const SizedBox(width: 4),
+        Text(
+          ' $text - ',
+          style: TextStyle(
+            fontSize: 14,
+            color: color,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+      ],
+    );
   }
 
   Widget _buildProviderInfo(AppointmentDetailController value) {

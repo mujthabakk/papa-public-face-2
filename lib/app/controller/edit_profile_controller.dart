@@ -142,7 +142,6 @@ class EditProfileController extends GetxController implements GetxService {
           ),
           barrierDismissible: false);
       Response response = await parser.uploadImage(_selectedImage as XFile);
-      Get.back();
       if (response.statusCode == 200) {
         _selectedImage = null;
         if (response.body['data'] != null && response.body['data'] != '') {
@@ -150,13 +149,37 @@ class EditProfileController extends GetxController implements GetxService {
           if (body['image_name'] != null && body['image_name'] != '') {
             cover = body['image_name'];
             debugPrint(cover);
-            parser.setCover(cover);
 
-            Get.find<AccountController>().changeInfo();
-            update();
+            // Update profile with new cover image immediately
+            var updateBody = {
+              "id": parser.getUID(),
+              // "first_name": firstNameTextEditor.text,
+              // "last_name": lastNameTextEditor.text,
+              // "gender": selectedGender,
+              "cover": cover,
+              // "country_code": countryCodeMobile,
+              // "mobile": mobileTextEditor.text,
+            };
+
+            var updateResponse = await parser.onUpdateCover(updateBody);
+            Get.back();
+
+            if (updateResponse.statusCode == 200) {
+              parser.setCover(cover);
+              Get.find<AccountController>().changeInfo();
+              update();
+              successToast('Profile picture updated'.tr);
+            } else {
+              ApiChecker.checkApi(updateResponse);
+            }
+          } else {
+            Get.back();
           }
+        } else {
+          Get.back();
         }
       } else {
+        Get.back();
         ApiChecker.checkApi(response);
       }
     }

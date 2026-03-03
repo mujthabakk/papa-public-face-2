@@ -39,6 +39,13 @@ class EditProfileParser {
     return response;
   }
 
+  Future<Response> onUpdateCover(var body) async {
+    var response = await apiService.postPrivate(AppConstants.updateInfo, body,
+        sharedPreferencesManager.getString('token') ?? '');
+    sharedPreferencesManager.putString('cover', body['cover']);
+    return response;
+  }
+
   String getUID() {
     return sharedPreferencesManager.getString('uid') ?? '0';
   }

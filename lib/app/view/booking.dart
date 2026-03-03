@@ -1329,7 +1329,7 @@ class _BookingScreenState extends State<BookingScreen>
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Image.asset(
-            'assets/images/no_appointments.svg',
+            'assets/images/no_appointments.png',
             width: 120,
             height: 120,
           ),

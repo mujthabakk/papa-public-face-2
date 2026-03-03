@@ -110,7 +110,7 @@ class _ComplaintScreenState extends State<ComplaintScreen> {
                                         Row(
                                           children: [
                                             Text(
-                                              'Freelancer'.tr,
+                                              'Business/Freelancer'.tr,
                                               textAlign: TextAlign.start,
                                               style: const TextStyle(
                                                   fontSize: 8,

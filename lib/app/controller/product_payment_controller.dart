@@ -17,6 +17,7 @@ import 'package:salon_user/app/backend/parse/product_payment_parse.dart';
 import 'package:salon_user/app/controller/address_list_controller.dart';
 import 'package:salon_user/app/controller/coupon_controller.dart';
 import 'package:salon_user/app/controller/product_cart_controller.dart';
+import 'package:salon_user/app/controller/product_order_controller.dart';
 import 'package:salon_user/app/controller/stripe_pay_product_controller.dart';
 import 'package:salon_user/app/controller/tabs_controller.dart';
 import 'package:salon_user/app/controller/web_product_payment_controller.dart';
@@ -70,6 +71,7 @@ class ProductPaymentController extends GetxController implements GetxService {
 
   int paymentId = 0;
   String payMethodName = '';
+  double distance = 0.0;
 
   String selectedAddressId = '';
   bool haveAddress = false;
@@ -139,7 +141,6 @@ class ProductPaymentController extends GetxController implements GetxService {
 
   Future<void> getMyWalletAmount() async {
     Response response = await parser.getMyWalletBalance();
-    apiCalled = true;
     if (response.statusCode == 200) {
       Map<String, dynamic> myMap = Map<String, dynamic>.from(response.body);
       dynamic body = myMap["data"];
@@ -217,11 +218,11 @@ class ProductPaymentController extends GetxController implements GetxService {
 
   void calculateDistance() {
     if (ownerType == 'individual') {
-      debugPrint('-------');
-      debugPrint(addressInfo.lat.toString());
-      debugPrint(addressInfo.lng.toString());
-      debugPrint(ownerInfo.lat.toString());
-      debugPrint(ownerInfo.lng.toString());
+      debugPrint('-------individual');
+      debugPrint('Customer ' + addressInfo.lat.toString());
+      debugPrint('Customer ' + addressInfo.lng.toString());
+      debugPrint('Shop ' + ownerInfo.lat.toString());
+      debugPrint('Shop ' + ownerInfo.lng.toString());
       debugPrint('-------');
       if (addressInfo.lat != null &&
           addressInfo.lng != null &&
@@ -237,9 +238,10 @@ class ProductPaymentController extends GetxController implements GetxService {
           double.tryParse(ownerInfo.lng.toString()) ?? 0.0,
         );
         totalMeters = totalMeters + storeDistance;
-        double distance =
-            double.parse((storeDistance / 1000).toStringAsFixed(2));
-        debugPrint(distance.toString());
+        distance = double.parse((storeDistance / 1000).toStringAsFixed(2));
+        debugPrint('distance ' + distance.toString());
+        debugPrint(
+            'allowed distance ' + parser.getAllowedDeliveryRadius().toString());
         if (distance > parser.getAllowedDeliveryRadius()) {
           haveFairDeliveryRadius = false;
           showToast(
@@ -248,20 +250,33 @@ class ProductPaymentController extends GetxController implements GetxService {
           if (Get.find<ProductCartController>().shippingMethod == 0) {
             double distancePricer =
                 distance * Get.find<ProductCartController>().shippingPrice;
-            _deliveryPrice = double.parse((distancePricer).toStringAsFixed(2));
+
+            double deliveryGst = distancePricer *
+                (Get.find<ProductCartController>().orderTax / 100);
+
+            double finalAmt = distancePricer + deliveryGst;
+
+            _deliveryPrice = double.parse((finalAmt).toStringAsFixed(2));
           } else {
-            _deliveryPrice = Get.find<ProductCartController>().shippingPrice;
+            double deliveryGst =
+                Get.find<ProductCartController>().shippingPrice *
+                    (Get.find<ProductCartController>().orderTax / 100);
+
+            double finalAmt =
+                Get.find<ProductCartController>().shippingPrice + deliveryGst;
+
+            _deliveryPrice = double.parse((finalAmt).toStringAsFixed(2));
           }
           haveFairDeliveryRadius = true;
         }
         update();
       }
     } else {
-      debugPrint('-------');
-      debugPrint(addressInfo.lat.toString());
-      debugPrint(addressInfo.lng.toString());
-      debugPrint(salonInfo.lat.toString());
-      debugPrint(salonInfo.lng.toString());
+      debugPrint('-------business');
+      debugPrint('Customer ' + addressInfo.lat.toString());
+      debugPrint('Customer ' + addressInfo.lng.toString());
+      debugPrint('Shop ' + salonInfo.lat.toString());
+      debugPrint('Shop ' + salonInfo.lng.toString());
       debugPrint('-------');
       if (addressInfo.lat != null &&
           addressInfo.lng != null &&
@@ -277,9 +292,11 @@ class ProductPaymentController extends GetxController implements GetxService {
           double.tryParse(salonInfo.lng.toString()) ?? 0.0,
         );
         totalMeters = totalMeters + storeDistance;
-        double distance =
-            double.parse((storeDistance / 1000).toStringAsFixed(2));
-        debugPrint(distance.toString());
+        distance = double.parse((storeDistance / 1000).toStringAsFixed(2));
+        debugPrint('distance ' + distance.toString());
+        debugPrint(
+            'allowed distance ' + parser.getAllowedDeliveryRadius().toString());
+
         if (distance > parser.getAllowedDeliveryRadius()) {
           haveFairDeliveryRadius = false;
           showToast(
@@ -288,9 +305,22 @@ class ProductPaymentController extends GetxController implements GetxService {
           if (Get.find<ProductCartController>().shippingMethod == 0) {
             double distancePricer =
                 distance * Get.find<ProductCartController>().shippingPrice;
-            _deliveryPrice = double.parse((distancePricer).toStringAsFixed(2));
+
+            double deliveryGst = distancePricer *
+                (Get.find<ProductCartController>().orderTax / 100);
+
+            double finalAmt = distancePricer + deliveryGst;
+
+            _deliveryPrice = double.parse((finalAmt).toStringAsFixed(2));
           } else {
-            _deliveryPrice = Get.find<ProductCartController>().shippingPrice;
+            double deliveryGst =
+                Get.find<ProductCartController>().shippingPrice *
+                    (Get.find<ProductCartController>().orderTax / 100);
+
+            double finalAmt =
+                Get.find<ProductCartController>().shippingPrice + deliveryGst;
+
+            _deliveryPrice = double.parse((finalAmt).toStringAsFixed(2));
           }
           haveFairDeliveryRadius = true;
         }
@@ -303,8 +333,6 @@ class ProductPaymentController extends GetxController implements GetxService {
   Future<void> getSavedAddress() async {
     var param = {"id": parser.getUID()};
     Response response = await parser.getSavedAddress(param);
-
-    apiCalled = true;
     update();
     if (response.statusCode == 200) {
       Map<String, dynamic> myMap = Map<String, dynamic>.from(response.body);
@@ -349,13 +377,24 @@ class ProductPaymentController extends GetxController implements GetxService {
     update();
   }
 
-  void onCoupon(String offerId, String offerName) {
+  // void onCoupon(String offerId, String offerName) {
+  //   Get.delete<CouponController>(force: true);
+  //   Get.toNamed(AppRouter.getCouponRoutes(), arguments: [
+  //     'product',
+  //     offerId,
+  //     offerName,
+  //     Get.find<ProductCartController>().savedInCart[0].freelacerId.toString()
+  //   ]);
+  // }
+
+  void onCoupon(String offerId, String offerName, String cartValue) {
     Get.delete<CouponController>(force: true);
     Get.toNamed(AppRouter.getCouponRoutes(), arguments: [
       'product',
       offerId,
       offerName,
-      Get.find<ProductCartController>().savedInCart[0].freelacerId.toString()
+      Get.find<ProductCartController>().savedInCart[0].freelacerId.toString(),
+      cartValue
     ]);
   }
 
@@ -388,6 +427,9 @@ class ProductPaymentController extends GetxController implements GetxService {
 
       _discount = percentage(Get.find<ProductCartController>().totalPrice,
           _selectedCoupon.discount); // null
+      if (_discount > _selectedCoupon.upto!) {
+        _discount = _selectedCoupon.upto!;
+      }
     }
     walletDiscount = balance;
     if (isWalletChecked == true) {
@@ -469,7 +511,7 @@ class ProductPaymentController extends GetxController implements GetxService {
           const SizedBox(
             height: 10,
           ),
-          Text('Your are going to place an order\nAre you sure?'.tr),
+          Text('Your are going to place an order\nDo you want to continue?'.tr),
           const SizedBox(
             height: 20,
           ),
@@ -563,9 +605,12 @@ class ProductPaymentController extends GetxController implements GetxService {
         'amount':
             double.parse((grandTotal * 100).toStringAsFixed(2)).toString(),
         'email': parser.getEmail(),
-        'logo': '${parser.apiService.appBaseUrl}uploads/${parser.getAppLogo()}',
+        // 'logo': '${parser.apiService.appBaseUrl}uploads/${parser.getAppLogo()}',
+        'logo':
+            'https://papa-bear.blr1.cdn.digitaloceanspaces.com/papalogo.png',
+
         'name': parser.getName(),
-        'app_color': '#f47878'
+        'app_color': '#000000'
       };
 
       String queryString = Uri(queryParameters: paymentPayLoad).query;
@@ -652,14 +697,14 @@ class ProductPaymentController extends GetxController implements GetxService {
       "salon_id": ownerType == 'salon'
           ? Get.find<ProductCartController>().savedInCart[0].freelacerId
           : 0,
-      "date_time": Jiffy().format('yyyy-MM-dd'),
+      "date_time": Jiffy.now().format(pattern: 'yyyy-MM-dd'),
       "paid_method": paymentId,
       "order_to": "home",
       "orders": jsonEncode(Get.find<ProductCartController>().savedInCart),
       "notes": notesEditor.text.isNotEmpty ? notesEditor.text : 'NA',
       "address": jsonEncode(addressInfo),
       "total": Get.find<ProductCartController>().totalPrice,
-      "tax": Get.find<ProductCartController>().orderTax,
+      "tax": Get.find<ProductCartController>().taxAmount,
       "grand_total": grandTotal,
       "discount": discount,
       "driver_id": 0,
@@ -709,7 +754,7 @@ class ProductPaymentController extends GetxController implements GetxService {
                 height: 10,
               ),
               Text(
-                'For Your Orders'.tr,
+                'For Your Order'.tr,
                 style: const TextStyle(fontFamily: 'semi-bold', fontSize: 16),
               ),
               const SizedBox(
@@ -827,7 +872,12 @@ class ProductPaymentController extends GetxController implements GetxService {
 
   void backOrders() {
     Get.find<ProductCartController>().clearCart();
-    Get.find<TabsController>().updateTabId(4);
     Get.offAllNamed(AppRouter.getTabsBarRoute());
+    // Future.delayed(Duration(milliseconds: 100), () {
+    //   Get.find<TabsController>().updateTabId(4);
+    // });
+
+    Get.delete<ProductOrderController>(force: true);
+    Get.toNamed(AppRouter.getProductOrder());
   }
 }

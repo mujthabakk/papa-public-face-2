@@ -1,11 +1,3 @@
-/*
-  Authors : initappz (Rahul Jograna)
-  Website : https://initappz.com/
-  App Name : Ultimate Salon Full App Flutter V2
-  This App Template Source code is licensed as per the
-  terms found in the Website https://initappz.com/license
-  Copyright and Good Faith Purchasers © 2023-present initappz.
-*/
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:salon_user/app/controller/chat_controller.dart';
@@ -123,7 +115,7 @@ class _ChatScreenState extends State<ChatScreen> {
                                                         const EdgeInsets.only(
                                                             right: 10),
                                                     padding: const EdgeInsets
-                                                            .symmetric(
+                                                        .symmetric(
                                                         vertical: 10,
                                                         horizontal: 15),
                                                     decoration:
@@ -165,54 +157,56 @@ class _ChatScreenState extends State<ChatScreen> {
                                 ],
                               );
                       }))),
-          bottomNavigationBar: SingleChildScrollView(
-            reverse: true,
+          bottomNavigationBar: Padding(
             padding: EdgeInsets.only(
-                bottom: MediaQuery.of(context).viewInsets.bottom),
-            child: Container(
-              height: 50,
-              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-              child: Row(
-                children: <Widget>[
-                  Expanded(
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10),
-                      decoration: BoxDecoration(
-                        borderRadius:
-                            const BorderRadius.all(Radius.circular(25)),
-                        color: ThemeProvider.greyColor.shade300,
-                      ),
-                      child: TextField(
-                        controller: value.message,
-                        keyboardType: TextInputType.text,
-                        decoration: InputDecoration(
-                            border: InputBorder.none,
-                            hintText: 'Message...'.tr),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(
-                    width: 20,
-                  ),
-                  InkWell(
-                    onTap: () {
-                      value.sendMessage();
-                    },
-                    child: Container(
-                      height: 50,
-                      width: 50,
-                      decoration: const BoxDecoration(
-                          color: ThemeProvider.appColor,
-                          borderRadius: BorderRadius.all(
-                            Radius.circular(50),
-                          )),
-                      child: const Icon(
-                        Icons.near_me,
-                        color: ThemeProvider.whiteColor,
+              bottom: MediaQuery.of(context).viewInsets.bottom,
+            ),
+            child: SafeArea(
+              child: Container(
+                height: 50,
+                margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                child: Row(
+                  children: <Widget>[
+                    Expanded(
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10),
+                        decoration: BoxDecoration(
+                          borderRadius:
+                              const BorderRadius.all(Radius.circular(25)),
+                          color: ThemeProvider.greyColor.shade300,
+                        ),
+                        child: TextField(
+                          controller: value.message,
+                          keyboardType: TextInputType.text,
+                          decoration: InputDecoration(
+                              border: InputBorder.none,
+                              hintText: 'Message...'.tr),
+                        ),
                       ),
                     ),
-                  ),
-                ],
+                    const SizedBox(
+                      width: 20,
+                    ),
+                    InkWell(
+                      onTap: () {
+                        value.sendMessage();
+                      },
+                      child: Container(
+                        height: 50,
+                        width: 50,
+                        decoration: const BoxDecoration(
+                            color: ThemeProvider.appColor,
+                            borderRadius: BorderRadius.all(
+                              Radius.circular(50),
+                            )),
+                        child: const Icon(
+                          Icons.near_me,
+                          color: ThemeProvider.whiteColor,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),

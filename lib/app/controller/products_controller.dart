@@ -59,6 +59,8 @@ class ProductsController extends GetxController implements GetxService {
         ProductsListModel products = ProductsListModel.fromJson(data);
         _productsList.add(products);
       });
+      _productsList.removeWhere((product) => product.status == 0);
+
       checkCartData();
     } else {
       ApiChecker.checkApi(response);
@@ -140,9 +142,12 @@ class ProductsController extends GetxController implements GetxService {
     Get.toNamed(AppRouter.getSortByRoutes());
   }
 
-  void onCart() {
+  Future<void> onCart() async {
     Get.delete<CartController>(force: true);
-    Get.toNamed(AppRouter.getCartRoutes());
+    await Get.toNamed(AppRouter.getCartRoutes());
+    // Refresh cart data when returning from cart screen
+    checkCartData();
+    update();
   }
 
   void sortProducts(String criteria) {

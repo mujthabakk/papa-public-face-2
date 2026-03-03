@@ -17,7 +17,7 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  final CarouselController _controller = CarouselController();
+  final CarouselSliderController _controller = CarouselSliderController();
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
   var top = 0.0;
@@ -177,9 +177,12 @@ class _HomeScreenState extends State<HomeScreen> {
                         floating: true,
                         automaticallyImplyLeading: false,
                         elevation: 10,
-                        toolbarHeight: 59,
-                        collapsedHeight: 69,
-                        expandedHeight: 140.0,
+                        toolbarHeight:
+                            MediaQuery.of(context).size.height * 0.074,
+                        collapsedHeight:
+                            MediaQuery.of(context).size.height * 0.086,
+                        expandedHeight:
+                            MediaQuery.of(context).size.height * 0.163,
                         iconTheme: const IconThemeData(
                             color: ThemeProvider.whiteColor),
                         flexibleSpace: LayoutBuilder(
@@ -222,7 +225,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                               const SizedBox(width: 28),
                                             ],
                                           )),
-                                      const SizedBox(height: 12),
+                                      const SizedBox(height: 10),
                                       Row(
                                         mainAxisAlignment:
                                             MainAxisAlignment.spaceBetween,
@@ -354,10 +357,12 @@ class _HomeScreenState extends State<HomeScreen> {
                                               const EdgeInsets.only(top: 0),
                                           child: CarouselSlider(
                                             options: CarouselOptions(
-                                              height: 180,
+                                              height: MediaQuery.of(context)
+                                                      .size
+                                                      .width *
+                                                  0.5,
                                               viewportFraction: 1,
                                               initialPage: 0,
-                                              aspectRatio: 16 / 9,
                                               enableInfiniteScroll: true,
                                               reverse: false,
                                               autoPlay: true,
@@ -365,7 +370,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                                   const Duration(seconds: 3),
                                               autoPlayAnimationDuration:
                                                   const Duration(
-                                                      milliseconds: 300),
+                                                      milliseconds: 100),
                                               autoPlayCurve:
                                                   Curves.fastOutSlowIn,
                                               enlargeCenterPage: false,
@@ -400,7 +405,11 @@ class _HomeScreenState extends State<HomeScreen> {
                                                               .bottomCenter,
                                                           children: [
                                                             SizedBox(
-                                                              height: 180,
+                                                              height: MediaQuery.of(
+                                                                          context)
+                                                                      .size
+                                                                      .width *
+                                                                  0.5,
                                                               width: double
                                                                   .infinity,
                                                               child: ClipRRect(
@@ -1245,7 +1254,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                                                       product.name ??
                                                                           '',
                                                                       maxLines:
-                                                                          2,
+                                                                          1,
                                                                       overflow:
                                                                           TextOverflow
                                                                               .ellipsis,
@@ -1445,8 +1454,9 @@ class _HomeScreenState extends State<HomeScreen> {
                       )
                     ],
                   ),
-            bottomNavigationBar:
-                Get.find<ServiceCartController>().totalItemsInCart > 0
+            bottomNavigationBar: GetBuilder<ServiceCartController>(
+              builder: (cartController) {
+                return cartController.totalItemsInCart > 0
                     ? SizedBox(
                         height: 70,
                         child: InkWell(
@@ -1465,8 +1475,8 @@ class _HomeScreenState extends State<HomeScreen> {
                               children: [
                                 Text(
                                   value.currencySide == 'left'
-                                      ? '${Get.find<ServiceCartController>().totalItemsInCart} ${'Items'.tr} ${value.currencySymbol} ${Get.find<ServiceCartController>().totalPrice}'
-                                      : ' ${Get.find<ServiceCartController>().totalItemsInCart} ${'Items'.tr} ${Get.find<ServiceCartController>().totalPrice}${value.currencySymbol}',
+                                      ? '${cartController.totalItemsInCart} ${'Items'.tr} ${value.currencySymbol} ${cartController.totalPrice}'
+                                      : '${cartController.totalItemsInCart} ${'Items'.tr} ${cartController.totalPrice}${value.currencySymbol}',
                                   style: const TextStyle(
                                       color: ThemeProvider.whiteColor),
                                 ),
@@ -1480,7 +1490,9 @@ class _HomeScreenState extends State<HomeScreen> {
                           ),
                         ),
                       )
-                    : const SizedBox(),
+                    : const SizedBox();
+              },
+            ),
           );
         });
       },

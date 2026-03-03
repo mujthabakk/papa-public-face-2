@@ -1,11 +1,3 @@
-/*
-  Authors : initappz (Rahul Jograna)
-  Website : https://initappz.com/
-  App Name : Ultimate Salon Full App Flutter V2
-  This App Template Source code is licensed as per the
-  terms found in the Website https://initappz.com/license
-  Copyright and Good Faith Purchasers © 2023-present initappz.
-*/
 import 'package:flutter/material.dart';
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:get/get.dart';
@@ -22,7 +14,7 @@ class IntroScreen extends StatefulWidget {
 }
 
 class _IntroScreenState extends State<IntroScreen> {
-  final CarouselController _controller = CarouselController();
+  final CarouselSliderController _controller = CarouselSliderController();
   int currentIndex = 0;
   List items = [0, 1, 2, 3];
   @override
@@ -40,21 +32,23 @@ class _IntroScreenState extends State<IntroScreen> {
         // ),
         backgroundColor: ThemeProvider.whiteColor,
         body: _buildBody(),
-        bottomNavigationBar: SizedBox(
-          height: 150,
-          child: Column(
-            children: [
-              if (currentIndex == 0)
-                _buildBottomNavigationBar1()
-              else if (currentIndex == 1)
-                _buildBottomNavigationBar2()
-              else if (currentIndex == 2)
-                _buildBottomNavigationBar3()
-              else if (currentIndex == 3)
-                _buildBottomNavigationBar4()
-              // else if (currentIndex == 4)
-              //   _buildBottomNavigationBar5()
-            ],
+        bottomNavigationBar: SafeArea(
+          child: SizedBox(
+            height: 150,
+            child: ListView(
+              children: [
+                if (currentIndex == 0)
+                  _buildBottomNavigationBar1()
+                else if (currentIndex == 1)
+                  _buildBottomNavigationBar2()
+                else if (currentIndex == 2)
+                  _buildBottomNavigationBar3()
+                else if (currentIndex == 3)
+                  _buildBottomNavigationBar4()
+                // else if (currentIndex == 4)
+                //   _buildBottomNavigationBar5()
+              ],
+            ),
           ),
         ),
       );
@@ -138,7 +132,7 @@ class _IntroScreenState extends State<IntroScreen> {
     return Column(
       children: [
         Container(
-          height: 400,
+          height: 360,
           decoration: const BoxDecoration(
             image: DecorationImage(
                 image: AssetImage(
@@ -152,7 +146,7 @@ class _IntroScreenState extends State<IntroScreen> {
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
               child: Text(
-                'Discover and book your favorite hair stylist !'.tr,
+                'Discover Your Perfect Hair Look'.tr,
                 textAlign: TextAlign.center,
                 style: const TextStyle(
                     fontFamily: 'bold',
@@ -164,7 +158,7 @@ class _IntroScreenState extends State<IntroScreen> {
               padding: const EdgeInsets.only(
                   top: 8.0, right: 18, left: 18, bottom: 8),
               child: Text(
-                'Lorem Ipsum is simply dummy text of the printing \n and typesetting industry'
+                'Book top-rated hair stylists for cuts, colors, and styles that suit your vibe'
                     .tr,
                 textAlign: TextAlign.center,
                 style: const TextStyle(
@@ -183,7 +177,7 @@ class _IntroScreenState extends State<IntroScreen> {
     return Column(
       children: [
         Container(
-          height: 400,
+          height: 360,
           decoration: const BoxDecoration(
             image: DecorationImage(
                 image: AssetImage(
@@ -197,7 +191,7 @@ class _IntroScreenState extends State<IntroScreen> {
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
               child: Text(
-                'Discover and book your favorite hair stylist !'.tr,
+                'Glow Up Starts Here'.tr,
                 textAlign: TextAlign.center,
                 style: const TextStyle(
                     fontFamily: 'bold',
@@ -209,8 +203,7 @@ class _IntroScreenState extends State<IntroScreen> {
               padding: const EdgeInsets.only(
                   top: 8.0, right: 18, left: 18, bottom: 8),
               child: Text(
-                'Lorem Ipsum is simply dummy text of the printing \n and typesetting industry'
-                    .tr,
+                'Facials, makeup, skincare & more — all at your fingertips.'.tr,
                 textAlign: TextAlign.center,
                 style: const TextStyle(
                     color: Color.fromARGB(255, 62, 62, 62),
@@ -228,7 +221,7 @@ class _IntroScreenState extends State<IntroScreen> {
     return Column(
       children: [
         Container(
-          height: 400,
+          height: 360,
           decoration: const BoxDecoration(
             image: DecorationImage(
                 image: AssetImage(
@@ -242,7 +235,7 @@ class _IntroScreenState extends State<IntroScreen> {
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
               child: Text(
-                'Discover and book your favorite hair stylist !'.tr,
+                'Crush Your Fitness Goals'.tr,
                 textAlign: TextAlign.center,
                 style: const TextStyle(
                     fontFamily: 'bold',
@@ -254,7 +247,7 @@ class _IntroScreenState extends State<IntroScreen> {
               padding: const EdgeInsets.only(
                   top: 8.0, right: 18, left: 18, bottom: 8),
               child: Text(
-                'Lorem Ipsum is simply dummy text of the printing \n and typesetting industry'
+                'Find the best gyms and certified trainers near you. Book your session today!'
                     .tr,
                 textAlign: TextAlign.center,
                 style: const TextStyle(
@@ -273,7 +266,7 @@ class _IntroScreenState extends State<IntroScreen> {
     return Column(
       children: [
         Container(
-          height: 400,
+          height: 360,
           decoration: const BoxDecoration(
             image: DecorationImage(
                 image: AssetImage(
@@ -287,7 +280,7 @@ class _IntroScreenState extends State<IntroScreen> {
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
               child: Text(
-                'Discover and book your favorite hair stylist !'.tr,
+                'Relax. Recharge. Repeat'.tr,
                 textAlign: TextAlign.center,
                 style: const TextStyle(
                     fontFamily: 'bold',
@@ -299,7 +292,7 @@ class _IntroScreenState extends State<IntroScreen> {
               padding: const EdgeInsets.only(
                   top: 8.0, right: 18, left: 18, bottom: 8),
               child: Text(
-                'Lorem Ipsum is simply dummy text of the printing \n and typesetting industry'
+                'Pamper yourself with spa therapies, massages, and self-care treatments'
                     .tr,
                 textAlign: TextAlign.center,
                 style: const TextStyle(

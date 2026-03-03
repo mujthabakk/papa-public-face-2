@@ -1,11 +1,3 @@
-/*
-  Authors : initappz (Rahul Jograna)
-  Website : https://initappz.com/
-  App Name : Ultimate Salon Full App Flutter V2
-  This App Template Source code is licensed as per the
-  terms found in the Website https://initappz.com/license
-  Copyright and Good Faith Purchasers © 2023-present initappz.
-*/
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:salon_user/app/backend/api/handler.dart';
@@ -42,6 +34,14 @@ class AccountChatController extends GetxController implements GetxService {
           ChatConversionModel datas = ChatConversionModel.fromJson(data);
           _chatList.add(datas);
         });
+
+        // Sort by updatedAtTimestamp in descending order (most recent first)
+        _chatList.sort((a, b) {
+          DateTime aDate = a.updatedAtTimestamp ?? DateTime(1970);
+          DateTime bDate = b.updatedAtTimestamp ?? DateTime(1970);
+          return bDate.compareTo(aDate);
+        });
+
         debugPrint(chatList.length.toString());
       } else {
         ApiChecker.checkApi(response);

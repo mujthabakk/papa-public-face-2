@@ -14,6 +14,7 @@ class ServiceCartController extends GetxController implements GetxService {
 
   int _totalItemsInCart = 0;
   int get totalItemsInCart => _totalItemsInCart;
+  set totalItemsInCartNow(int value) => _totalItemsInCart = value;
 
   double _totalPrice = 0.0;
   double get totalPrice => _totalPrice;
@@ -54,6 +55,8 @@ class ServiceCartController extends GetxController implements GetxService {
   int salonId = 0;
   String servicesFrom = '';
   ServiceCartController({required this.parser});
+
+  //set _totalItemsInCart to 0
 
   void getCart() {
     _savedInCart = ServiceCartModel();

@@ -21,6 +21,12 @@ class AccountParser {
         : false;
   }
 
+  Future<Response> onDelete() async {
+    var response = await apiService.postPublic(AppConstants.getDelete,
+        {"uid": sharedPreferencesManager.getString('uid')});
+    return response;
+  }
+
   String getFirstName() {
     return sharedPreferencesManager.getString('first_name') ?? '';
   }

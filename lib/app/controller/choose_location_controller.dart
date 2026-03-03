@@ -88,7 +88,13 @@ class ChooseLocationController extends GetxController implements GetxService {
     }).catchError((error) async {
       Get.back();
       showToast(error.toString());
-      await Geolocator.openLocationSettings();
+      // Check for specific errors to decide which settings to open
+      if (error.toString().contains('permanently denied')) {
+        await Geolocator.openAppSettings();
+      } else if (error.toString().contains('Location services are disabled')) {
+        await Geolocator.openLocationSettings();
+      }
+      // If just "denied", do not open settings automatically
     });
 
     /////// REAL DATA /////

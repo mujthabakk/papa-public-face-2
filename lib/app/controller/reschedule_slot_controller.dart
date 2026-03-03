@@ -64,10 +64,10 @@ class RescheduleSlotController extends GetxController implements GetxService {
     uid = Get.arguments[1].toString();
     type = Get.arguments[2].toString();
 
-    var dayName = Jiffy().format("EEEE"); // Tuesday
+    var dayName = Jiffy.now().format(pattern: "EEEE"); // Tuesday
     debugPrint(dayName);
     int index = dayList.indexOf(dayName);
-    var date = Jiffy().format('yyyy-MM-dd');
+    var date = Jiffy.now().format(pattern: 'yyyy-MM-dd');
     savedDate = date;
     update();
     getSlotsForBookings(index, date);
@@ -222,8 +222,8 @@ class RescheduleSlotController extends GetxController implements GetxService {
     selectedSlotIndex = '';
     haveData = false;
     debugPrint(date.toString());
-    var dayName = Jiffy(date).format("EEEE");
-    var selectedDate = Jiffy(date).format('yyyy-MM-dd');
+    var dayName = Jiffy.parseFromDateTime(date).format(pattern: "EEEE");
+    var selectedDate = Jiffy.parseFromDateTime(date).format(pattern: 'yyyy-MM-dd');
     savedDate = selectedDate;
     update();
     debugPrint(dayName);
@@ -296,14 +296,128 @@ class RescheduleSlotController extends GetxController implements GetxService {
     Get.back();
     if (response.statusCode == 200) {
       // back//
-      successToast('Status Updated'.tr);
-      Get.find<BookingController>().getAppointmentById();
-      onBack(); // list refresh
+      // successToast('Status Updated'.tr);
+      // Get.find<BookingController>().getAppointmentById();
+
+      //  onBack(); // list refresh
+
+      showRescheduleSuccessDialog();
     } else {
       ApiChecker.checkApi(response);
     }
 
     update();
+  }
+
+  void showRescheduleSuccessDialog() {
+    Get.dialog(
+      Dialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Success icon
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: ThemeProvider.greenColor.withOpacity(0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  Icons.check_circle_outline,
+                  size: 64,
+                  color: ThemeProvider.greenColor,
+                ),
+              ),
+              const SizedBox(height: 24),
+
+              // Success title
+              Text(
+                'Appointment Rescheduled'.tr,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: ThemeProvider.blackColor,
+                ),
+              ),
+              const SizedBox(height: 8),
+
+              // Success message
+              Text(
+                'Your appointment has been successfully rescheduled. You will receive a confirmation email shortly.'
+                    .tr,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 14,
+                  color: ThemeProvider.greyColor,
+                  height: 1.4,
+                ),
+              ),
+              const SizedBox(height: 24),
+
+              // Action buttons
+              Column(
+                children: [
+                  // Book new appointment button
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      onPressed: () {
+                        Get.find<BookingController>().getAppointmentById();
+                        onBack(); // list refresh
+                        onBack();
+                      },
+                      icon: const Icon(Icons.schedule, size: 18),
+                      label: Text('Goto Appointments'.tr),
+                      style: ElevatedButton.styleFrom(
+                        foregroundColor: ThemeProvider.whiteColor,
+                        backgroundColor: ThemeProvider.appColor,
+                        minimumSize: const Size.fromHeight(48),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        elevation: 0,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+
+                  // // Done button
+                  // SizedBox(
+                  //   width: double.infinity,
+                  //   child: TextButton(
+                  //     onPressed: () {
+                  //       Navigator.pop(Get.context!);
+                  //     },
+                  //     style: TextButton.styleFrom(
+                  //       foregroundColor: ThemeProvider.greyColor,
+                  //       minimumSize: const Size.fromHeight(48),
+                  //       shape: RoundedRectangleBorder(
+                  //         borderRadius: BorderRadius.circular(8),
+                  //       ),
+                  //     ),
+                  //     child: Text(
+                  //       'Done'.tr,
+                  //       style: const TextStyle(
+                  //         fontSize: 16,
+                  //         fontWeight: FontWeight.w500,
+                  //       ),
+                  //     ),
+                  //   ),
+                  // ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+      barrierDismissible: false,
+    );
   }
 
   // void onCheckout() {

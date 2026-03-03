@@ -13,6 +13,7 @@ class SalonModel {
   bool? isPremium;
   double? distance;
   int? gender;
+  int? status;
   int? duration;
   double? price;
   double? off;
@@ -25,6 +26,7 @@ class SalonModel {
     this.serviceName,
     this.id,
     this.uid,
+    this.status,
     this.name,
     this.rating,
     this.totalRating,
@@ -50,7 +52,8 @@ class SalonModel {
     id = json['id'] ?? 0;
     uid = json['uid'] ?? 0;
     name = json['name'] ?? 'Unknown Name';
-    isPremium = json['isPremium'] ?? false;
+    status = json['status'] ?? 1;
+    isPremium = json['is_premium'] ?? false;
     rating = json['rating'] != null
         ? double.tryParse(json['rating'].toString()) ?? 0.0
         : 0.0;
@@ -98,8 +101,9 @@ class SalonModel {
     data['uid'] = uid;
     data['name'] = name;
     data['rating'] = rating;
-    data['isPremium'] = isPremium;
+    data['is_premium'] = isPremium;
     data['total_rating'] = totalRating;
+    data['status'] = status;
     data['address'] = address;
     data['cover'] = cover;
     data['salon_lat'] = salonLat;

@@ -31,13 +31,20 @@ class FindLocationController extends GetxController implements GetxService {
   final RxDouble myLng = 0.0.obs;
 
   bool isConfirmed = false;
+  String savedAddress = '';
 
   FindLocationController({required this.parser});
 
   @override
   Future<void> onInit() async {
     super.onInit();
-    getCurrentLocation();
+    searchbarText.clear();
+    _getList = [];
+
+    // Load saved address
+    savedAddress = parser.getSavedAddress();
+
+    getCurrentLocation(updateSearchText: true);
 
     // var pinPosition = LatLng(myLat, myLng);
     // markers.add(Marker(
@@ -46,7 +53,7 @@ class FindLocationController extends GetxController implements GetxService {
     // ));
   }
 
-  void getCurrentLocation() async {
+  void getCurrentLocation({bool updateSearchText = false}) async {
     try {
       Position position = await determinePosition();
       myLat.value = position.latitude;
@@ -59,6 +66,28 @@ class FindLocationController extends GetxController implements GetxService {
           position: pinPosition,
         ),
       );
+
+      // Get address from coordinates only if requested
+      if (updateSearchText) {
+        try {
+          List<Placemark> placemarks =
+              await placemarkFromCoordinates(myLat.value, myLng.value);
+          if (placemarks.isNotEmpty) {
+            Placemark placeMark = placemarks[0];
+            String name = placeMark.name.toString();
+            String subLocality = placeMark.subLocality.toString();
+            String locality = placeMark.locality.toString();
+            String administrativeArea = placeMark.administrativeArea.toString();
+            String postalCode = placeMark.postalCode.toString();
+            String country = placeMark.country.toString();
+            String address =
+                "$name,$subLocality,$locality,$administrativeArea,$postalCode,$country";
+            searchbarText.text = address;
+          }
+        } catch (e) {
+          debugPrint("Error getting address: $e");
+        }
+      }
 
       update(); // Update the UI with new marker position
     } catch (e) {
@@ -217,7 +246,7 @@ class FindLocationController extends GetxController implements GetxService {
     }
   }
 
-  void moveMapToPosition(double lat, double lng) {
+  void moveMapToPosition(double lat, double lng) async {
     final newPosition = LatLng(lat, lng);
 
     // Update marker position
@@ -232,6 +261,25 @@ class FindLocationController extends GetxController implements GetxService {
     // Move the camera to the new position
     mapController?.animateCamera(CameraUpdate.newLatLng(newPosition));
 
+    // Get address from coordinates and update search text
+    try {
+      List<Placemark> placemarks = await placemarkFromCoordinates(lat, lng);
+      if (placemarks.isNotEmpty) {
+        Placemark placeMark = placemarks[0];
+        String name = placeMark.name.toString();
+        String subLocality = placeMark.subLocality.toString();
+        String locality = placeMark.locality.toString();
+        String administrativeArea = placeMark.administrativeArea.toString();
+        String postalCode = placeMark.postalCode.toString();
+        String country = placeMark.country.toString();
+        String address =
+            "$name,$subLocality,$locality,$administrativeArea,$postalCode,$country";
+        searchbarText.text = address;
+      }
+    } catch (e) {
+      debugPrint("Error getting address: $e");
+    }
+
     update(); // Refresh the UI to reflect marker changes
   }
 
@@ -245,5 +293,34 @@ class FindLocationController extends GetxController implements GetxService {
     Get.delete<BookingController>(force: true);
     Get.delete<AccountController>(force: true);
     Get.offAndToNamed(AppRouter.getTabsBarRoute());
+  }
+
+  void resetSearch() {
+    searchbarText.clear();
+    _getList = [];
+    savedAddress = parser.getSavedAddress();
+    getCurrentLocation(updateSearchText: true);
+  }
+
+  void useSavedLocation() {
+    double lat = parser.getSavedLat();
+    double lng = parser.getSavedLng();
+    String address = parser.getSavedAddress();
+
+    if (lat != 0.0 && lng != 0.0 && address.isNotEmpty) {
+      myLat.value = lat;
+      myLng.value = lng;
+      searchbarText.text = address;
+
+      var pinPosition = LatLng(lat, lng);
+      markers.removeWhere((m) => m.markerId.value == 'sourcePin');
+      markers.add(Marker(
+        markerId: const MarkerId('sourcePin'),
+        position: pinPosition,
+      ));
+
+      mapController?.animateCamera(CameraUpdate.newLatLng(pinPosition));
+      update();
+    }
   }
 }

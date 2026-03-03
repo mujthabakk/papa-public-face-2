@@ -16,6 +16,7 @@ class PackagesDetailsModel {
   String? specialistIds;
   String? extraField;
   int? status;
+  String? gender;
   List<Services>? services;
   List<Specialist>? specialist;
   late bool? isBooked;
@@ -36,6 +37,7 @@ class PackagesDetailsModel {
       this.specialistIds,
       this.extraField,
       this.status,
+      this.gender,
       this.services,
       this.isBooked = false,
       this.specialist});
@@ -56,6 +58,7 @@ class PackagesDetailsModel {
     specialistIds = json['specialist_ids'];
     extraField = json['extra_field'];
     status = int.parse(json['status'].toString());
+    gender = json['gender'];
     isBooked = json['isBooked'];
     if (json['services'] != null) {
       services = <Services>[];
@@ -88,6 +91,8 @@ class PackagesDetailsModel {
     data['specialist_ids'] = specialistIds;
     data['extra_field'] = extraField;
     data['status'] = status;
+    data['gender'] = gender;
+
     data['isBooked'] = isBooked;
     if (services != null) {
       data['services'] = services!.map((v) => v.toJson()).toList();
@@ -126,6 +131,9 @@ class Services {
     data['id'] = id;
     data['name'] = name;
     data['cover'] = cover;
+    data['gender'] = gender;
+    data['price'] = price;
+
     return data;
   }
 }

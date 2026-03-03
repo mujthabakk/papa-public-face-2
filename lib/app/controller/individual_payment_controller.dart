@@ -92,7 +92,6 @@ class IndividualPaymentController extends GetxController
 
   Future<void> getMyWalletAmount() async {
     Response response = await parser.getMyWalletBalance();
-    apiCalled = true;
     if (response.statusCode == 200) {
       Map<String, dynamic> myMap = Map<String, dynamic>.from(response.body);
       dynamic body = myMap["data"];
@@ -135,6 +134,7 @@ class IndividualPaymentController extends GetxController
 
       IndividualInfoModel services = IndividualInfoModel.fromJson(body);
       _individualInfo = services;
+      haveFairDeliveryRadius = true;
       getSavedAddress();
       checkPremiumStatus(Get.find<IndividualSlotController>().uid);
       update();
@@ -149,7 +149,6 @@ class IndividualPaymentController extends GetxController
 
     Response response = await parser.getSavedAddress(param);
     debugPrint(response.bodyString);
-    apiCalled = true;
     update();
     if (response.statusCode == 200) {
       debugPrint(response.bodyString);
@@ -211,9 +210,21 @@ class IndividualPaymentController extends GetxController
         if (Get.find<ServiceCartController>().shippingMethod == 0) {
           double distancePricer =
               distance * Get.find<ServiceCartController>().shippingPrice;
-          _deliveryPrice = double.parse((distancePricer).toStringAsFixed(2));
+
+          double deliveryGst = distancePricer *
+              (Get.find<ServiceCartController>().orderTax / 100);
+
+          double finalAmt = distancePricer + deliveryGst;
+
+          _deliveryPrice = double.parse((finalAmt).toStringAsFixed(2));
         } else {
-          _deliveryPrice = Get.find<ServiceCartController>().shippingPrice;
+          double deliveryGst = Get.find<ServiceCartController>().shippingPrice *
+              (Get.find<ServiceCartController>().orderTax / 100);
+
+          double finalAmt =
+              Get.find<ServiceCartController>().shippingPrice + deliveryGst;
+
+          _deliveryPrice = double.parse((finalAmt).toStringAsFixed(2));
         }
         haveFairDeliveryRadius = true;
       }
@@ -251,6 +262,10 @@ class IndividualPaymentController extends GetxController
 
       _discount = percentage(Get.find<ServiceCartController>().totalPrice,
           _selectedCoupon.discount); // null
+
+      if (_discount > _selectedCoupon.upto!) {
+        _discount = _selectedCoupon.upto!;
+      }
     }
     walletDiscount = balance;
     if (isWalletChecked == true) {
@@ -291,13 +306,24 @@ class IndividualPaymentController extends GetxController
     update();
   }
 
-  void onCoupon(String offerId, String offerName) {
+  // void onCoupon(String offerId, String offerName) {
+  //   Get.delete<CouponController>(force: true);
+  //   Get.toNamed(AppRouter.getCouponRoutes(), arguments: [
+  //     'individual-service',
+  //     offerId,
+  //     offerName,
+  //     Get.find<ServiceCartController>().salonId.toString()
+  //   ]);
+  // }
+
+  void onCoupon(String offerId, String offerName, String cartValue) {
     Get.delete<CouponController>(force: true);
     Get.toNamed(AppRouter.getCouponRoutes(), arguments: [
       'individual-service',
       offerId,
       offerName,
-      Get.find<ServiceCartController>().salonId.toString()
+      Get.find<ServiceCartController>().salonId.toString(),
+      cartValue
     ]);
   }
 
@@ -376,7 +402,9 @@ class IndividualPaymentController extends GetxController
           const SizedBox(
             height: 10,
           ),
-          Text('Your are going to make an appointment/order, Are you sure?'.tr),
+          Text(
+              'You are going to make an appointment/order, Do you want to continue?'
+                  .tr),
           const SizedBox(
             height: 20,
           ),
@@ -473,9 +501,11 @@ class IndividualPaymentController extends GetxController
         'amount':
             double.parse((grandTotal * 100).toStringAsFixed(2)).toString(),
         'email': parser.getEmail(),
-        'logo': '${parser.apiService.appBaseUrl}uploads/${parser.getAppLogo()}',
+        // 'logo': '${parser.apiService.appBaseUrl}uploads/${parser.getAppLogo()}',
+        'logo':
+            'https://papa-bear.blr1.cdn.digitaloceanspaces.com/papalogo.png',
         'name': parser.getName(),
-        'app_color': '#f47878'
+        'app_color': '#000000'
       };
 
       String queryString = Uri(queryParameters: paymentPayLoad).query;
@@ -566,7 +596,7 @@ class IndividualPaymentController extends GetxController
       "discount": discount,
       "distance_cost": deliveryPrice,
       "total": Get.find<ServiceCartController>().totalPrice,
-      "serviceTax": Get.find<ServiceCartController>().orderTax,
+      "serviceTax": Get.find<ServiceCartController>().taxAmount,
       "grand_total": grandTotal,
       "pay_method": paymentId,
       "paid": "COD",
@@ -720,6 +750,18 @@ class IndividualPaymentController extends GetxController
     update();
   }
 
+  // void backHome() {
+  //   Get.find<ServiceCartController>().clearCart();
+  //   Get.find<TabsController>().updateTabId(0);
+  //   Get.offAllNamed(AppRouter.getTabsBarRoute());
+  // }
+
+  // void backOrders() {
+  //   Get.find<ServiceCartController>().clearCart();
+  //   Get.find<TabsController>().updateTabId(4);
+  //   Get.offAllNamed(AppRouter.getTabsBarRoute());
+  // }
+
   void backHome() {
     Get.find<ServiceCartController>().clearCart();
     Get.find<TabsController>().updateTabId(0);
@@ -728,7 +770,9 @@ class IndividualPaymentController extends GetxController
 
   void backOrders() {
     Get.find<ServiceCartController>().clearCart();
-    Get.find<TabsController>().updateTabId(4);
     Get.offAllNamed(AppRouter.getTabsBarRoute());
+    Future.delayed(Duration(milliseconds: 100), () {
+      Get.find<TabsController>().updateTabId(4);
+    });
   }
 }

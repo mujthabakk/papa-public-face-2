@@ -1,8 +1,5 @@
-import 'dart:developer';
-import 'dart:io';
-import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:qr_code_scanner/qr_code_scanner.dart';
+import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:salon_user/app/backend/api/handler.dart';
 import 'package:salon_user/app/backend/parse/qr_parse.dart';
 import 'package:salon_user/app/controller/services_controller.dart';
@@ -10,42 +7,33 @@ import 'package:salon_user/app/controller/specialist_controller.dart';
 import 'package:salon_user/app/helper/router.dart';
 
 class QRController extends GetxController implements GetxService {
-  final GlobalKey qrKey = GlobalKey(debugLabel: 'QR');
-
   final QrParser parser;
-  QRViewController? controller;
 
-  var result = Rxn<Barcode>();
+  late MobileScannerController scannerController;
+
   var isPremium = false.obs;
-  var hasPermission = false.obs;
   var isFlashOn = false.obs;
-  bool isScanned = false; // 👈 Prevent multiple detections
+  bool isScanned = false;
 
   QRController({required this.parser});
 
   @override
   void onInit() {
     super.onInit();
-    checkPermission();
+    scannerController = MobileScannerController(
+      detectionSpeed: DetectionSpeed.noDuplicates,
+    );
   }
 
   @override
   void onClose() {
-    controller?.dispose();
+    scannerController.dispose();
     super.onClose();
   }
 
   void toggleFlash() async {
-    if (controller != null) {
-      await controller!.toggleFlash();
-      isFlashOn.value = await controller!.getFlashStatus() ?? false;
-    }
-  }
-
-  Future<void> checkPermission() async {
-    hasPermission.value =
-        (await controller?.getSystemFeatures()) as bool? ?? false;
-    update();
+    await scannerController.toggleTorch();
+    isFlashOn.value = !isFlashOn.value;
   }
 
   Future<void> checkPremium(String salonId) async {
@@ -58,13 +46,21 @@ class QRController extends GetxController implements GetxService {
     }
   }
 
-  void handleQRCodeScan(Barcode scanData) async {
-    if (isScanned) return; // 👈 Ignore duplicate scans
-    isScanned = true; // 👈 Block further scans
+  void handleQRCodeScan(BarcodeCapture capture) async {
+    if (isScanned) return;
+    isScanned = true;
 
-    result.value = scanData;
-    String resultText = scanData.code ?? "";
-    if (resultText.isEmpty) return;
+    final List<Barcode> barcodes = capture.barcodes;
+    if (barcodes.isEmpty) {
+      isScanned = false;
+      return;
+    }
+
+    String? resultText = barcodes.first.rawValue;
+    if (resultText == null || resultText.isEmpty) {
+      isScanned = false;
+      return;
+    }
 
     String remainingText = resultText.trimLeft().substring(1);
 
@@ -81,25 +77,8 @@ class QRController extends GetxController implements GetxService {
           snackPosition: SnackPosition.TOP);
     }
 
-    // 👇 Reset the flag after 3 seconds to allow new scans
     Future.delayed(const Duration(seconds: 3), () {
       isScanned = false;
     });
-  }
-
-  void onQRViewCreated(QRViewController controller) {
-    this.controller = controller;
-    controller.scannedDataStream.listen((scanData) {
-      handleQRCodeScan(scanData);
-    });
-  }
-
-  void onPermissionSet(bool permissionGranted) {
-    hasPermission.value = permissionGranted;
-    if (!permissionGranted) {
-      Get.snackbar(
-          "Permission Denied", "Camera access is required to scan QR codes",
-          snackPosition: SnackPosition.BOTTOM);
-    }
   }
 }

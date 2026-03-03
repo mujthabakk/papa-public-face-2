@@ -1,11 +1,3 @@
-/*
-  Authors : initappz (Rahul Jograna)
-  Website : https://initappz.com/
-  App Name : Ultimate Salon Full App Flutter V2
-  This App Template Source code is licensed as per the
-  terms found in the Website https://initappz.com/license
-  Copyright and Good Faith Purchasers © 2023-present initappz.
-*/
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:salon_user/app/backend/api/handler.dart';
@@ -322,7 +314,7 @@ class RegisterController extends GetxController implements GetxService {
                     onCodeChanged: (String code) {},
                     onSubmit: (String verificationCode) {
                       otpCode = verificationCode;
-                      onOtpSubmit(context);
+                      onOtpSubmit(context, 'email');
                     }, // end onSubmit
                   ),
                   // OTP
@@ -342,7 +334,7 @@ class RegisterController extends GetxController implements GetxService {
                   child: ElevatedButton(
                       onPressed: () async {
                         if (otpCode != '' && otpCode.length >= 6) {
-                          onOtpSubmit(context);
+                          onOtpSubmit(context, 'email');
                         }
                       },
                       style: ElevatedButton.styleFrom(
@@ -360,7 +352,7 @@ class RegisterController extends GetxController implements GetxService {
         });
   }
 
-  Future<void> onOtpSubmit(context) async {
+  Future<void> onOtpSubmit(context, String type) async {
     Get.dialog(
       SimpleDialog(
         children: [
@@ -386,7 +378,7 @@ class RegisterController extends GetxController implements GetxService {
       ),
       barrierDismissible: false,
     );
-    var param = {'id': smsId, 'otp': otpCode};
+    var param = {'id': smsId, 'type': type, 'otp': otpCode};
     Response response = await parser.verifyOTP(param);
     Get.back();
     if (response.statusCode == 200) {

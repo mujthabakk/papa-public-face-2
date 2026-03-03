@@ -66,10 +66,10 @@ class _NearScreenState extends State<NearScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _buildSectionTitle('Top Specialists'.tr),
+                _buildSectionTitle('Top Freelancers'.tr),
                 _buildSpecialistList(value),
                 const SizedBox(height: 5),
-                _buildSectionTitle('Top Salons'.tr),
+                _buildSectionTitle('Top Wellness Centers'.tr),
                 _buildSalonList(value),
               ],
             ),
@@ -242,6 +242,7 @@ class _NearScreenState extends State<NearScreen> {
                   ),
                   const SizedBox(height: 6),
                   Text(
+                    maxLines: 1,
                     address.length > 20
                         ? '${address.substring(0, 20)}...'
                         : address,
@@ -263,9 +264,7 @@ class _NearScreenState extends State<NearScreen> {
                         shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(8)),
                       ),
-                      onPressed: () {
-                        onTap;
-                      },
+                      onPressed: onTap,
                     ),
                   ),
                   // Align(

@@ -13,6 +13,15 @@ class FindLocationScreen extends StatefulWidget {
 
 class _FindLocationScreenState extends State<FindLocationScreen> {
   @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final controller = Get.find<FindLocationController>();
+      controller.resetSearch();
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
     return GetBuilder<FindLocationController>(builder: (value) {
       return Scaffold(
@@ -36,7 +45,7 @@ class _FindLocationScreenState extends State<FindLocationScreen> {
             ),
           ],
         ),
-        body: SingleChildScrollView(
+        body: Padding(
           padding: const EdgeInsets.all(16),
           child: Column(
             children: [
@@ -70,36 +79,99 @@ class _FindLocationScreenState extends State<FindLocationScreen> {
                   ],
                 ),
               ),
-              const SizedBox(height: 20),
-              value.getList.isNotEmpty
-                  ? Container(
-                      decoration:
-                          const BoxDecoration(color: ThemeProvider.whiteColor),
-                      child: Column(
-                        children: [
-                          for (var item in value.getList)
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 10, vertical: 10),
-                              child: InkWell(
-                                onTap: () {
-                                  value.getLatLngFromAddress(
-                                      item.description.toString());
-                                },
-                                child: Row(
-                                  children: [
-                                    const Icon(Icons.search),
-                                    const SizedBox(width: 10),
-                                    Text(
-                                      item.description!.length > 25
-                                          ? '${item.description!.substring(0, 25)}...'
-                                          : item.description!,
-                                    ),
-                                  ],
+              const SizedBox(height: 10),
+              if (value.savedAddress.isNotEmpty)
+                InkWell(
+                  onTap: () {
+                    value.useSavedLocation();
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 12),
+                    decoration: BoxDecoration(
+                      color: ThemeProvider.appColor.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(
+                        color: ThemeProvider.appColor,
+                        width: 1,
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(
+                          Icons.location_on,
+                          color: ThemeProvider.appColor,
+                          size: 20,
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Current Active Location'.tr,
+                                style: const TextStyle(
+                                  fontSize: 11,
+                                  color: ThemeProvider.appColor,
+                                  fontFamily: 'bold',
                                 ),
                               ),
-                            )
-                        ],
+                              const SizedBox(height: 2),
+                              Text(
+                                value.savedAddress,
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  color: ThemeProvider.greyColor,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ],
+                          ),
+                        ),
+                        const Icon(
+                          Icons.arrow_forward_ios,
+                          color: ThemeProvider.appColor,
+                          size: 16,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              const SizedBox(height: 10),
+              value.getList.isNotEmpty
+                  ? Expanded(
+                      child: SingleChildScrollView(
+                        child: Container(
+                          decoration: const BoxDecoration(
+                              color: ThemeProvider.whiteColor),
+                          child: Column(
+                            children: [
+                              for (var item in value.getList)
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 10, vertical: 10),
+                                  child: InkWell(
+                                    onTap: () {
+                                      value.getLatLngFromAddress(
+                                          item.description.toString());
+                                    },
+                                    child: Row(
+                                      children: [
+                                        const Icon(Icons.search),
+                                        const SizedBox(width: 10),
+                                        Text(
+                                          item.description!.length > 25
+                                              ? '${item.description!.substring(0, 25)}...'
+                                              : item.description!,
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                )
+                            ],
+                          ),
+                        ),
                       ),
                     )
                   : const SizedBox(),
@@ -119,9 +191,7 @@ class _FindLocationScreenState extends State<FindLocationScreen> {
                   : const SizedBox(),
               SizedBox(height: value.getList.isEmpty ? 20 : 0),
               value.getList.isEmpty
-                  ? SizedBox(
-                      height: 400,
-                      width: double.infinity,
+                  ? Expanded(
                       child: Obx(() {
                         if (value.myLat.value == 0.0 &&
                             value.myLng.value == 0.0) {
@@ -155,7 +225,7 @@ class _FindLocationScreenState extends State<FindLocationScreen> {
                     )
                   : const SizedBox(),
               SizedBox(height: value.getList.isEmpty ? 20 : 0),
-              value.isConfirmed
+              value.getList.isEmpty && value.myLat.value != 0.0 && value.myLng.value != 0.0
                   ? ElevatedButton(
                       onPressed: () {
                         value.onConfirmLocation();

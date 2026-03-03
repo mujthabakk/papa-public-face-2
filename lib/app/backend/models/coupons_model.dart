@@ -15,24 +15,27 @@ class CouponsModel {
   int? userLimitValidation;
   String? extraField;
   int? status;
+  bool? maxUsageExceeded; // Added missing field
 
-  CouponsModel(
-      {this.id,
-      this.name,
-      this.shortDescriptions,
-      this.code,
-      this.type,
-      this.forWhome,
-      this.discount,
-      this.upto,
-      this.expire,
-      this.freelancerIds,
-      this.maxUsage,
-      this.minCartValue,
-      this.validations,
-      this.userLimitValidation,
-      this.extraField,
-      this.status});
+  CouponsModel({
+    this.id,
+    this.name,
+    this.shortDescriptions,
+    this.code,
+    this.type,
+    this.forWhome,
+    this.discount,
+    this.upto,
+    this.expire,
+    this.freelancerIds,
+    this.maxUsage,
+    this.minCartValue,
+    this.validations,
+    this.userLimitValidation,
+    this.extraField,
+    this.status,
+    this.maxUsageExceeded, // Added to constructor
+  });
 
   CouponsModel.fromJson(Map<String, dynamic> json) {
     id = int.parse(json['id'].toString());
@@ -40,7 +43,7 @@ class CouponsModel {
     shortDescriptions = json['short_descriptions'];
     code = json['code'];
     type = int.parse(json['type'].toString());
-    // forWhome = int.parse(json['for'].toString());
+    // forWhome = int.parse(json['for'].toString()); // Note: 'for' is not in JSON, might need clarification
     discount = double.parse(json['discount'].toString());
     upto = double.parse(json['upto'].toString());
     expire = json['expire'];
@@ -48,9 +51,11 @@ class CouponsModel {
     maxUsage = int.parse(json['max_usage'].toString());
     minCartValue = double.parse(json['min_cart_value'].toString());
     validations = int.parse(json['validations'].toString());
-    // userLimitValidation = int.parse(json['user_limit_validation'].toString());
+    // userLimitValidation = int.parse(json['user_limit_validation'].toString()); // Note: 'user_limit_validation' is not in JSON
     extraField = json['extra_field'];
     status = int.parse(json['status'].toString());
+    maxUsageExceeded = json['max_usage_exceeded']
+        as bool?; // Added parsing for max_usage_exceeded
   }
 
   Map<String, dynamic> toJson() {
@@ -71,6 +76,7 @@ class CouponsModel {
     data['user_limit_validation'] = userLimitValidation;
     data['extra_field'] = extraField;
     data['status'] = status;
+    data['max_usage_exceeded'] = maxUsageExceeded; // Added to toJson
     return data;
   }
 }

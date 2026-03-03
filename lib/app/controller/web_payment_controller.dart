@@ -96,7 +96,7 @@ class WebPaymentController extends GetxController implements GetxService {
       "discount": Get.find<IndividualPaymentController>().discount,
       "distance_cost": Get.find<IndividualPaymentController>().deliveryPrice,
       "total": Get.find<ServiceCartController>().totalPrice,
-      "serviceTax": Get.find<ServiceCartController>().orderTax,
+      "serviceTax": Get.find<ServiceCartController>().taxAmount,
       "grand_total": Get.find<IndividualPaymentController>().grandTotal,
       "pay_method": Get.find<IndividualPaymentController>().paymentId,
       "paid": orderId,
@@ -241,17 +241,17 @@ class WebPaymentController extends GetxController implements GetxService {
           ? jsonEncode(Get.find<PaymentController>().addressInfo)
           : 'NA',
       "items": jsonEncode(Get.find<ServiceCartController>().savedInCart),
-      "coupon_id": Get.find<ServiceCartController>().selectedCoupon.code != null
-          ? Get.find<ServiceCartController>().selectedCoupon.id
+      "coupon_id": Get.find<PaymentController>().selectedCoupon.code != null
+          ? Get.find<PaymentController>().selectedCoupon.id
           : 0,
-      "coupon": Get.find<ServiceCartController>().selectedCoupon.code != null
-          ? jsonEncode(Get.find<ServiceCartController>().selectedCoupon)
+      "coupon": Get.find<PaymentController>().selectedCoupon.code != null
+          ? jsonEncode(Get.find<PaymentController>().selectedCoupon)
           : 'NA',
       "discount": Get.find<PaymentController>().discount,
       "distance_cost": Get.find<PaymentController>().deliveryPrice,
       "total": Get.find<ServiceCartController>().totalPrice,
-      "serviceTax": Get.find<ServiceCartController>().orderTax,
-      "grand_total": Get.find<ServiceCartController>().grandTotal,
+      "serviceTax": Get.find<ServiceCartController>().taxAmount,
+      "grand_total": Get.find<PaymentController>().grandTotal,
       "pay_method": Get.find<PaymentController>().paymentId,
       "paid": orderId,
       "save_date": Get.find<SlotController>().savedDate,
@@ -271,7 +271,6 @@ class WebPaymentController extends GetxController implements GetxService {
     };
     var response = await parser.createAppoinments(param);
     Get.back();
-
     if (response.statusCode == 200) {
       Get.defaultDialog(
         title: '',
@@ -364,8 +363,10 @@ class WebPaymentController extends GetxController implements GetxService {
 
   void backOrders() {
     Get.find<ServiceCartController>().clearCart();
-    Get.find<TabsController>().updateTabId(3);
     Get.offAllNamed(AppRouter.getTabsBarRoute());
+    Future.delayed(Duration(milliseconds: 100), () {
+      Get.find<TabsController>().updateTabId(4);
+    });
   }
 
   Future<void> verifyRazorpayPurchase(String payKey) async {

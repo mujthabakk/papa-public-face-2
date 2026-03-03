@@ -144,148 +144,169 @@ class AppointmentDetailController extends GetxController
   Future<void> onUpdateAppointmentStatus(int status) async {
     Get.defaultDialog(
       title: '',
-      contentPadding: const EdgeInsets.all(20),
+      contentPadding: const EdgeInsets.all(24),
+      backgroundColor: ThemeProvider.whiteColor,
+      radius: 12,
       content: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Image.asset(
-            'assets/images/question-mark.png',
-            fit: BoxFit.cover,
-            height: 80,
-            width: 80,
+          // Icon with background circle
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: ThemeProvider.appColor.withOpacity(0.1),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              Icons.help_outline,
+              size: 48,
+              color: ThemeProvider.appColor,
+            ),
           ),
-          const SizedBox(
-            height: 20,
-          ),
+          const SizedBox(height: 24),
+
+          // Title
           Text(
-            'Are you sure'.tr,
-            style: const TextStyle(fontSize: 24, fontFamily: 'semi-bold'),
+            'Manage Appointment'.tr,
+            style: const TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              color: ThemeProvider.blackColor,
+            ),
           ),
-          const SizedBox(
-            height: 10,
+          const SizedBox(height: 8),
+
+          // Subtitle
+          Text(
+            'What would you like to do with your appointment?'.tr,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 14,
+              color: ThemeProvider.greyColor,
+              height: 1.4,
+            ),
           ),
-          Text('You can cancel or reschedule your appointment'.tr),
-          const SizedBox(
-            height: 20,
-          ),
+          const SizedBox(height: 32),
+
+          // Action buttons
           Column(
             children: [
-              Row(
-                children: [
-                  Expanded(
-                    child: ElevatedButton(
-                      onPressed: () {
-                        var context = Get.context as BuildContext;
-                        Navigator.pop(context);
-                        Get.delete<RescheduleSlotController>(force: true);
-                        Get.toNamed(AppRouter.getRescheduleSlotRoutes(),
-                            arguments: [appointmentId, uid, type]);
-                      },
-                      style: ElevatedButton.styleFrom(
-                        foregroundColor: ThemeProvider.whiteColor,
-                        backgroundColor: ThemeProvider.greenColor,
-                        minimumSize: const Size.fromHeight(35),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(5),
-                        ),
-                      ),
-                      child: Text(
-                        'Reschedule'.tr,
-                        style: const TextStyle(
-                          color: ThemeProvider.whiteColor,
-                          fontSize: 14,
-                        ),
-                      ),
+              // Reschedule button
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: () {
+                    var context = Get.context as BuildContext;
+                    Navigator.pop(context);
+                    Get.delete<RescheduleSlotController>(force: true);
+                    Get.toNamed(AppRouter.getRescheduleSlotRoutes(),
+                        arguments: [appointmentId, uid, type]);
+                  },
+                  icon: const Icon(Icons.schedule, size: 18),
+                  label: Text('Reschedule'.tr),
+                  style: ElevatedButton.styleFrom(
+                    foregroundColor: ThemeProvider.whiteColor,
+                    backgroundColor: ThemeProvider.greenColor,
+                    minimumSize: const Size.fromHeight(48),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
                     ),
-                  ),
-                  const SizedBox(
-                    width: 10,
-                  ),
-                  Expanded(
-                    child: ElevatedButton(
-                      onPressed: () async {
-                        var context = Get.context as BuildContext;
-                        Navigator.pop(context);
-                        Get.dialog(
-                            SimpleDialog(
-                              children: [
-                                Row(
-                                  children: [
-                                    const SizedBox(
-                                      width: 30,
-                                    ),
-                                    const CircularProgressIndicator(
-                                      color: ThemeProvider.appColor,
-                                    ),
-                                    const SizedBox(
-                                      width: 30,
-                                    ),
-                                    SizedBox(
-                                        child: Text(
-                                      "Please wait".tr,
-                                      style:
-                                          const TextStyle(fontFamily: 'bold'),
-                                    )),
-                                  ],
-                                )
-                              ],
-                            ),
-                            barrierDismissible: false);
-                        var body = {"id": appointmentId, "status": status};
-                        Response response =
-                            await parser.onUpdateAppointmentStatus(body);
-                        Get.back();
-                        if (response.statusCode == 200) {
-                          // back//
-                          successToast('Status Updated'.tr);
-                          Get.find<BookingController>().getAppointmentById();
-                          onBack(); // list refresh
-                        } else {
-                          ApiChecker.checkApi(response);
-                        }
-                        update();
-                      },
-                      style: ElevatedButton.styleFrom(
-                        foregroundColor: ThemeProvider.whiteColor,
-                        backgroundColor: ThemeProvider.redColor,
-                        minimumSize: const Size.fromHeight(35),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(5),
-                        ),
-                      ),
-                      child: Text(
-                        'Cancel'.tr,
-                        style: const TextStyle(
-                          color: ThemeProvider.whiteColor,
-                          fontSize: 14,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(
-                height: 3,
-              ),
-              ElevatedButton(
-                onPressed: () {
-                  var context = Get.context as BuildContext;
-                  Navigator.pop(context);
-                  // onCheckout();
-                },
-                style: ElevatedButton.styleFrom(
-                  foregroundColor: ThemeProvider.whiteColor,
-                  backgroundColor: ThemeProvider.blackColor,
-                  minimumSize: const Size.fromHeight(35),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(5),
+                    elevation: 0,
                   ),
                 ),
-                child: Text(
-                  'Close'.tr,
-                  style: const TextStyle(
-                    color: ThemeProvider.whiteColor,
-                    fontSize: 14,
+              ),
+              const SizedBox(height: 12),
+
+              // Cancel button
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: () async {
+                    var context = Get.context as BuildContext;
+                    Navigator.pop(context);
+
+                    // Show loading dialog
+                    Get.dialog(
+                      Dialog(
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Padding(
+                          padding: const EdgeInsets.all(24),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const CircularProgressIndicator(
+                                color: ThemeProvider.appColor,
+                              ),
+                              const SizedBox(height: 16),
+                              Text(
+                                "Cancelling appointment...".tr,
+                                style: const TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      barrierDismissible: false,
+                    );
+
+                    var body = {"id": appointmentId, "status": status};
+                    Response response =
+                        await parser.onUpdateAppointmentStatus(body);
+                    Get.back(); // Close loading dialog
+
+                    if (response.statusCode == 200) {
+                      // Show success dialog
+                      showCancellationSuccessDialog();
+                      //Get.find<BookingController>().getAppointmentById();
+                      //onBack(); // list refresh
+                    } else {
+                      ApiChecker.checkApi(response);
+                    }
+                    update();
+                  },
+                  icon: const Icon(Icons.cancel_outlined, size: 18),
+                  label: Text('Cancel Appointment'.tr),
+                  style: ElevatedButton.styleFrom(
+                    foregroundColor: ThemeProvider.whiteColor,
+                    backgroundColor: ThemeProvider.redColor,
+                    minimumSize: const Size.fromHeight(48),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    elevation: 0,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+
+              // Close button
+              SizedBox(
+                width: double.infinity,
+                child: TextButton(
+                  onPressed: () {
+                    var context = Get.context as BuildContext;
+                    Navigator.pop(context);
+                  },
+                  style: TextButton.styleFrom(
+                    foregroundColor: ThemeProvider.greyColor,
+                    minimumSize: const Size.fromHeight(48),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      side: BorderSide(
+                          color: ThemeProvider.greyColor.withOpacity(0.3)),
+                    ),
+                  ),
+                  child: Text(
+                    'Close'.tr,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                    ),
                   ),
                 ),
               ),
@@ -295,42 +316,119 @@ class AppointmentDetailController extends GetxController
       ),
     );
 
-    // Get.dialog(
-    //     SimpleDialog(
-    //       children: [
-    //         Row(
-    //           children: [
-    //             const SizedBox(
-    //               width: 30,
-    //             ),
-    //             const CircularProgressIndicator(
-    //               color: ThemeProvider.appColor,
-    //             ),
-    //             const SizedBox(
-    //               width: 30,
-    //             ),
-    //             SizedBox(
-    //                 child: Text(
-    //               "Please wait".tr,
-    //               style: const TextStyle(fontFamily: 'bold'),
-    //             )),
-    //           ],
-    //         )
-    //       ],
-    //     ),
-    //     barrierDismissible: false);
-    // var body = {"id": appointmentId, "status": status};
-    // Response response = await parser.onUpdateAppointmentStatus(body);
-    // Get.back();
-    // if (response.statusCode == 200) {
-    //   // back//
-    //   successToast('Status Updated'.tr);
-    //   Get.find<BookingController>().getAppointmentById();
-    //   onBack(); // list refresh
-    // } else {
-    //   ApiChecker.checkApi(response);
-    // }
     update();
+  }
+
+// Method for showing cancellation success dialog
+  void showCancellationSuccessDialog() {
+    Get.dialog(
+      Dialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Success icon
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: ThemeProvider.greenColor.withOpacity(0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  Icons.check_circle_outline,
+                  size: 64,
+                  color: ThemeProvider.greenColor,
+                ),
+              ),
+              const SizedBox(height: 24),
+
+              // Success title
+              Text(
+                'Appointment Cancelled'.tr,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: ThemeProvider.blackColor,
+                ),
+              ),
+              const SizedBox(height: 8),
+
+              // Success message
+              Text(
+                'Your appointment has been successfully cancelled. You will receive a confirmation email shortly. For any queries regarding refund, please contact us at hello@papabear4u.com'
+                    .tr,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 14,
+                  color: ThemeProvider.greyColor,
+                  height: 1.4,
+                ),
+              ),
+              const SizedBox(height: 24),
+
+              // Action buttons
+              Column(
+                children: [
+                  // Book new appointment button
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      onPressed: () {
+                        Get.find<BookingController>().getAppointmentById();
+                        onBack(); // list refresh
+                        onBack();
+                      },
+                      icon: const Icon(Icons.schedule, size: 18),
+                      label: Text('Goto Appointments'.tr),
+                      style: ElevatedButton.styleFrom(
+                        foregroundColor: ThemeProvider.whiteColor,
+                        backgroundColor: ThemeProvider.appColor,
+                        minimumSize: const Size.fromHeight(48),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        elevation: 0,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+
+                  // // Done button
+                  // SizedBox(
+                  //   width: double.infinity,
+                  //   child: TextButton(
+                  //     onPressed: () {
+                  //       Navigator.pop(Get.context!);
+                  //     },
+                  //     style: TextButton.styleFrom(
+                  //       foregroundColor: ThemeProvider.greyColor,
+                  //       minimumSize: const Size.fromHeight(48),
+                  //       shape: RoundedRectangleBorder(
+                  //         borderRadius: BorderRadius.circular(8),
+                  //       ),
+                  //     ),
+                  //     child: Text(
+                  //       'Done'.tr,
+                  //       style: const TextStyle(
+                  //         fontSize: 16,
+                  //         fontWeight: FontWeight.w500,
+                  //       ),
+                  //     ),
+                  //   ),
+                  // ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+      barrierDismissible: false,
+    );
   }
 
   void onBack() {
@@ -684,7 +782,7 @@ class AppointmentDetailController extends GetxController
             title: Text('Complaints'.tr),
             onTap: () {
               Navigator.pop(context);
-              Get.delete(force: true);
+              Get.delete<ComplaintsController>(force: true);
               Get.toNamed(AppRouter.getComplaintsRoutes(),
                   arguments: [appointmentId, 'appointments']);
             },
@@ -692,7 +790,7 @@ class AppointmentDetailController extends GetxController
           ListTile(
             leading: const Icon(Icons.cancel, color: Colors.red),
             title: Text(
-              'Cancel'.tr,
+              'Close'.tr,
               style: const TextStyle(color: Colors.red),
             ),
             onTap: () {
@@ -760,7 +858,7 @@ class AppointmentDetailController extends GetxController
               ),
               _buildOption(
                 icon: Icons.cancel,
-                text: 'Cancel'.tr,
+                text: 'Close'.tr,
                 iconColor: Colors.red,
                 textColor: Colors.red,
                 onTap: () => Navigator.pop(context),

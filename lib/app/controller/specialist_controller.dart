@@ -1,6 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:flutter_share/flutter_share.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:get/get.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:salon_user/app/backend/api/handler.dart';
@@ -111,6 +111,8 @@ class SpecialistController extends GetxController
       getPremium2();
     }
     getindividualDetails();
+    getPremium();
+
     debugPrint('individual id --> $individualId');
     currencySide = parser.getCurrencySide();
     currencySymbol = parser.getCurrencySymbol();
@@ -279,12 +281,16 @@ class SpecialistController extends GetxController
         }
         _servicesList.add(services);
       });
+      _servicesList.removeWhere((services) => services.status == 0);
+
       debugPrint('Service list' + _servicesList.length.toString());
 
       salonPackages.forEach((data) {
         PackagesModel packages = PackagesModel.fromJson(data);
         _packagesList.add(packages);
       });
+      _packagesList.removeWhere((packages) => packages.status == 0);
+
       debugPrint(packagesList.length.toString());
 
       update();
@@ -432,32 +438,43 @@ class SpecialistController extends GetxController
   }
 
   Future<void> callIndividual() async {
-    final Uri launchUri = Uri(
-      scheme: 'tel',
-      path: individualDetails.mobile.toString(),
-    );
-    await launchUrl(launchUri);
+    // if (isPremium) {
+    //   final Uri launchUri = Uri(
+    //     scheme: 'tel',
+    //     path: individualDetails.mobile.toString(),
+    //   );
+    //   await launchUrl(launchUri);
+    // } else {
+    //   showToast('Feature not available for this freelancer'.tr);
+    // }
+    showToast('Feature not available right now'.tr);
   }
 
   Future<void> share() async {
-    await FlutterShare.share(
-        title: Environments.appName,
-        linkUrl: individualDetails.website.toString(),
-        chooserTitle: 'Share with'.tr);
+    // await FlutterShare.share(
+    //     title: Environments.appName,
+    //     linkUrl: individualDetails.website.toString(),
+    //     chooserTitle: 'Share with'.tr);
+
+    await Share.share(
+      'Checkout PapaBear App\nhttps://play.google.com/store/apps/details?id=com.papabear.userapp',
+      subject: Environments.appName,
+    );
   }
 
   void onChat() {
-    debugPrint('on chat');
-    if (parser.isLogin() == true) {
-      Get.delete<ChatController>(force: true);
-      Get.toNamed(AppRouter.getChatRoutes(), arguments: [
-        individualDetails.uid.toString(),
-        '${userInfo.firstName} ${userInfo.lastName}'
-      ]);
-    } else {
-      Get.delete<LoginController>(force: true);
-      Get.toNamed(AppRouter.getLoginRoute());
-    }
+    // debugPrint('on chat');
+    // if (parser.isLogin() == true) {
+    //   Get.delete<ChatController>(force: true);
+    //   Get.toNamed(AppRouter.getChatRoutes(), arguments: [
+    //     individualDetails.uid.toString(),
+    //     '${userInfo.firstName} ${userInfo.lastName}'
+    //   ]);
+    // } else {
+    //   Get.delete<LoginController>(force: true);
+    //   Get.toNamed(AppRouter.getLoginRoute());
+    // }
+    showToast('Feature not available right now'.tr);
   }
 
   void onCheckout() {

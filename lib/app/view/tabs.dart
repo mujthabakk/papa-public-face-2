@@ -34,12 +34,13 @@ class _TabScreenState extends State<TabScreen> {
         length: 6,
         child: Scaffold(
           backgroundColor: Colors.white,
-          bottomNavigationBar: Container(
-            color: Colors.white,
-            child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 5, horizontal: 5),
-              child: InkWell(
-                child: (GNav(
+          bottomNavigationBar: SafeArea(
+            child: Container(
+              color: Colors.white,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 5, horizontal: 5),
+                child: InkWell(
+                  child: (GNav(
                   rippleColor: ThemeProvider.whiteColor,
                   hoverColor: ThemeProvider.appColor,
                   haptic: false,
@@ -88,7 +89,7 @@ class _TabScreenState extends State<TabScreen> {
                                   : ThemeProvider.pink),
                         ),
                         child: Icon(
-                          Icons.add_shopping_cart,
+                          Icons.shopping_cart_outlined,
                           color: value.tabId == 2 ? Colors.grey : Colors.grey,
                         ),
                       ),
@@ -108,7 +109,8 @@ class _TabScreenState extends State<TabScreen> {
                   onTabChange: (index) {
                     value.updateTabId(index);
                   },
-                )),
+                  )),
+                ),
               ),
             ),
           ),

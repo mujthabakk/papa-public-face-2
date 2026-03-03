@@ -287,7 +287,15 @@ Widget _buildServicesList(IndividualPackagesController controller) {
         leading: const Icon(Icons.assignment, color: ThemeProvider.appColor),
         title: Row(
           children: [
-            Text(service.name!),
+            Expanded(
+              child: Text(service.name!,
+                  maxLines: 3,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                  )),
+            ),
             const SizedBox(width: 10),
             _buildGenderIcon(service.gender),
             const SizedBox(width: 5),

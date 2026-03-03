@@ -29,26 +29,26 @@ class ComplaintsController extends GetxController implements GetxService {
   XFile? _selectedImage;
 
   List<String> reasonList = [
-    'The product arrived too late'.tr,
-    'The product did not match the description'.tr,
-    'The purchase was fraudulent'.tr,
-    'The product was damaged or defective'.tr,
-    'The merchant shipped the wrong item'.tr,
+    'The Product arrived too late'.tr,
+    'The Product did not match the description'.tr,
+    'The Purchase was fraudulent'.tr,
+    'The Product was damaged or defective'.tr,
+    'The Merchant shipped the wrong item'.tr,
     'Wrong Item Size or Wrong Product Shipped'.tr,
     'Driver arrived too late'.tr,
     'Driver behavior'.tr,
-    'Freelacer behavior'.tr,
+    'Employee/Freelacer behavior'.tr,
     'Issue with Payment Amount'.tr,
     'Others'.tr,
   ];
 
   List<String> freelancerReasonsList = [
-    'Freelancer arrived too late'.tr,
-    'Freelancer did not match the description'.tr,
-    'Freelancer was fraudulent'.tr,
+    'Employee/Freelancer arrived too late'.tr,
+    'Employee/Freelancer did not match the description'.tr,
+    'Employee/Freelancer was fraudulent'.tr,
     'Related to service'.tr,
     'Satisfaction of services'.tr,
-    'Freelacer behavior'.tr,
+    'Employee/Freelacer behavior'.tr,
     'Issue with Payment Amount'.tr,
     'Others'.tr,
   ];
@@ -76,7 +76,10 @@ class ComplaintsController extends GetxController implements GetxService {
   @override
   void onInit() {
     super.onInit();
+
     orderId = Get.arguments[0].toString();
+
+    debugPrint('OrderID $orderId');
     if (Get.arguments[1] == 'products') {
       complaintsOn = 1;
       issueWithText = 'Order';
@@ -124,7 +127,7 @@ class ComplaintsController extends GetxController implements GetxService {
       var orderParam = {"id": 6, "name": "Service".tr};
       _issueWithList.add(IssueItemsModel.fromJson(orderParam));
 
-      var freelancerParam = {"id": 2, "name": "Salon Or Individual".tr};
+      var freelancerParam = {"id": 2, "name": "Business/Freelancer".tr};
       _issueWithList.add(IssueItemsModel.fromJson(freelancerParam));
 
       var packageParam = {"id": 9, "name": "Packages".tr};
@@ -157,7 +160,7 @@ class ComplaintsController extends GetxController implements GetxService {
       var orderParam = {"id": 1, "name": "Order".tr};
       _issueWithList.add(IssueItemsModel.fromJson(orderParam));
 
-      var freelancerParam = {"id": 2, "name": "Salon Or Individual".tr};
+      var freelancerParam = {"id": 2, "name": "Business/Freelancer".tr};
       _issueWithList.add(IssueItemsModel.fromJson(freelancerParam));
 
       var productParam = {"id": 4, "name": "Product".tr};

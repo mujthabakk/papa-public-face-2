@@ -14,7 +14,6 @@ import 'package:salon_user/app/controller/category_search_controller.dart';
 import 'package:salon_user/app/controller/checkout_controller.dart';
 import 'package:salon_user/app/controller/filter_controller.dart';
 import 'package:salon_user/app/controller/individual_checkout_controller.dart';
-import 'package:salon_user/app/controller/new_category_search_controller.dart';
 import 'package:salon_user/app/controller/product_cart_controller.dart';
 import 'package:salon_user/app/controller/products_details_controller.dart';
 import 'package:salon_user/app/controller/search_controller.dart';
@@ -26,6 +25,7 @@ import 'package:salon_user/app/controller/top_offers_controller.dart';
 import 'package:salon_user/app/controller/top_packages_controller.dart';
 import 'package:salon_user/app/controller/top_products_controller.dart';
 import 'package:salon_user/app/controller/top_specialist_controller.dart';
+import 'package:salon_user/app/controller/unified_search_controller.dart';
 import 'package:salon_user/app/helper/router.dart';
 import 'package:salon_user/app/util/constant.dart';
 import 'package:salon_user/app/util/toast.dart';
@@ -118,6 +118,8 @@ class HomeController extends GetxController implements GetxService {
         ProductsListModel products = ProductsListModel.fromJson(data);
         _productsList.add(products);
       });
+      _productsList.removeWhere((product) => product.status == 0);
+
       debugPrint(productsList.length.toString());
       checkCartData();
       if (_salonList.isEmpty && _individualList.isEmpty) {
@@ -153,8 +155,13 @@ class HomeController extends GetxController implements GetxService {
   //   Get.toNamed(AppRouter.getCategoriesListRoutes(), arguments: [id, name]);
   // }
 
+  // void onCategoriesList(int id, String name) {
+  //   Get.delete<CategorySearchController>(force: true);
+  //   Get.toNamed(AppRouter.getCategoriesListRoutes(), arguments: [id, name]);
+  // }
+
   void onCategoriesList(int id, String name) {
-    Get.delete<CategorySearchController>(force: true);
+    Get.delete<UnifiedSearchController>(force: true);
     Get.toNamed(AppRouter.getCategoriesListRoutes(), arguments: [id, name]);
   }
 
@@ -178,8 +185,12 @@ class HomeController extends GetxController implements GetxService {
     Get.toNamed(AppRouter.getTopProductsRoutes());
   }
 
+  // void onSearch() {
+  //   Get.delete<AppSearchController>(force: true);
+  //   Get.toNamed(AppRouter.getSearchRoutes());
+  // }
   void onSearch() {
-    Get.delete<AppSearchController>(force: true);
+    Get.delete<UnifiedSearchController>(force: true);
     Get.toNamed(AppRouter.getSearchRoutes());
   }
 

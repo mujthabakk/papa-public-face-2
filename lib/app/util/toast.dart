@@ -1,11 +1,3 @@
-/*
-  Authors : initappz (Rahul Jograna)
-  Website : https://initappz.com/
-  App Name : Ultimate Salon Full App Flutter V2
-  This App Template Source code is licensed as per the
-  terms found in the Website https://initappz.com/license
-  Copyright and Good Faith Purchasers © 2023-present initappz.
-*/
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
@@ -30,7 +22,7 @@ void successToast(String message) {
   Get.showSnackbar(GetSnackBar(
     backgroundColor: Colors.green,
     message: message.tr,
-    duration: const Duration(seconds: 3),
+    duration: const Duration(seconds: 6),
     snackStyle: SnackStyle.FLOATING,
     margin: const EdgeInsets.all(10),
     borderRadius: 10,

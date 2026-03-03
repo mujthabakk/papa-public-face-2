@@ -1,11 +1,3 @@
-/*
-  Authors : initappz (Rahul Jograna)
-  Website : https://initappz.com/
-  App Name : Ultimate Salon Full App Flutter V2
-  This App Template Source code is licensed as per the
-  terms found in the Website https://initappz.com/license
-  Copyright and Good Faith Purchasers © 2023-present initappz.
-*/
 import 'package:jiffy/jiffy.dart';
 
 class ChatConversionModel {
@@ -22,6 +14,7 @@ class ChatConversionModel {
   String? lastMessage;
   String? lastMessageType;
   String? updatedAt;
+  DateTime? updatedAtTimestamp; // For sorting
 
   ChatConversionModel(
       {this.senderFirstName,
@@ -36,7 +29,8 @@ class ChatConversionModel {
       this.receiverType,
       this.lastMessage,
       this.lastMessageType,
-      this.updatedAt});
+      this.updatedAt,
+      this.updatedAtTimestamp});
 
   ChatConversionModel.fromJson(Map<String, dynamic> json) {
     senderFirstName = json['sender_first_name'];
@@ -50,8 +44,13 @@ class ChatConversionModel {
     senderType = json['sender_type'].toString();
     receiverType = json['receiver_type'].toString();
     lastMessage = json['last_message'];
-    lastMessageType = json['last_message_type'];
-    updatedAt = Jiffy(json['updated_at']).yMMMMd;
+    lastMessageType = json['last_message_type'].toString();
+    try {
+      updatedAtTimestamp = DateTime.parse(json['updated_at']); // Store original timestamp
+    } catch (e) {
+      updatedAtTimestamp = DateTime.now(); // Fallback to current time
+    }
+    updatedAt = Jiffy.parse(json['updated_at']).yMMMMd; // Format for display
   }
 
   Map<String, dynamic> toJson() {

@@ -219,7 +219,7 @@ class StripePayProductController extends GetxController implements GetxService {
       "salon_id": Get.find<ProductPaymentController>().ownerType == 'salon'
           ? Get.find<ProductCartController>().savedInCart[0].freelacerId
           : 0,
-      "date_time": Jiffy().format('yyyy-MM-dd'),
+      "date_time": Jiffy.now().format(pattern: 'yyyy-MM-dd'),
       "paid_method": Get.find<ProductPaymentController>().paymentId,
       "order_to": "home",
       "orders": jsonEncode(Get.find<ProductCartController>().savedInCart),
@@ -351,7 +351,9 @@ class StripePayProductController extends GetxController implements GetxService {
 
   void backOrders() {
     Get.find<ProductCartController>().clearCart();
-    Get.find<TabsController>().updateTabId(4);
     Get.offAllNamed(AppRouter.getTabsBarRoute());
+    Future.delayed(Duration(milliseconds: 100), () {
+      Get.find<TabsController>().updateTabId(4);
+    });
   }
 }

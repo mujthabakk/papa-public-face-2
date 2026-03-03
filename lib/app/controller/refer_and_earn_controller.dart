@@ -7,7 +7,7 @@ import 'package:salon_user/app/backend/models/redeem_model.dart';
 import 'package:salon_user/app/backend/parse/refer_and_earn_parse.dart';
 import 'package:salon_user/app/env.dart';
 import 'package:salon_user/app/util/toast.dart';
-import 'package:flutter_share/flutter_share.dart';
+import 'package:share_plus/share_plus.dart';
 
 class ReferAndEarnController extends GetxController implements GetxService {
   final ReferAndEarnParser parser;
@@ -74,11 +74,9 @@ class ReferAndEarnController extends GetxController implements GetxService {
       linkUrl = appStoreLink;
     }
 
-    await FlutterShare.share(
-      title: title,
-      text: message,
-      linkUrl: linkUrl, // Dynamically selected link
-      chooserTitle: 'Share with buddies'.tr,
+    await Share.share(
+      '$message\n$linkUrl',
+      subject: title,
     );
   }
 

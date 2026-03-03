@@ -124,21 +124,67 @@ class ProductOrderDetailController extends GetxController
     update();
   }
 
+  // Future<void> onUpdateAppointmentStatus(int status) async {
+  //   Get.dialog(
+  //       SimpleDialog(
+  //         children: [
+  //           Row(
+  //             children: [
+  //               const SizedBox(
+  //                 width: 30,
+  //               ),
+  //               const CircularProgressIndicator(
+  //                 color: ThemeProvider.appColor,
+  //               ),
+  //               const SizedBox(
+  //                 width: 30,
+  //               ),
+  //               SizedBox(
+  //                   child: Text(
+  //                 "Please wait".tr,
+  //                 style: const TextStyle(fontFamily: 'bold'),
+  //               )),
+  //             ],
+  //           )
+  //         ],
+  //       ),
+  //       barrierDismissible: false);
+  //   var body = {"id": orderId, "status": status};
+  //   Response response = await parser.updateProductOrder(body);
+  //   Get.back();
+  //   if (response.statusCode == 200) {
+  //     // successToast('Status Updated'.tr);
+  //     // Get.find<ProductOrderController>().getProductById();
+  //     //onBack(); // list refresh
+
+  //     showCancellationSuccessDialog();
+  //   } else {
+  //     ApiChecker.checkApi(response);
+  //   }
+  //   update();
+  // }
+
   Future<void> onUpdateAppointmentStatus(int status) async {
+    // Show confirmation dialog for cancellation
+    if (status == 5) {
+      // Assuming 5 is the cancel status code
+      bool? shouldCancel = await showCancelConfirmationDialog();
+      if (shouldCancel != true) {
+        return; // User cancelled the action
+      }
+    }
+
+    // Show loading dialog
     Get.dialog(
         SimpleDialog(
           children: [
             Row(
               children: [
-                const SizedBox(
-                  width: 30,
-                ),
+                const SizedBox(width: 30),
                 const CircularProgressIndicator(
                   color: ThemeProvider.appColor,
                 ),
-                const SizedBox(
-                  width: 30,
-                ),
+                const SizedBox(width: 30),
                 SizedBox(
                     child: Text(
                   "Please wait".tr,
@@ -149,17 +195,286 @@ class ProductOrderDetailController extends GetxController
           ],
         ),
         barrierDismissible: false);
+
     var body = {"id": orderId, "status": status};
     Response response = await parser.updateProductOrder(body);
-    Get.back();
+    Get.back(); // Close loading dialog
+
     if (response.statusCode == 200) {
-      successToast('Status Updated'.tr);
-      Get.find<ProductOrderController>().getProductById();
-      onBack(); // list refresh
+      showCancellationSuccessDialog();
     } else {
       ApiChecker.checkApi(response);
     }
     update();
+  }
+
+  Future<bool?> showCancelConfirmationDialog() async {
+    return await Get.dialog<bool>(
+      Dialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Warning Icon
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.red.withOpacity(0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  Icons.warning_outlined,
+                  size: 64,
+                  color: Colors.red,
+                ),
+              ),
+              const SizedBox(height: 24),
+
+              // Title
+              Text(
+                'Cancel Appointment?'.tr,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: ThemeProvider.blackColor,
+                ),
+              ),
+              const SizedBox(height: 8),
+
+              // Description
+              Text(
+                'Do you want to cancel this appointment? This action cannot be undone.'
+                    .tr,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 14,
+                  color: ThemeProvider.greyColor,
+                  height: 1.4,
+                ),
+              ),
+              const SizedBox(height: 24),
+
+              // Buttons
+              Row(
+                children: [
+                  // Cancel Button (Keep appointment)
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () {
+                        Get.back(result: false); // Don't cancel
+                      },
+                      style: OutlinedButton.styleFrom(
+                        side: BorderSide(color: ThemeProvider.greyColor),
+                        minimumSize: const Size.fromHeight(48),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                      child: Text(
+                        'Close'.tr,
+                        style: TextStyle(
+                          color: ThemeProvider.blackColor,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+
+                  // Confirm Cancel Button
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () {
+                        Get.back(result: true); // Confirm cancellation
+                      },
+                      style: ElevatedButton.styleFrom(
+                        foregroundColor: ThemeProvider.whiteColor,
+                        backgroundColor: Colors.red,
+                        minimumSize: const Size.fromHeight(48),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        elevation: 0,
+                      ),
+                      child: Text(
+                        'Yes, Cancel'.tr,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+      barrierDismissible: false,
+    );
+  }
+
+// Alternative simpler confirmation dialog
+  Future<bool?> showSimpleCancelConfirmationDialog() async {
+    return await Get.dialog<bool>(
+      AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+        title: Text(
+          'Cancel Appointment'.tr,
+          style: const TextStyle(
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        content: Text(
+          'Do you want to cancel this appointment?'.tr,
+          style: TextStyle(
+            color: ThemeProvider.greyColor,
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Get.back(result: false); // Don't cancel
+            },
+            child: Text(
+              'No'.tr,
+              style: TextStyle(
+                color: ThemeProvider.greyColor,
+              ),
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Get.back(result: true); // Confirm cancellation
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
+            ),
+            child: Text('Yes, Cancel'.tr),
+          ),
+        ],
+      ),
+      barrierDismissible: false,
+    );
+  }
+
+  void showCancellationSuccessDialog() {
+    Get.dialog(
+      Dialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Success icon
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: ThemeProvider.greenColor.withOpacity(0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  Icons.check_circle_outline,
+                  size: 64,
+                  color: ThemeProvider.greenColor,
+                ),
+              ),
+              const SizedBox(height: 24),
+
+              // Success title
+              Text(
+                'Order Cancelled'.tr,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: ThemeProvider.blackColor,
+                ),
+              ),
+              const SizedBox(height: 8),
+
+              // Success message
+              Text(
+                'Your order has been successfully cancelled. You will receive a confirmation email shortly. For any queries regarding refund, please contact us at hello@papabear4u.com'
+                    .tr,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 14,
+                  color: ThemeProvider.greyColor,
+                  height: 1.4,
+                ),
+              ),
+              const SizedBox(height: 24),
+
+              // Action buttons
+              Column(
+                children: [
+                  // Book new appointment button
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      onPressed: () {
+                        Get.find<ProductOrderController>().getProductById();
+                        onBack(); // list refresh
+                        onBack();
+                      },
+                      icon: const Icon(Icons.schedule, size: 18),
+                      label: Text('Goto Order List'.tr),
+                      style: ElevatedButton.styleFrom(
+                        foregroundColor: ThemeProvider.whiteColor,
+                        backgroundColor: ThemeProvider.appColor,
+                        minimumSize: const Size.fromHeight(48),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        elevation: 0,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+
+                  // // Done button
+                  // SizedBox(
+                  //   width: double.infinity,
+                  //   child: TextButton(
+                  //     onPressed: () {
+                  //       Navigator.pop(Get.context!);
+                  //     },
+                  //     style: TextButton.styleFrom(
+                  //       foregroundColor: ThemeProvider.greyColor,
+                  //       minimumSize: const Size.fromHeight(48),
+                  //       shape: RoundedRectangleBorder(
+                  //         borderRadius: BorderRadius.circular(8),
+                  //       ),
+                  //     ),
+                  //     child: Text(
+                  //       'Done'.tr,
+                  //       style: const TextStyle(
+                  //         fontSize: 16,
+                  //         fontWeight: FontWeight.w500,
+                  //       ),
+                  //     ),
+                  //   ),
+                  // ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+      barrierDismissible: false,
+    );
   }
 
   void onBack() {

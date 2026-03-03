@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_rating_bar/flutter_rating_bar.dart';
 import 'package:get/get.dart';
-import 'package:salon_user/app/controller/search_controller.dart';
+import 'package:salon_user/app/controller/unified_search_controller.dart';
 import 'package:salon_user/app/util/theme.dart';
 
 class FilterScreen extends StatefulWidget {
@@ -14,7 +14,7 @@ class FilterScreen extends StatefulWidget {
 class _FilterScreenState extends State<FilterScreen> {
   @override
   Widget build(BuildContext context) {
-    return GetBuilder<AppSearchController>(builder: (controller) {
+    return GetBuilder<UnifiedSearchController>(builder: (controller) {
       return Scaffold(
         backgroundColor: ThemeProvider.whiteColor,
         body: CustomScrollView(
@@ -111,7 +111,7 @@ class _FilterScreenState extends State<FilterScreen> {
                             ),
                           ),
                         ),
-                        _buildTitle('Services'.tr),
+                        _buildTitle('Facilities'.tr),
                         Wrap(
                           direction: Axis.horizontal,
                           spacing: 2.0,
@@ -320,7 +320,7 @@ class _FilterScreenState extends State<FilterScreen> {
     );
   }
 
-  Widget _buildChip(AppSearchController controller, int index) {
+  Widget _buildChip(UnifiedSearchController controller, int index) {
     return ActionChip(
       elevation: 6.0,
       padding: const EdgeInsets.all(2.0),
@@ -342,7 +342,7 @@ class _FilterScreenState extends State<FilterScreen> {
     );
   }
 
-  Widget _buildChipCat(AppSearchController controller, int index) {
+  Widget _buildChipCat(UnifiedSearchController controller, int index) {
     return ActionChip(
       elevation: 6.0,
       padding: const EdgeInsets.all(2.0),

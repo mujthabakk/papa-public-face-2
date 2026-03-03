@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:salon_user/app/backend/models/service_cart_model.dart';
@@ -47,6 +49,7 @@ class CheckoutController extends GetxController implements GetxService {
   }
 
   void deleteServiceFromCart(int index) {
+    debugPrint('deleteServiceFromCart');
     Get.find<ServiceCartController>()
         .removeServiceFromCart(_savedInCart.services![index].id as int);
     _savedInCart = Get.find<ServiceCartController>().savedInCart;
@@ -59,6 +62,10 @@ class CheckoutController extends GetxController implements GetxService {
         .removePackageFromCart(_savedInCart.packages![index].id as int);
     _savedInCart = Get.find<ServiceCartController>().savedInCart;
     update();
+    if (_savedInCart.services!.isEmpty && _savedInCart.packages!.isEmpty) {
+      Get.find<ServiceCartController>().clearCart();
+      Get.find<ServiceCartController>().update();
+    }
     checkCartItems();
   }
 

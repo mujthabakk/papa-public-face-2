@@ -23,7 +23,7 @@ class ProductsModel {
     if (json['subCates'] != null) {
       subCates = <SubCates>[];
       json['subCates'].forEach((v) {
-        subCates!.add(SubCates.fromJson(v));
+        subCates?.add(SubCates.fromJson(v));
       });
     }
   }

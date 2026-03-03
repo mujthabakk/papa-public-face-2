@@ -1,11 +1,3 @@
-/*
-  Authors : initappz (Rahul Jograna)
-  Website : https://initappz.com/
-  App Name : Ultimate Salon Full App Flutter V2
-  This App Template Source code is licensed as per the
-  terms found in the Website https://initappz.com/license
-  Copyright and Good Faith Purchasers © 2023-present initappz.
-*/
 import 'package:flutter/cupertino.dart';
 import 'package:get/get.dart';
 import 'package:salon_user/app/backend/api/handler.dart';
@@ -74,13 +66,13 @@ class AddressListController extends GetxController implements GetxService {
 
   void saveAndClose() {
     if (actionFrom == 'product') {
-      Get.find<ProductPaymentController>().getSavedAddress();
+      //  Get.find<ProductPaymentController>().getSavedAddress();
       Get.find<ProductPaymentController>().onSaveAddress(selectedAddressId);
     } else if (actionFrom == 'salon') {
-      Get.find<PaymentController>().getSavedAddress();
+      //  Get.find<PaymentController>().getSavedAddress();
       Get.find<PaymentController>().onSaveAddress(selectedAddressId);
     } else if (actionFrom == 'individual') {
-      Get.find<IndividualPaymentController>().getSavedAddress();
+      // Get.find<IndividualPaymentController>().getSavedAddress();
       Get.find<IndividualPaymentController>().onSaveAddress(selectedAddressId);
     }
     onBack();

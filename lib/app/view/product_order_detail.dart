@@ -940,8 +940,8 @@ class _ProductOrderDetailState extends State<ProductOrderDetail> {
                       ),
                       Text(
                         controller.currencySide == 'left'
-                            ? '${controller.currencySymbol}${item.sellPrice}'
-                            : '${item.sellPrice}${controller.currencySymbol}',
+                            ? '${controller.currencySymbol}${(item.sellPrice! * item.quantity).toStringAsFixed(2)}'
+                            : '${(item.sellPrice! * item.quantity).toStringAsFixed(2)}${controller.currencySymbol}',
                         style: const TextStyle(fontWeight: FontWeight.w500),
                       ),
                     ],
@@ -977,7 +977,7 @@ class _ProductOrderDetailState extends State<ProductOrderDetail> {
               controller,
             ),
             _buildPriceRow(
-              'Service Tax'.tr,
+              'Service Tax (18%)'.tr,
               double.tryParse(controller.serviceTax) ?? 0.0,
               controller,
             ),

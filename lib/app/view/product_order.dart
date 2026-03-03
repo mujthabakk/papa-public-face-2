@@ -224,8 +224,8 @@ class _OrderCard extends StatelessWidget {
                             ),
                             Text(
                               controller.currencySide == 'left'
-                                  ? '${controller.currencySymbol}${item.sellPrice}'
-                                  : '${item.sellPrice}${controller.currencySymbol}',
+                                  ? '${controller.currencySymbol}${(item.sellPrice * item.quantity).toStringAsFixed(2)}'
+                                  : '${(item.sellPrice * item.quantity).toStringAsFixed(2)}${controller.currencySymbol}',
                               style:
                                   const TextStyle(fontWeight: FontWeight.w500),
                             ),

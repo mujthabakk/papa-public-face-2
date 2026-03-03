@@ -109,7 +109,7 @@ class ProductSalonModel {
     status = int.parse(json['status'].toString());
     payStatus = int.parse(json['payStatus'].toString());
     extraField = json['extra_field'];
-    createdAt = Jiffy(json['created_at']).yMMMMd;
+    createdAt = Jiffy.parse(json['created_at']).yMMMMd;
     type = json['type'];
     if (json.containsKey('salonInfo')) {
       salonInfo = json['salonInfo'] != null

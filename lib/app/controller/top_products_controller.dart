@@ -1,11 +1,3 @@
-/*
-  Authors : initappz (Rahul Jograna)
-  Website : https://initappz.com/
-  App Name : Ultimate Salon Full App Flutter V2
-  This App Template Source code is licensed as per the
-  terms found in the Website https://initappz.com/license
-  Copyright and Good Faith Purchasers © 2023-present initappz.
-*/
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:salon_user/app/backend/api/handler.dart';
@@ -53,6 +45,8 @@ class TopProductsControllrer extends GetxController implements GetxService {
         ProductsListModel products = ProductsListModel.fromJson(data);
         _productsList.add(products);
       });
+      _productsList.removeWhere((product) => product.status == 0);
+
       debugPrint(productsList.length.toString());
       checkCartData();
 

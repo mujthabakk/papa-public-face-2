@@ -33,4 +33,16 @@ class FindLocationParser {
     sharedPreferencesManager.putDouble('lng', lng);
     sharedPreferencesManager.putString('address', address);
   }
+
+  String getSavedAddress() {
+    return sharedPreferencesManager.getString('address') ?? '';
+  }
+
+  double getSavedLat() {
+    return sharedPreferencesManager.getDouble('lat') ?? 0.0;
+  }
+
+  double getSavedLng() {
+    return sharedPreferencesManager.getDouble('lng') ?? 0.0;
+  }
 }

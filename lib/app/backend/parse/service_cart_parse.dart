@@ -1,11 +1,3 @@
-/*
-  Authors : initappz (Rahul Jograna)
-  Website : https://initappz.com/
-  App Name : Ultimate Salon Full App Flutter V2
-  This App Template Source code is licensed as per the
-  terms found in the Website https://initappz.com/license
-  Copyright and Good Faith Purchasers © 2023-present initappz.
-*/
 import 'dart:convert';
 import 'package:salon_user/app/backend/api/api.dart';
 import 'package:salon_user/app/backend/models/packages_details_model.dart';
@@ -69,6 +61,12 @@ class ServiceCartParser {
     List<String>? carts = [];
     if (sharedPreferencesManager.isKeyExists('savedPackages') ?? false) {
       carts = sharedPreferencesManager.getStringList('savedPackages');
+      if (carts != null) {
+        for (var i = 0; i < carts.length; i++) {
+          print(
+              'Item $i:\n${const JsonEncoder.withIndent('  ').convert(jsonDecode(carts[i]))}');
+        }
+      }
     }
     List<PackagesDetailsModel> cartList = <PackagesDetailsModel>[];
     carts?.forEach((element) {

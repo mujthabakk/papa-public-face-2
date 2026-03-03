@@ -88,7 +88,7 @@ class AppointmentModel {
     grandTotal = double.parse(json['grand_total'].toString());
     payMethod = int.parse(json['pay_method'].toString());
     paid = json['paid'];
-    saveDate = Jiffy(json['save_date']).yMMMMd;
+    saveDate = Jiffy.parse(json['save_date']).yMMMMd;
     slot = json['slot'];
     walletUsed = int.parse(json['wallet_used'].toString());
     walletPrice = double.parse(json['wallet_price'].toString());

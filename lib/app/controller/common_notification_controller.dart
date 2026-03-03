@@ -60,7 +60,7 @@ class CommonNotificationController extends GetxController
                   children: [
                     CircleAvatar(
                       backgroundColor: ThemeProvider.appColor.withOpacity(0.1),
-                      child: Icon(
+                      child: const Icon(
                         Icons.notifications_active,
                         color: ThemeProvider.appColor,
                       ),
@@ -69,7 +69,7 @@ class CommonNotificationController extends GetxController
                     Expanded(
                       child: Text(
                         notification.title,
-                        style: TextStyle(
+                        style: const TextStyle(
                           fontSize: 20,
                           fontWeight: FontWeight.w700,
                           color: Colors.black87,
@@ -198,7 +198,7 @@ class CommonNotificationController extends GetxController
               ),
               Text(
                 value,
-                style: TextStyle(
+                style: const TextStyle(
                   color: Colors.black87,
                   fontSize: 16,
                   fontWeight: FontWeight.w600,

@@ -1,11 +1,3 @@
-/*
-  Authors : initappz (Rahul Jograna)
-  Website : https://initappz.com/
-  App Name : Ultimate Salon Full App Flutter V2
-  This App Template Source code is licensed as per the
-  terms found in the Website https://initappz.com/license
-  Copyright and Good Faith Purchasers © 2023-present initappz.
-*/
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
@@ -14,6 +6,7 @@ import 'package:jiffy/jiffy.dart';
 import 'package:salon_user/app/backend/api/handler.dart';
 import 'package:salon_user/app/backend/parse/web_product_payment_parse.dart';
 import 'package:salon_user/app/controller/product_cart_controller.dart';
+import 'package:salon_user/app/controller/product_order_controller.dart';
 import 'package:salon_user/app/controller/product_payment_controller.dart';
 import 'package:salon_user/app/controller/tabs_controller.dart';
 import 'package:salon_user/app/helper/router.dart';
@@ -75,7 +68,7 @@ class WebProductPaymentController extends GetxController
       "salon_id": Get.find<ProductPaymentController>().ownerType == 'salon'
           ? Get.find<ProductCartController>().savedInCart[0].freelacerId
           : 0,
-      "date_time": Jiffy().format('yyyy-MM-dd'),
+      "date_time": Jiffy.now().format(pattern: 'yyyy-MM-dd'),
       "paid_method": Get.find<ProductPaymentController>().paymentId,
       "order_to": "home",
       "orders": jsonEncode(Get.find<ProductCartController>().savedInCart),
@@ -84,8 +77,8 @@ class WebProductPaymentController extends GetxController
           : 'NA',
       "address": jsonEncode(Get.find<ProductPaymentController>().addressInfo),
       "total": Get.find<ProductCartController>().totalPrice,
-      "tax": Get.find<ProductCartController>().orderTax,
-      "grand_total": Get.find<ProductCartController>().grandTotal,
+      "tax": Get.find<ProductCartController>().taxAmount,
+      "grand_total": Get.find<ProductPaymentController>().grandTotal,
       "discount": Get.find<ProductPaymentController>().discount,
       "driver_id": 0,
       "delivery_charge": Get.find<ProductPaymentController>().deliveryPrice,
@@ -145,7 +138,7 @@ class WebProductPaymentController extends GetxController
                 height: 10,
               ),
               Text(
-                'For Your Appoinment'.tr,
+                'For Your Order'.tr,
                 style: const TextStyle(fontFamily: 'semi-bold', fontSize: 16),
               ),
               const SizedBox(
@@ -173,7 +166,7 @@ class WebProductPaymentController extends GetxController
                   ),
                 ),
                 child: Text(
-                  'TRACK MY APPOINTMENT'.tr,
+                  'TRACK MY ORDER'.tr,
                   style: const TextStyle(
                     color: ThemeProvider.whiteColor,
                     fontSize: 14,
@@ -207,8 +200,12 @@ class WebProductPaymentController extends GetxController
 
   void backOrders() {
     Get.find<ProductCartController>().clearCart();
-    Get.find<TabsController>().updateTabId(4);
     Get.offAllNamed(AppRouter.getTabsBarRoute());
+    // Future.delayed(Duration(milliseconds: 100), () {
+    //   Get.find<TabsController>().updateTabId(4);
+    // });
+    Get.delete<ProductOrderController>(force: true);
+    Get.toNamed(AppRouter.getProductOrder());
   }
 
   Future<void> verifyRazorpayPurchase(String payKey) async {

@@ -44,7 +44,7 @@ class DefaultFirebaseOptions {
   }
 
   static const FirebaseOptions web = FirebaseOptions(
-      apiKey: "AIzaSyDmiNoQY8m5ywKeR5RYYo6vbADg4kYZOtk",
+      apiKey: "AIzaSyAwAUUUlGy6uBPakLk5f-V0Rc7LzQkI2Gk",
       authDomain: "papabear-8b9f9.firebaseapp.com",
       projectId: "papabear-8b9f9",
       storageBucket: "papabear-8b9f9.firebasestorage.app",

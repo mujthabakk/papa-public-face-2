@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_rating_bar/flutter_rating_bar.dart';
 import 'package:get/get.dart';
-import 'package:salon_user/app/controller/category_search_controller.dart';
+import 'package:salon_user/app/controller/unified_search_controller.dart';
 import 'package:salon_user/app/util/theme.dart';
 
 class FilterScreenCat extends StatefulWidget {
@@ -14,7 +14,7 @@ class FilterScreenCat extends StatefulWidget {
 class _FilterScreenState extends State<FilterScreenCat> {
   @override
   Widget build(BuildContext context) {
-    return GetBuilder<CategorySearchController>(builder: (controller) {
+    return GetBuilder<UnifiedSearchController>(builder: (controller) {
       return Scaffold(
         backgroundColor: ThemeProvider.whiteColor,
         body: CustomScrollView(
@@ -320,7 +320,7 @@ class _FilterScreenState extends State<FilterScreenCat> {
     );
   }
 
-  Widget _buildChip(CategorySearchController controller, int index) {
+  Widget _buildChip(UnifiedSearchController controller, int index) {
     return ActionChip(
       elevation: 6.0,
       padding: const EdgeInsets.all(2.0),
@@ -342,7 +342,7 @@ class _FilterScreenState extends State<FilterScreenCat> {
     );
   }
 
-  Widget _buildChipCat(CategorySearchController controller, int index) {
+  Widget _buildChipCat(UnifiedSearchController controller, int index) {
     return ActionChip(
       elevation: 6.0,
       padding: const EdgeInsets.all(2.0),

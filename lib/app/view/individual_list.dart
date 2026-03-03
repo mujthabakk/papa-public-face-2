@@ -202,8 +202,9 @@ class _IndividualListScreenState extends State<IndividualListScreen> {
                     ),
                   ),
                 ),
-          bottomNavigationBar:
-              Get.find<ServiceCartController>().totalItemsInCart > 0
+          bottomNavigationBar: GetBuilder<ServiceCartController>(
+            builder: (cartController) {
+              return cartController.totalItemsInCart > 0
                   ? SizedBox(
                       height: 70,
                       child: InkWell(
@@ -222,8 +223,8 @@ class _IndividualListScreenState extends State<IndividualListScreen> {
                             children: [
                               Text(
                                 value.currencySide == 'left'
-                                    ? '${Get.find<ServiceCartController>().totalItemsInCart} ${'Items'.tr} ${value.currencySymbol} ${Get.find<ServiceCartController>().totalPrice}'
-                                    : ' ${Get.find<ServiceCartController>().totalItemsInCart} ${'Items'.tr} ${Get.find<ServiceCartController>().totalPrice}${value.currencySymbol}',
+                                    ? '${cartController.totalItemsInCart} ${'Items'.tr} ${value.currencySymbol} ${cartController.totalPrice}'
+                                    : '${cartController.totalItemsInCart} ${'Items'.tr} ${cartController.totalPrice}${value.currencySymbol}',
                                 style: const TextStyle(
                                     color: ThemeProvider.whiteColor),
                               ),
@@ -237,7 +238,9 @@ class _IndividualListScreenState extends State<IndividualListScreen> {
                         ),
                       ),
                     )
-                  : const SizedBox(),
+                  : const SizedBox();
+            },
+          ),
         );
       },
     );

@@ -1,14 +1,4 @@
-/*
-  Authors : initappz (Rahul Jograna)
-  Website : https://initappz.com/
-  App Name : Ultimate Salon Full App Flutter V2
-  This App Template Source code is licensed as per the
-  terms found in the Website https://initappz.com/license
-  Copyright and Good Faith Purchasers © 2023-present initappz.
-*/
-
 import 'package:get/get.dart';
-import 'package:qr_code_scanner/qr_code_scanner.dart';
 import 'package:salon_user/app/backend/binding/account_binding.dart';
 import 'package:salon_user/app/backend/binding/account_chat_binding.dart';
 import 'package:salon_user/app/backend/binding/add_card_binding.dart';
@@ -44,8 +34,6 @@ import 'package:salon_user/app/backend/binding/languages_binding.dart';
 import 'package:salon_user/app/backend/binding/login_binding.dart';
 import 'package:salon_user/app/backend/binding/near_binding.dart';
 import 'package:salon_user/app/backend/binding/new_address_binding.dart';
-import 'package:salon_user/app/backend/binding/new_category_search_binding.dart';
-import 'package:salon_user/app/backend/binding/notification_binding.dart';
 import 'package:salon_user/app/backend/binding/packages_details_binding.dart';
 import 'package:salon_user/app/backend/binding/payment_binding.dart';
 import 'package:salon_user/app/backend/binding/product_order_binding.dart';
@@ -58,7 +46,7 @@ import 'package:salon_user/app/backend/binding/refer_and_earn_binding.dart';
 import 'package:salon_user/app/backend/binding/register_binding.dart';
 import 'package:salon_user/app/backend/binding/reschedule_slot_binding.dart';
 import 'package:salon_user/app/backend/binding/reset_password_binding.dart';
-import 'package:salon_user/app/backend/binding/search_binding.dart';
+import 'package:salon_user/app/backend/binding/unified_search_binding.dart';
 import 'package:salon_user/app/backend/binding/selected_services_binding.dart';
 import 'package:salon_user/app/backend/binding/services_binding.dart';
 import 'package:salon_user/app/backend/binding/slot_binding.dart';
@@ -88,7 +76,6 @@ import 'package:salon_user/app/view/appointment_detail.dart';
 import 'package:salon_user/app/view/booking.dart';
 import 'package:salon_user/app/view/cart.dart';
 import 'package:salon_user/app/view/categories.dart';
-import 'package:salon_user/app/view/categories_list.dart';
 import 'package:salon_user/app/view/chat.dart';
 import 'package:salon_user/app/view/checkout.dart';
 import 'package:salon_user/app/view/choose_location.dart';
@@ -127,7 +114,7 @@ import 'package:salon_user/app/view/refer_and_earn.dart';
 import 'package:salon_user/app/view/register.dart';
 import 'package:salon_user/app/view/reschedule_slot.dart';
 import 'package:salon_user/app/view/reset_password.dart';
-import 'package:salon_user/app/view/search.dart';
+import 'package:salon_user/app/view/unified_search.dart';
 import 'package:salon_user/app/view/selected_services.dart';
 import 'package:salon_user/app/view/shop_page.dart';
 import 'package:salon_user/app/view/slot.dart';
@@ -362,8 +349,8 @@ class AppRouter {
         fullscreenDialog: true),
     GetPage(
         name: searchRoutes,
-        page: () => const SearchScreen(),
-        binding: SearchBinding(),
+        page: () => const UnifiedSearchScreen(),
+        binding: UnifiedSearchBinding(),
         fullscreenDialog: true),
     GetPage(
         name: chatRoutes,
@@ -467,9 +454,8 @@ class AppRouter {
         fullscreenDialog: true),
     GetPage(
         name: categoriesListRoutes,
-        page: () => const CategoriesListScreen(),
-        binding: NewCatSearchCBinding()),
-    // binding: CategoriesListBinding()),
+        page: () => const UnifiedSearchScreen(),
+        binding: UnifiedSearchBinding()),
     GetPage(
         name: selectedServicesRoutes,
         page: () => const SelectedServicesScreen(),

@@ -141,6 +141,7 @@ class AppConstants {
   static const String registerComplaints =
       'api/v1/complaints/registerNewComplaints';
   static const String logout = 'api/v1/profile/logout';
+  static const String getDelete = 'api/v1/user/delete-account';
 
   // API Routes
 
@@ -150,20 +151,20 @@ class AppConstants {
         languageName: 'English',
         countryCode: 'US',
         languageCode: 'en'),
-    LanguageModel(
-        imageUrl: '',
-        languageName: 'عربي',
-        countryCode: 'AE',
-        languageCode: 'ar'),
-    LanguageModel(
-        imageUrl: '',
-        languageName: 'हिन्दी',
-        countryCode: 'IN',
-        languageCode: 'hi'),
-    LanguageModel(
-        imageUrl: '',
-        languageName: 'Español',
-        countryCode: 'De',
-        languageCode: 'es'),
+    // LanguageModel(
+    //     imageUrl: '',
+    //     languageName: 'عربي',
+    //     countryCode: 'AE',
+    //     languageCode: 'ar'),
+    // LanguageModel(
+    //     imageUrl: '',
+    //     languageName: 'हिन्दी',
+    //     countryCode: 'IN',
+    //     languageCode: 'hi'),
+    // LanguageModel(
+    //     imageUrl: '',
+    //     languageName: 'Español',
+    //     countryCode: 'De',
+    //     languageCode: 'es'),
   ];
 }

@@ -110,7 +110,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
         var notification = controller.notificationList[index];
         return GestureDetector(
           onTap: () {
-            controller.showNotificationDialog(context, notification);
+            // controller.showNotificationDialog(context, notification);
           },
           child: Container(
             decoration: BoxDecoration(
@@ -319,7 +319,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
     if (notification.type == 'Appointment' &&
         notification.data.appointmentId != null) {
       return "Appointment #${notification.data.appointmentId}".tr;
-    } else if (notification.type == 'order' &&
+    } else if (notification.type == 'Product' &&
         notification.data.orderId != null) {
       return "Order #${notification.data.orderId}".tr;
     } else {

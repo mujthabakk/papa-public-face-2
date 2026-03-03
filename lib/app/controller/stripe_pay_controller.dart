@@ -111,7 +111,7 @@ class StripePayController extends GetxController implements GetxService {
           pageBuilder: (context, __, ___) => AlertDialog(
                 title: Text('Are you sure?'.tr),
                 content: Text(
-                    'Your are going to make an appointment/order\nAre you sure?'
+                    'You are going to make an appointment/order\nDo you want to continue?'
                         .tr),
                 actions: [
                   TextButton(
@@ -505,7 +505,9 @@ class StripePayController extends GetxController implements GetxService {
 
   void backOrders() {
     Get.find<ServiceCartController>().clearCart();
-    Get.find<TabsController>().updateTabId(4);
     Get.offAllNamed(AppRouter.getTabsBarRoute());
+    Future.delayed(Duration(milliseconds: 100), () {
+      Get.find<TabsController>().updateTabId(4);
+    });
   }
 }

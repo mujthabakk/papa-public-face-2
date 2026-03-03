@@ -1,4 +1,5 @@
 {
     "editor.inlineSuggest.showToolbar": "onHover",
-    "dart.flutterSdkPath": "~/Flutter/flutter_3106"
+    "dart.flutterSdkPath": "~/Flutter/flutter_3355",
+    "java.configuration.updateBuildConfiguration": "interactive"
 }

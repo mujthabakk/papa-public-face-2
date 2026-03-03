@@ -59,6 +59,7 @@ class NotificationData {
   final int? appointmentId;
   final int? orderId;
   final String businessName;
+  final String customerName;
   final num price;
   final String date;
   final String status;
@@ -68,17 +69,22 @@ class NotificationData {
     this.orderId,
     required this.businessName,
     required this.price,
+    required this.customerName,
     required this.date,
     required this.status,
   });
 
   factory NotificationData.fromJson(Map<String, dynamic> json) {
+    String rawDate = json['date'] ?? '';
+    String formattedDate =
+        rawDate.contains(' ') ? rawDate.split(' ').first : rawDate;
     return NotificationData(
       appointmentId: json['appointment_id'],
       orderId: json['order_id'],
       businessName: json['business_name'] ?? '',
+      customerName: json['customer'] ?? '',
       price: json['price'] ?? 0,
-      date: json['date'] ?? '',
+      date: formattedDate,
       status: json['status']?.toString() ?? '',
     );
   }

@@ -157,36 +157,22 @@ class _PackagesDetailsScreenState extends State<PackagesDetailsScreen> {
 
   Widget _buildPackageDetails(PackagesDetailsController controller) {
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _buildDetailRow(
+          Icons.assignment,
+          controller.packagesDetails.name!,
+          backgroundColor: Colors.purple.shade50,
+          iconColor: Colors.purple,
+        ),
+        const SizedBox(height: 12),
+        _buildDetailRow(
           Icons.timer,
-          'Duration: ${controller.packagesDetails.duration} min'.tr,
+          '${controller.packagesDetails.duration} min',
           backgroundColor: Colors.blue.shade50,
           iconColor: Colors.blue,
-          textStyle: TextStyle(
-              color: Colors.blue.shade800, fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 12),
-        _buildDetailRow(
-          Icons.currency_rupee,
-          'Price: ${controller.packagesDetails.price}'.tr,
-          color: Colors.red,
-          backgroundColor: Colors.red.shade50,
-          iconColor: Colors.red,
-          textStyle: TextStyle(
-              color: Colors.red.shade800, fontWeight: FontWeight.bold),
-        ),
-        const SizedBox(height: 12),
-        _buildDetailRow(
-          Icons.local_offer,
-          'Discount: ${controller.packagesDetails.off}%'.tr,
-          color: Colors.green,
-          backgroundColor: Colors.green.shade50,
-          iconColor: Colors.green,
-          textStyle: TextStyle(
-              color: Colors.green.shade800, fontWeight: FontWeight.bold),
-        ),
+        _buildPriceRow(controller),
       ],
     );
   }
@@ -194,42 +180,117 @@ class _PackagesDetailsScreenState extends State<PackagesDetailsScreen> {
   Widget _buildDetailRow(
     IconData icon,
     String label, {
-    Color color = Colors.black,
     Color? backgroundColor,
     Color iconColor = Colors.black,
-    TextStyle? textStyle,
   }) {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
       decoration: BoxDecoration(
-        color: backgroundColor ?? Colors.transparent,
+        color: backgroundColor,
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: color.withOpacity(0.3)),
+        border: Border.all(color: iconColor.withOpacity(0.3)),
       ),
       child: Row(
         children: [
-          Icon(
-            icon,
-            color: iconColor,
-            size: 28,
-          ),
+          Icon(icon, color: iconColor, size: 28),
           const SizedBox(width: 12),
           Expanded(
             child: Text(
               label,
-              style: textStyle ??
-                  TextStyle(
-                    fontWeight: FontWeight.w600,
-                    fontSize: 16,
-                    color: color,
-                  ),
+              style: TextStyle(
+                fontWeight: FontWeight.w600,
+                fontSize: 16,
+                color: iconColor,
+              ),
             ),
           ),
         ],
       ),
     );
   }
+
+  Widget _buildPriceRow(PackagesDetailsController controller) {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+      decoration: BoxDecoration(
+        color: Colors.green.shade50,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.green.withOpacity(0.3)),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.currency_rupee, color: Colors.green, size: 28),
+          const SizedBox(width: 12),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                controller.currencySide == 'left'
+                    ? '${controller.currencySymbol}${controller.packagesDetails.price}'
+                    : '${controller.packagesDetails.price}${controller.currencySymbol}',
+                style: TextStyle(
+                  fontSize: 14,
+                  color: Colors.grey,
+                  decoration: TextDecoration.lineThrough,
+                ),
+              ),
+              Text(
+                controller.currencySide == 'left'
+                    ? '${controller.currencySymbol}${controller.packagesDetails.off}'
+                    : '${controller.packagesDetails.off}${controller.currencySymbol}',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.green.shade800,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
 }
+
+//   Widget _buildDetailRow(
+//     IconData icon,
+//     String label, {
+//     Color color = Colors.black,
+//     Color? backgroundColor,
+//     Color iconColor = Colors.black,
+//     TextStyle? textStyle,
+//   }) {
+//     return Container(
+//       padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+//       decoration: BoxDecoration(
+//         color: backgroundColor ?? Colors.transparent,
+//         borderRadius: BorderRadius.circular(8),
+//         border: Border.all(color: color.withOpacity(0.3)),
+//       ),
+//       child: Row(
+//         children: [
+//           Icon(
+//             icon,
+//             color: iconColor,
+//             size: 28,
+//           ),
+//           const SizedBox(width: 12),
+//           Expanded(
+//             child: Text(
+//               label,
+//               style: textStyle ??
+//                   TextStyle(
+//                     fontWeight: FontWeight.w600,
+//                     fontSize: 16,
+//                     color: color,
+//                   ),
+//             ),
+//           ),
+//         ],
+//       ),
+//     );
+//   }
+// }
 
 Widget _buildCard(Widget child) {
   return SizedBox(
@@ -253,13 +314,26 @@ Widget _buildServicesList(PackagesDetailsController controller) {
         leading: const Icon(Icons.assignment, color: ThemeProvider.appColor),
         title: Row(
           children: [
-            Text(service.name!),
+            Expanded(
+              child: Text(service.name!,
+                  maxLines: 3,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                  )),
+            ),
             const SizedBox(width: 10),
             _buildGenderIcon(service.gender),
             const SizedBox(width: 5),
           ],
         ),
-        trailing: Text('\$${service.price}'),
+        trailing: Text(
+          controller.currencySide == 'left'
+              ? '${controller.currencySymbol}${service.price}'
+              : '${service.price}${controller.currencySymbol}',
+          style: const TextStyle(fontWeight: FontWeight.bold),
+        ),
       );
     }).toList(),
   );

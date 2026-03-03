@@ -54,6 +54,7 @@ class SearchIndividualModel {
   String? address;
   String? cover;
   bool? isPremium;
+  int? status;
 
   double? salonLat;
   double? salonLng;
@@ -72,6 +73,7 @@ class SearchIndividualModel {
     this.id,
     this.uid,
     this.name,
+    this.status,
     this.rating,
     this.isPremium,
     this.totalRating,
@@ -96,7 +98,8 @@ class SearchIndividualModel {
     id = json['id'] ?? 0;
     uid = json['uid'] ?? 0;
     name = json['name'] ?? 'Unknown Name';
-    isPremium = json['isPremium'] ?? false;
+    isPremium = json['is_premium'] ?? false;
+    status = json['status'] ?? 1;
 
     rating = json['rating'] != null
         ? double.tryParse(json['rating'].toString()) ?? 0.0
@@ -144,7 +147,8 @@ class SearchIndividualModel {
     data['id'] = id;
     data['uid'] = uid;
     data['name'] = name;
-    data['isPremium'] = isPremium;
+    data['is_premium'] = isPremium;
+    data['status'] = status;
 
     data['rating'] = rating;
     data['total_rating'] = totalRating;
