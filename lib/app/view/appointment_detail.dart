@@ -111,7 +111,7 @@ class _AppointmentDetailScreenState extends State<AppointmentDetailScreen> {
                   _buildInfoRow('Distance Cost'.tr,
                       _formatCurrency(value.distanceCost, value)),
                   const SizedBox(height: 4),
-                  _buildInfoRow('Service Tax (18%)'.tr,
+                  _buildInfoRow('Service Tax (5%)'.tr,
                       _formatCurrency(value.serviceTax, value)),
                   const SizedBox(height: 4),
                   _buildInfoRow(

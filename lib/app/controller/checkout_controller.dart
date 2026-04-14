@@ -10,6 +10,7 @@ import 'package:salon_user/app/controller/service_cart_controller.dart';
 import 'package:salon_user/app/controller/slot_controller.dart';
 import 'package:salon_user/app/helper/router.dart';
 import 'package:salon_user/app/util/constant.dart';
+import 'package:salon_user/app/util/facebook_service.dart';
 
 class CheckoutController extends GetxController implements GetxService {
   final CheckoutParser parser;
@@ -27,6 +28,11 @@ class CheckoutController extends GetxController implements GetxService {
   @override
   void onInit() {
     _savedInCart = Get.find<ServiceCartController>().savedInCart;
+    FacebookService.logInitiatedCheckout(
+      totalPrice: Get.find<ServiceCartController>().totalPrice,
+      currency: AppConstants.defaultCurrencySymbol,
+      numItems: Get.find<ServiceCartController>().totalItemsInCart,
+    );
     super.onInit();
   }
 

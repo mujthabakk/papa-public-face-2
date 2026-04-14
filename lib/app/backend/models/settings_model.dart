@@ -1,11 +1,3 @@
-/*
-  Authors : initappz (Rahul Jograna)
-  Website : https://initappz.com/
-  App Name : Ultimate Salon Full App Flutter V2
-  This App Template Source code is licensed as per the
-  terms found in the Website https://initappz.com/license
-  Copyright and Good Faith Purchasers © 2023-present initappz.
-*/
 class SettingsModel {
   int? id;
   String? name;
@@ -44,6 +36,7 @@ class SettingsModel {
   double? allowDistance;
   int? searchResultKind;
   String? extraField;
+  double? serviceCharge;
 
   SettingsModel(
       {this.id,
@@ -82,6 +75,7 @@ class SettingsModel {
       this.status,
       this.allowDistance,
       this.searchResultKind,
+      this.serviceCharge,
       this.extraField});
 
   SettingsModel.fromJson(Map<String, dynamic> json) {
@@ -121,6 +115,7 @@ class SettingsModel {
     status = int.parse(json['status'].toString());
     allowDistance = double.parse(json['allowDistance'].toString());
     searchResultKind = int.parse(json['searchResultKind'].toString());
+    serviceCharge = double.parse(json['commission_percentage'].toString());
     extraField = json['extra_field'];
   }
 
@@ -162,6 +157,7 @@ class SettingsModel {
     data['status'] = status;
     data['allowDistance'] = allowDistance;
     data['searchResultKind'] = searchResultKind;
+    data['commission_percentage'] = serviceCharge;
     data['extra_field'] = extraField;
     return data;
   }

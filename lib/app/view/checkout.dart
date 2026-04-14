@@ -1278,14 +1278,15 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
             ),
             const SizedBox(height: 12),
             _buildBillRow(
-              'Service Charge'.tr,
+              'Service Charge (${Get.find<ServiceCartController>().serviceCharge}%)'
+                  .tr,
               value.currencySide == 'left'
-                  ? '${value.currencySymbol}${Get.find<ServiceCartController>().serviceCharge.toStringAsFixed(2)}'
-                  : '${Get.find<ServiceCartController>().serviceCharge.toStringAsFixed(2)}${value.currencySymbol}',
+                  ? '${value.currencySymbol}${Get.find<ServiceCartController>().serviceChargeAmount.toStringAsFixed(2)}'
+                  : '${Get.find<ServiceCartController>().serviceChargeAmount.toStringAsFixed(2)}${value.currencySymbol}',
             ),
             const SizedBox(height: 12),
             _buildBillRow(
-              'Tax (GST 18%)'.tr,
+              'Tax (GST ${Get.find<ServiceCartController>().orderTax}%)'.tr,
               value.currencySide == 'left'
                   ? '${value.currencySymbol}${Get.find<ServiceCartController>().taxAmount.toStringAsFixed(2)}'
                   : '${Get.find<ServiceCartController>().taxAmount.toStringAsFixed(2)}${value.currencySymbol}',

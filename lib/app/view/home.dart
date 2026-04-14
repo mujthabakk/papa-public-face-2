@@ -974,7 +974,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                               vertical: 5, horizontal: 8),
                                           child: SizedBox(
                                             height:
-                                                120, // Constrain size for ListView horizontal
+                                                130, // Constrain size for ListView horizontal
                                             child: ListView.builder(
                                               scrollDirection: Axis.horizontal,
                                               itemCount:
@@ -1053,6 +1053,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                                         item.userInfo!.firstName
                                                             .toString(),
                                                         style: const TextStyle(
+                                                            fontSize: 11,
                                                             fontFamily:
                                                                 'semibold'),
                                                       ),
@@ -1060,7 +1061,9 @@ class _HomeScreenState extends State<HomeScreen> {
                                                         item.userInfo!.lastName
                                                             .toString(),
                                                         style: const TextStyle(
-                                                            fontSize: 10),
+                                                            fontSize: 11,
+                                                            fontFamily:
+                                                                'semibold'),
                                                       ),
                                                     ],
                                                   ),

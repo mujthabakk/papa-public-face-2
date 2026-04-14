@@ -57,7 +57,7 @@ class LocaleString extends Translations {
           "Discount": "Discount",
           "Wallet Discount": "Wallet Discount",
           "Distance Cost": "Distance Cost",
-          "Service Tax": "Service Tax (18%)",
+          "Service Tax": "Service Tax (5%)",
           "Total": "Total",
           "Payment Method": "Payment Method",
           "Total Amount": "Total Amount",

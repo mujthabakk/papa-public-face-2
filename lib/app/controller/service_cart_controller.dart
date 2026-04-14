@@ -6,6 +6,7 @@ import 'package:salon_user/app/backend/models/service_cart_model.dart';
 import 'package:salon_user/app/backend/models/services_model.dart';
 import 'package:salon_user/app/backend/parse/service_cart_parse.dart';
 import 'package:salon_user/app/util/constant.dart';
+import 'package:salon_user/app/util/facebook_service.dart';
 
 class ServiceCartController extends GetxController implements GetxService {
   final ServiceCartParser parser;
@@ -30,6 +31,9 @@ class ServiceCartController extends GetxController implements GetxService {
 
   double _serviceCharge = 0.0;
   double get serviceCharge => _serviceCharge;
+
+  double _serviceChargeAmount = 0.0;
+  double get serviceChargeAmount => _serviceChargeAmount;
 
   double _orderPrice = 0.0;
   double get orderPrice => _orderPrice;
@@ -104,6 +108,12 @@ class ServiceCartController extends GetxController implements GetxService {
     salonId = service.uid!;
     parser.saveSalonId(salonId);
     parser.saveService(_savedInCart.services as List<ServicesModel>);
+    FacebookService.logAddToCart(
+      id: service.id.toString(),
+      type: 'service',
+      price: service.discount! > 0 ? service.off!.toDouble() : service.price!.toDouble(),
+      currency: AppConstants.defaultCurrencySymbol,
+    );
     calcuate();
     update();
   }
@@ -115,6 +125,12 @@ class ServiceCartController extends GetxController implements GetxService {
     salonId = package.uid!;
     parser.saveSalonId(salonId);
     parser.savePackages(_savedInCart.packages as List<PackagesDetailsModel>);
+    FacebookService.logAddToCart(
+      id: package.id.toString(),
+      type: 'package',
+      price: package.discount! > 0 ? package.off!.toDouble() : package.price!.toDouble(),
+      currency: AppConstants.defaultCurrencySymbol,
+    );
     calcuate();
     update();
   }
@@ -186,10 +202,13 @@ class ServiceCartController extends GetxController implements GetxService {
     taxAmount = _totalPrice * (orderTax / 100);
     taxAmount = taxAmount.toPrecision(2);
 
+    _serviceChargeAmount = _totalPrice * (_serviceCharge / 100);
+    _serviceChargeAmount = _serviceChargeAmount.toPrecision(2);
+
     // _grandTotal = double.parse((totalPrice).toStringAsFixed(2));
 
     _grandTotal = double.parse(
-        (totalPrice + taxAmount + serviceCharge).toStringAsFixed(2));
+        (totalPrice + taxAmount + _serviceChargeAmount).toStringAsFixed(2));
     update();
   }
 }

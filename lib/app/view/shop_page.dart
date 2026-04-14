@@ -3520,16 +3520,18 @@ class _ServicesScreenState extends State<ServicesScreen> {
                     value.salonDetails.name.toString(),
                     style: const TextStyle(
                       color: Colors.white,
-                      fontSize: 24,
+                      fontSize: 20,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
                   const SizedBox(height: 8),
                   Text(
                     value.salonDetails.address.toString(),
+                    maxLines: 3,
                     style: const TextStyle(
                       color: Colors.white,
-                      fontSize: 14,
+                      overflow: TextOverflow.ellipsis,
+                      fontSize: 13,
                     ),
                   ),
                   const SizedBox(height: 12),

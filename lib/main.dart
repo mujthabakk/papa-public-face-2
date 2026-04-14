@@ -10,6 +10,7 @@ import 'package:salon_user/app/util/constant.dart';
 import 'package:salon_user/app/util/theme.dart';
 import 'package:salon_user/app/util/translator.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:salon_user/app/util/facebook_service.dart';
 import 'firebase_options.dart';
 
 void main() async {
@@ -21,6 +22,7 @@ void main() async {
   await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,
       name: 'papabear-public-app');
+  await FacebookService.init();
   await MainBinding().dependencies();
   runApp(const MyApp());
 }

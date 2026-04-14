@@ -1177,10 +1177,30 @@ class _PaymentScreenState extends State<PaymentScreen> {
           ),
         ],
       ),
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
+      child: Theme(
+        data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+        child: ExpansionTile(
+          initiallyExpanded: false,
+          tilePadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+          childrenPadding:
+              const EdgeInsets.only(left: 20, right: 20, bottom: 20),
+          title: _buildBillRow(
+            'Total Amount'.tr,
+            value.currencySide == 'left'
+                ? '${value.currencySymbol}${value.grandTotal.toStringAsFixed(2)}'
+                : '${value.grandTotal.toStringAsFixed(2)}${value.currencySymbol}',
+            isTotal: true,
+          ),
           children: [
+            Container(
+              height: 1,
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [borderLight, borderMedium],
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
             _buildBillRow(
               'Service Total'.tr,
               value.currencySide == 'left'
@@ -1218,34 +1238,18 @@ class _PaymentScreenState extends State<PaymentScreen> {
               const SizedBox(height: 12),
             ],
             _buildBillRow(
-              'Service Charge'.tr,
+              'Service Charge (${Get.find<ServiceCartController>().serviceCharge}%)'
+                  .tr,
               value.currencySide == 'left'
-                  ? '${value.currencySymbol}${Get.find<ServiceCartController>().serviceCharge.toStringAsFixed(2)}'
-                  : '${Get.find<ServiceCartController>().serviceCharge.toStringAsFixed(2)}${value.currencySymbol}',
+                  ? '${value.currencySymbol}${Get.find<ServiceCartController>().serviceChargeAmount.toStringAsFixed(2)}'
+                  : '${Get.find<ServiceCartController>().serviceChargeAmount.toStringAsFixed(2)}${value.currencySymbol}',
             ),
             const SizedBox(height: 12),
             _buildBillRow(
-              'Tax (GST 18%)'.tr,
+              'Tax (GST ${Get.find<ServiceCartController>().orderTax}%)'.tr,
               value.currencySide == 'left'
                   ? '${value.currencySymbol}${value.taxAmount.toStringAsFixed(2)}'
                   : '${value.taxAmount.toStringAsFixed(2)}${value.currencySymbol}',
-            ),
-            const SizedBox(height: 16),
-            Container(
-              height: 1,
-              decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [borderLight, borderMedium],
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
-            _buildBillRow(
-              'Total Amount'.tr,
-              value.currencySide == 'left'
-                  ? '${value.currencySymbol}${value.grandTotal.toStringAsFixed(2)}'
-                  : '${value.grandTotal.toStringAsFixed(2)}${value.currencySymbol}',
-              isTotal: true,
             ),
           ],
         ),

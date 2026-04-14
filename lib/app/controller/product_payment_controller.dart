@@ -414,7 +414,8 @@ class ProductPaymentController extends GetxController implements GetxService {
 
   void calculateAllCharge() {
     taxAmount = Get.find<ProductCartController>().totalPrice *
-        (Get.find<ProductCartController>().orderTax / 100);
+        //  (Get.find<ProductCartController>().orderTax / 100);
+        (18 / 100); // hardcoded
 
     double totalPrice = Get.find<ProductCartController>().totalPrice +
         taxAmount +

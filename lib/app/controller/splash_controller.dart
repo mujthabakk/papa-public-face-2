@@ -66,7 +66,8 @@ class SplashController extends GetxController implements GetxService {
               '${supportModelInfo.firstName!} ${supportModelInfo.lastName!}',
               supportModelInfo.id,
               appSettingsInfo.mobile.toString(),
-              appSettingsInfo.allowDistance);
+              appSettingsInfo.allowDistance,
+              appSettingsInfo.serviceCharge);
           isSuccess = true;
         } else {
           isSuccess = false;

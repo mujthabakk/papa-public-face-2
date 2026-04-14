@@ -22,6 +22,7 @@ import 'package:salon_user/app/controller/tabs_controller.dart';
 import 'package:salon_user/app/helper/router.dart';
 import 'package:salon_user/app/util/constant.dart';
 import 'package:salon_user/app/util/theme.dart';
+import 'package:salon_user/app/util/facebook_service.dart';
 import 'package:salon_user/app/util/toast.dart';
 
 class StripePayController extends GetxController implements GetxService {
@@ -263,6 +264,14 @@ class StripePayController extends GetxController implements GetxService {
     Get.back();
 
     if (response.statusCode == 200) {
+      FacebookService.logPurchase(
+        amount: grandTotal,
+        currency: currencyCode,
+        parameters: {
+          'order_from': 'individual',
+          'pay_method': Get.find<IndividualPaymentController>().paymentId,
+        },
+      );
       Get.defaultDialog(
         title: '',
         contentPadding: const EdgeInsets.all(20),
@@ -414,6 +423,14 @@ class StripePayController extends GetxController implements GetxService {
     Get.back();
 
     if (response.statusCode == 200) {
+      FacebookService.logPurchase(
+        amount: grandTotal,
+        currency: currencyCode,
+        parameters: {
+          'order_from': 'salon',
+          'pay_method': Get.find<PaymentController>().paymentId,
+        },
+      );
       Get.defaultDialog(
         title: '',
         contentPadding: const EdgeInsets.all(20),

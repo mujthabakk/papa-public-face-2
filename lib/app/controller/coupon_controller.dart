@@ -74,7 +74,8 @@ class CouponController extends GetxController implements GetxService {
                 expiryDate.isAtSameMomentAs(currentDate);
 
             bool isValidForFreelancer = data.freelancerIds != null &&
-                data.freelancerIds!.split(',').contains(uid.toString());
+                (data.freelancerIds == "ALL" ||
+                    data.freelancerIds!.split(',').contains(uid.toString()));
 
             bool isNotMaxUsageExceeded = data.maxUsageExceeded != true;
 

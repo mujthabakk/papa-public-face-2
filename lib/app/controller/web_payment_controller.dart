@@ -19,6 +19,8 @@ import 'package:salon_user/app/controller/slot_controller.dart';
 import 'package:salon_user/app/controller/tabs_controller.dart';
 import 'package:salon_user/app/helper/router.dart';
 import 'package:salon_user/app/util/theme.dart';
+import 'package:salon_user/app/util/constant.dart';
+import 'package:salon_user/app/util/facebook_service.dart';
 
 class WebPaymentController extends GetxController implements GetxService {
   final WebPaymentParse parser;
@@ -122,6 +124,14 @@ class WebPaymentController extends GetxController implements GetxService {
     Get.back();
 
     if (response.statusCode == 200) {
+      FacebookService.logPurchase(
+        amount: Get.find<IndividualPaymentController>().grandTotal,
+        currency: AppConstants.defaultCurrencySymbol,
+        parameters: {
+          'order_from': 'individual',
+          'pay_method': payMethod,
+        },
+      );
       Get.defaultDialog(
         title: '',
         contentPadding: const EdgeInsets.all(20),
@@ -272,6 +282,14 @@ class WebPaymentController extends GetxController implements GetxService {
     var response = await parser.createAppoinments(param);
     Get.back();
     if (response.statusCode == 200) {
+      FacebookService.logPurchase(
+        amount: Get.find<PaymentController>().grandTotal,
+        currency: AppConstants.defaultCurrencySymbol,
+        parameters: {
+          'order_from': 'salon',
+          'pay_method': payMethod,
+        },
+      );
       Get.defaultDialog(
         title: '',
         contentPadding: const EdgeInsets.all(20),

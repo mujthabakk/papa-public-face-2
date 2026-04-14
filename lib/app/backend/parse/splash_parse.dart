@@ -1,11 +1,3 @@
-/*
-  Authors : initappz (Rahul Jograna)
-  Website : https://initappz.com/
-  App Name : Ultimate Salon Full App Flutter V2
-  This App Template Source code is licensed as per the
-  terms found in the Website https://initappz.com/license
-  Copyright and Good Faith Purchasers © 2023-present initappz.
-*/
 import 'package:salon_user/app/backend/api/api.dart';
 import 'package:salon_user/app/helper/shared_pref.dart';
 import 'package:get/get.dart';
@@ -54,7 +46,8 @@ class SplashParser {
       var supportName,
       var supportId,
       var supportPhone,
-      var allowDistance) {
+      var allowDistance,
+      var serviceCharge) {
     sharedPreferencesManager.putString('currencyCode', currencyCode);
     sharedPreferencesManager.putString('currencySide', currencySide);
     sharedPreferencesManager.putString('currencySymbol', currencySymbol);
@@ -71,6 +64,7 @@ class SplashParser {
     sharedPreferencesManager.putString('supportName', supportName);
     sharedPreferencesManager.putString('supportPhone', supportPhone);
     sharedPreferencesManager.putDouble('allowDistance', allowDistance);
+    sharedPreferencesManager.putDouble('serviceCharge', serviceCharge);
   }
 
   void saveDeviceToken(String token) {
