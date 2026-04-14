@@ -258,6 +258,7 @@ class UnifiedSearchController extends GetxController implements GetxService {
       if (isFemale || isKid || isMale || isFamily) {
         getSearchResult(query);
       } else {
+        FocusManager.instance.primaryFocus?.unfocus();
         genderDialog(context);
       }
     } else {
@@ -273,6 +274,7 @@ class UnifiedSearchController extends GetxController implements GetxService {
           update();
         }
       } else {
+        FocusManager.instance.primaryFocus?.unfocus();
         genderDialog(context);
       }
     }

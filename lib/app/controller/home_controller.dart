@@ -78,60 +78,66 @@ class HomeController extends GetxController implements GetxService {
     apiCalled = true;
 
     if (response.statusCode == 200) {
-      Map<String, dynamic> myMap = Map<String, dynamic>.from(response.body);
-      var salonData = myMap['salon'];
-      var categoriesData = myMap['categories'];
-      var individualData = myMap['individual'];
-      var bannerData = myMap['banners'];
-      var products = myMap['products'];
-      _salonList = [];
-      _categoriesList = [];
-      _individualList = [];
-      _bannerList = [];
-      _productsList = [];
+      try {
+        Map<String, dynamic> myMap = Map<String, dynamic>.from(response.body);
+        var salonData = myMap['salon'] ?? [];
+        var categoriesData = myMap['categories'] ?? [];
+        var individualData = myMap['individual'] ?? [];
+        var bannerData = myMap['banners'] ?? [];
+        var products = myMap['products'] ?? [];
+        _salonList = [];
+        _categoriesList = [];
+        _individualList = [];
+        _bannerList = [];
+        _productsList = [];
 
-      salonData.forEach((data) {
-        SalonModel salon = SalonModel.fromJson(data);
-        _salonList.add(salon);
-      });
-      debugPrint(salonList.length.toString());
+        for (var data in salonData) {
+          SalonModel salon = SalonModel.fromJson(data);
+          _salonList.add(salon);
+        }
+        await Future.delayed(Duration.zero);
 
-      categoriesData.forEach((data) {
-        CategoriesModel categories = CategoriesModel.fromJson(data);
-        _categoriesList.add(categories);
-      });
-      debugPrint(categoriesList.length.toString());
+        for (var data in categoriesData) {
+          CategoriesModel categories = CategoriesModel.fromJson(data);
+          _categoriesList.add(categories);
+        }
+        await Future.delayed(Duration.zero);
 
-      individualData.forEach((data) {
-        IndividualModel individual = IndividualModel.fromJson(data);
-        _individualList.add(individual);
-      });
-      debugPrint(individualList.length.toString());
+        for (var data in individualData) {
+          IndividualModel individual = IndividualModel.fromJson(data);
+          _individualList.add(individual);
+        }
+        await Future.delayed(Duration.zero);
 
-      bannerData.forEach((data) {
-        BannerModel banner = BannerModel.fromJson(data);
-        _bannerList.add(banner);
-      });
-      debugPrint(bannerList.length.toString());
+        for (var data in bannerData) {
+          BannerModel banner = BannerModel.fromJson(data);
+          _bannerList.add(banner);
+        }
+        await Future.delayed(Duration.zero);
 
-      products.forEach((data) {
-        ProductsListModel products = ProductsListModel.fromJson(data);
-        _productsList.add(products);
-      });
-      _productsList.removeWhere((product) => product.status == 0);
+        for (var data in products) {
+          ProductsListModel product = ProductsListModel.fromJson(data);
+          _productsList.add(product);
+        }
+        _productsList.removeWhere((product) => product.status == 0);
+        await Future.delayed(Duration.zero);
 
-      debugPrint(productsList.length.toString());
-      checkCartData();
-      if (_salonList.isEmpty && _individualList.isEmpty) {
+        checkCartData();
+        if (_salonList.isEmpty && _individualList.isEmpty) {
+          haveData = false;
+        } else {
+          haveData = true;
+        }
+      } catch (e) {
+        debugPrint('GETHOMEDATA EXCEPTION: \${e.toString()}');
+        showToast('App Parsing Error: \${e.toString()}');
         haveData = false;
-      } else {
-        haveData = true;
       }
       update();
     } else {
       ApiChecker.checkApi(response);
+      update();
     }
-    update();
   }
 
   void onServices(int uid) {

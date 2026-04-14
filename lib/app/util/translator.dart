@@ -294,7 +294,7 @@ class LocaleString extends Translations {
           "Top Packages & Offers": "Top Packages & Offers",
           "Ms.Jolly Jonthon": "Ms.Jolly Jonthon",
           "Aromatherapy": "Aromatherapy",
-          "Fee start from": "Fee start from",
+          "Fee start from": "Starting Fee",
           "All Transactions": "All Transactions",
           "Book an Appointment for Salon, Spa & Barber":
               "Book an Appointment for Salon, Spa & Barber etc..",

@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -550,87 +551,89 @@ class _HomeScreenState extends State<HomeScreen> {
                                         Padding(
                                           padding: const EdgeInsets.symmetric(
                                               vertical: 5, horizontal: 8),
-                                          child: SingleChildScrollView(
-                                            scrollDirection: Axis.horizontal,
-                                            child: Row(
-                                              children: [
-                                                for (var item
-                                                    in value.categoriesList)
-                                                  InkWell(
-                                                    onTap: () {
-                                                      value.onCategoriesList(
-                                                          item.id as int,
-                                                          item.name.toString());
-                                                    },
-                                                    child: Container(
-                                                      margin: const EdgeInsets
-                                                          .symmetric(
-                                                        horizontal: 5,
-                                                      ),
-                                                      child: Column(
-                                                        children: [
-                                                          ClipRRect(
-                                                            borderRadius:
-                                                                BorderRadius
-                                                                    .circular(
-                                                                        100),
-                                                            child: SizedBox
-                                                                .fromSize(
-                                                              size: const Size
-                                                                  .fromRadius(
-                                                                  35),
-                                                              child:
-                                                                  FadeInImage(
-                                                                image: NetworkImage(
-                                                                    '${Environments.imageURL}${item.cover.toString()}'),
-                                                                placeholder:
-                                                                    const AssetImage(
-                                                                        "assets/images/placeholder.jpeg"),
-                                                                imageErrorBuilder:
-                                                                    (context,
-                                                                        error,
-                                                                        stackTrace) {
-                                                                  return Image.asset(
-                                                                      'assets/images/notfound.png',
+                                          child: SizedBox(
+                                            height:
+                                                120, // Constrain size for ListView horizontal
+                                            child: ListView.builder(
+                                              scrollDirection: Axis.horizontal,
+                                              itemCount:
+                                                  value.categoriesList.length,
+                                              itemBuilder: (context, index) {
+                                                var item =
+                                                    value.categoriesList[index];
+                                                return InkWell(
+                                                  onTap: () {
+                                                    value.onCategoriesList(
+                                                        item.id as int,
+                                                        item.name.toString());
+                                                  },
+                                                  child: Container(
+                                                    margin: const EdgeInsets
+                                                        .symmetric(
+                                                      horizontal: 5,
+                                                    ),
+                                                    child: Column(
+                                                      children: [
+                                                        ClipRRect(
+                                                          borderRadius:
+                                                              BorderRadius
+                                                                  .circular(
+                                                                      100),
+                                                          child:
+                                                              SizedBox.fromSize(
+                                                            size: const Size
+                                                                .fromRadius(35),
+                                                            child:
+                                                                CachedNetworkImage(
+                                                              imageUrl:
+                                                                  '${Environments.imageURL}${item.cover.toString()}',
+                                                              fit: BoxFit.cover,
+                                                              placeholder: (context,
+                                                                      url) =>
+                                                                  const Image(
+                                                                      image: AssetImage(
+                                                                          "assets/images/placeholder.jpeg"),
                                                                       fit: BoxFit
-                                                                          .cover);
-                                                                },
-                                                                fit: BoxFit
-                                                                    .cover,
-                                                              ),
+                                                                          .cover),
+                                                              errorWidget: (context,
+                                                                      url,
+                                                                      error) =>
+                                                                  Image.asset(
+                                                                      "assets/images/notfound.png",
+                                                                      fit: BoxFit
+                                                                          .cover),
                                                             ),
                                                           ),
-                                                          Column(
-                                                            children: [
-                                                              Padding(
-                                                                padding:
-                                                                    const EdgeInsets
-                                                                        .only(
-                                                                        top:
-                                                                            10),
-                                                                child: Text(
-                                                                  item.name!.length >
-                                                                          15
-                                                                      ? '${item.name!.substring(0, 15)}...'
-                                                                      : item
-                                                                          .name
-                                                                          .toString(),
-                                                                  style: const TextStyle(
-                                                                      fontSize:
-                                                                          11,
-                                                                      color: ThemeProvider
-                                                                          .greyColor,
-                                                                      fontFamily:
-                                                                          'bold'),
-                                                                ),
+                                                        ),
+                                                        Column(
+                                                          children: [
+                                                            Padding(
+                                                              padding:
+                                                                  const EdgeInsets
+                                                                      .only(
+                                                                      top: 10),
+                                                              child: Text(
+                                                                item.name!.length >
+                                                                        15
+                                                                    ? '${item.name!.substring(0, 15)}...'
+                                                                    : item.name
+                                                                        .toString(),
+                                                                style: const TextStyle(
+                                                                    fontSize:
+                                                                        11,
+                                                                    color: ThemeProvider
+                                                                        .greyColor,
+                                                                    fontFamily:
+                                                                        'bold'),
                                                               ),
-                                                            ],
-                                                          ),
-                                                        ],
-                                                      ),
+                                                            ),
+                                                          ],
+                                                        ),
+                                                      ],
                                                     ),
-                                                  )
-                                              ],
+                                                  ),
+                                                );
+                                              },
                                             ),
                                           ),
                                         ),
@@ -759,23 +762,25 @@ class _HomeScreenState extends State<HomeScreen> {
                                                                             12)),
                                                                 child: Stack(
                                                                   children: [
-                                                                    FadeInImage(
+                                                                    CachedNetworkImage(
                                                                       height:
                                                                           120,
                                                                       width: double
                                                                           .infinity,
+                                                                      imageUrl:
+                                                                          '${Environments.imageURL}${item.cover}',
                                                                       fit: BoxFit
                                                                           .cover,
-                                                                      image: NetworkImage(
-                                                                          '${Environments.imageURL}${item.cover}'),
-                                                                      placeholder:
-                                                                          const AssetImage(
+                                                                      placeholder: (context, url) => const Image(
+                                                                          image: AssetImage(
                                                                               "assets/images/placeholder.jpeg"),
-                                                                      imageErrorBuilder: (context,
-                                                                              error,
-                                                                              stackTrace) =>
+                                                                          fit: BoxFit
+                                                                              .cover),
+                                                                      errorWidget: (context,
+                                                                              url,
+                                                                              error) =>
                                                                           Image.asset(
-                                                                              'assets/images/notfound.png',
+                                                                              "assets/images/notfound.png",
                                                                               fit: BoxFit.cover),
                                                                     ),
                                                                     Positioned(
@@ -967,99 +972,100 @@ class _HomeScreenState extends State<HomeScreen> {
                                         Padding(
                                           padding: const EdgeInsets.symmetric(
                                               vertical: 5, horizontal: 8),
-                                          child: SingleChildScrollView(
-                                            scrollDirection: Axis.horizontal,
-                                            child: Row(
-                                              children: [
-                                                for (var item
-                                                    in value.individualList)
-                                                  Padding(
-                                                    padding: const EdgeInsets
-                                                        .symmetric(
-                                                        horizontal: 10),
-                                                    child: Column(
-                                                      children: [
-                                                        InkWell(
-                                                          onTap: () {
-                                                            value.onSpecialist(
-                                                              item.uid as int,
-                                                            );
-                                                          },
-                                                          child: Container(
-                                                            decoration:
-                                                                BoxDecoration(
+                                          child: SizedBox(
+                                            height:
+                                                120, // Constrain size for ListView horizontal
+                                            child: ListView.builder(
+                                              scrollDirection: Axis.horizontal,
+                                              itemCount:
+                                                  value.individualList.length,
+                                              itemBuilder: (context, index) {
+                                                var item =
+                                                    value.individualList[index];
+                                                return Padding(
+                                                  padding: const EdgeInsets
+                                                      .symmetric(
+                                                      horizontal: 10),
+                                                  child: Column(
+                                                    children: [
+                                                      InkWell(
+                                                        onTap: () {
+                                                          value.onSpecialist(
+                                                            item.uid as int,
+                                                          );
+                                                        },
+                                                        child: Container(
+                                                          decoration:
+                                                              BoxDecoration(
+                                                            borderRadius:
+                                                                BorderRadius
+                                                                    .circular(
+                                                                        100.0),
+                                                            border: Border.all(
+                                                              width: 2,
+                                                              color:
+                                                                  ThemeProvider
+                                                                      .appColor,
+                                                            ),
+                                                          ),
+                                                          child: Padding(
+                                                            padding:
+                                                                const EdgeInsets
+                                                                    .all(3.0),
+                                                            child: ClipRRect(
                                                               borderRadius:
                                                                   BorderRadius
                                                                       .circular(
-                                                                          100.0),
-                                                              border:
-                                                                  Border.all(
-                                                                width: 2,
-                                                                color:
-                                                                    ThemeProvider
-                                                                        .appColor,
-                                                              ),
-                                                            ),
-                                                            child: Padding(
-                                                              padding:
-                                                                  const EdgeInsets
-                                                                      .all(3.0),
-                                                              child: ClipRRect(
-                                                                borderRadius:
-                                                                    BorderRadius
-                                                                        .circular(
-                                                                            100),
-                                                                child: SizedBox
-                                                                    .fromSize(
-                                                                  size: const Size
-                                                                      .fromRadius(
-                                                                      35),
-                                                                  child:
-                                                                      FadeInImage(
-                                                                    image: NetworkImage(
-                                                                        '${Environments.imageURL}${item.userInfo?.cover.toString()}'),
-                                                                    placeholder:
-                                                                        const AssetImage(
-                                                                            "assets/images/placeholder.jpeg"),
-                                                                    imageErrorBuilder:
-                                                                        (context,
-                                                                            error,
-                                                                            stackTrace) {
-                                                                      return Image.asset(
-                                                                          'assets/images/notfound.png',
+                                                                          100),
+                                                              child: SizedBox
+                                                                  .fromSize(
+                                                                size: const Size
+                                                                    .fromRadius(
+                                                                    35),
+                                                                child:
+                                                                    CachedNetworkImage(
+                                                                  imageUrl:
+                                                                      '${Environments.imageURL}${item.userInfo?.cover.toString()}',
+                                                                  fit: BoxFit
+                                                                      .cover,
+                                                                  placeholder: (context,
+                                                                          url) =>
+                                                                      const Image(
+                                                                          image: AssetImage(
+                                                                              "assets/images/placeholder.jpeg"),
                                                                           fit: BoxFit
-                                                                              .cover);
-                                                                    },
-                                                                    fit: BoxFit
-                                                                        .cover,
-                                                                  ),
+                                                                              .cover),
+                                                                  errorWidget: (context,
+                                                                          url,
+                                                                          error) =>
+                                                                      Image.asset(
+                                                                          "assets/images/notfound.png",
+                                                                          fit: BoxFit
+                                                                              .cover),
                                                                 ),
                                                               ),
                                                             ),
                                                           ),
                                                         ),
-                                                        const SizedBox(
-                                                            height: 5),
-                                                        Text(
-                                                          item.userInfo!
-                                                              .firstName
-                                                              .toString(),
-                                                          style: const TextStyle(
-                                                              fontFamily:
-                                                                  'semibold'),
-                                                        ),
-                                                        Text(
-                                                          item.userInfo!
-                                                              .lastName
-                                                              .toString(),
-                                                          style:
-                                                              const TextStyle(
-                                                                  fontSize: 10),
-                                                        ),
-                                                      ],
-                                                    ),
-                                                  )
-                                              ],
+                                                      ),
+                                                      const SizedBox(height: 5),
+                                                      Text(
+                                                        item.userInfo!.firstName
+                                                            .toString(),
+                                                        style: const TextStyle(
+                                                            fontFamily:
+                                                                'semibold'),
+                                                      ),
+                                                      Text(
+                                                        item.userInfo!.lastName
+                                                            .toString(),
+                                                        style: const TextStyle(
+                                                            fontSize: 10),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                );
+                                              },
                                             ),
                                           ),
                                         ),

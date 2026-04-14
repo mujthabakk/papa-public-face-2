@@ -5,6 +5,7 @@ import 'package:salon_user/app/controller/near_controller.dart';
 import 'package:salon_user/app/env.dart';
 import 'package:salon_user/app/helper/map_style.dart';
 import 'package:salon_user/app/util/theme.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
 class NearScreen extends StatefulWidget {
   const NearScreen({Key? key}) : super(key: key);
@@ -97,68 +98,66 @@ class _NearScreenState extends State<NearScreen> {
   // Specialist horizontal list
   Widget _buildSpecialistList(NearController value) {
     return SizedBox(
-      height: 130,
-      child: SingleChildScrollView(
+      height: 130, // Keep height constraints
+      child: ListView.builder(
         scrollDirection: Axis.horizontal,
-        child: Row(
-          children: [
-            for (var item in Get.find<NearController>().individualList)
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 10),
-                child: Column(
-                  children: [
-                    InkWell(
-                      onTap: () {
-                        value.onSpecialist(
-                          item.uid as int,
-                        );
-                      },
-                      child: Container(
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(100.0),
-                          border: Border.all(
-                            width: 2,
-                            color: ThemeProvider.appColor,
-                          ),
-                        ),
-                        child: Padding(
-                          padding: const EdgeInsets.all(3.0),
-                          child: ClipRRect(
-                            borderRadius: BorderRadius.circular(100),
-                            child: SizedBox.fromSize(
-                              size: const Size.fromRadius(35),
-                              child: FadeInImage(
-                                image: NetworkImage(
-                                    '${Environments.imageURL}${item.userInfo?.cover.toString()}'),
-                                placeholder: const AssetImage(
+        itemCount: Get.find<NearController>().individualList.length,
+        itemBuilder: (context, index) {
+          var item = Get.find<NearController>().individualList[index];
+          return Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 10),
+            child: Column(
+              children: [
+                InkWell(
+                  onTap: () {
+                    value.onSpecialist(
+                      item.uid as int,
+                    );
+                  },
+                  child: Container(
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(100.0),
+                      border: Border.all(
+                        width: 2,
+                        color: ThemeProvider.appColor,
+                      ),
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.all(3.0),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(100),
+                        child: SizedBox.fromSize(
+                          size: const Size.fromRadius(35),
+                          child: CachedNetworkImage(
+                            imageUrl:
+                                '${Environments.imageURL}${item.userInfo?.cover.toString()}',
+                            fit: BoxFit.cover,
+                            placeholder: (context, url) => const Image(
+                                image: AssetImage(
                                     "assets/images/placeholder.jpeg"),
-                                imageErrorBuilder:
-                                    (context, error, stackTrace) {
-                                  return Image.asset(
-                                      'assets/images/notfound.png',
-                                      fit: BoxFit.cover);
-                                },
-                                fit: BoxFit.cover,
-                              ),
-                            ),
+                                fit: BoxFit.cover),
+                            errorWidget: (context, url, error) => Image.asset(
+                                "assets/images/notfound.png",
+                                fit: BoxFit.cover),
                           ),
                         ),
                       ),
                     ),
-                    const SizedBox(height: 5),
-                    Text(
-                      item.userInfo!.firstName.toString(),
-                      style: const TextStyle(fontFamily: 'semibold'),
-                    ),
-                    Text(
-                      item.userInfo!.lastName.toString(),
-                      style: const TextStyle(fontSize: 10),
-                    ),
-                  ],
+                  ),
                 ),
-              )
-          ],
-        ),
+                const SizedBox(height: 5),
+                Text(
+                  item.userInfo!.firstName.toString(),
+                  style: const TextStyle(fontFamily: 'semibold'),
+                ),
+                Text(
+                  item.userInfo!.lastName.toString(),
+                  style: const TextStyle(fontSize: 10),
+                ),
+              ],
+            ),
+          );
+        },
       ),
     );
   }
@@ -202,16 +201,19 @@ class _NearScreenState extends State<NearScreen> {
             ClipRRect(
               borderRadius:
                   const BorderRadius.vertical(top: Radius.circular(12)),
-              child: FadeInImage(
+              child: SizedBox(
                 height: 120,
                 width: double.infinity,
-                image: NetworkImage('${Environments.imageURL}$imageUrl'),
-                placeholder: const AssetImage("assets/images/placeholder.jpeg"),
-                imageErrorBuilder: (context, error, stackTrace) {
-                  return Image.asset('assets/images/notfound.png',
-                      fit: BoxFit.cover);
-                },
-                fit: BoxFit.cover,
+                child: CachedNetworkImage(
+                  imageUrl: '${Environments.imageURL}$imageUrl',
+                  fit: BoxFit.cover,
+                  placeholder: (context, url) => const Image(
+                      image: AssetImage("assets/images/placeholder.jpeg"),
+                      fit: BoxFit.cover),
+                  errorWidget: (context, url, error) => Image.asset(
+                      "assets/images/notfound.png",
+                      fit: BoxFit.cover),
+                ),
               ),
             ),
             Padding(

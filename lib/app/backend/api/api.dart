@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:get/get.dart';
 import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
+import 'package:flutter/foundation.dart';
 import 'package:pretty_http_logger/pretty_http_logger.dart';
 
 class ApiService extends GetxService {
@@ -10,7 +11,9 @@ class ApiService extends GetxService {
   static const String connectionIssue = 'Connection failed!';
   final int timeoutInSeconds = 30;
   HttpWithMiddleware httpp = HttpWithMiddleware.build(middlewares: [
-    HttpLogger(logLevel: LogLevel.BODY),
+    HttpLogger(
+        logLevel: LogLevel
+            .NONE), // Disabled to prevent huge payloads crashing real devices
   ]);
   ApiService({required this.appBaseUrl});
   Future<Response> getPublic(String uri) async {
@@ -24,7 +27,8 @@ class ApiService extends GetxService {
 
       return parseResponse(response, uri);
     } catch (e) {
-      return const Response(statusCode: 1, statusText: connectionIssue);
+      debugPrint('GET PUBLIC EXCEPTION: \${e.toString()}');
+      return Response(statusCode: 1, statusText: e.toString());
     }
   }
 
@@ -113,9 +117,8 @@ class ApiService extends GetxService {
 
       return parseResponse(response, appBaseUrl + uri);
     } catch (e) {
-      print(e.toString());
-
-      return const Response(statusCode: 1, statusText: connectionIssue);
+      debugPrint('POST PUBLIC EXCEPTION: \${e.toString()}');
+      return Response(statusCode: 1, statusText: e.toString());
     }
   }
 
@@ -135,7 +138,8 @@ class ApiService extends GetxService {
 
       return parseResponse(response, uri);
     } catch (e) {
-      return const Response(statusCode: 1, statusText: connectionIssue);
+      debugPrint('POST PRIVATE EXCEPTION: \${e.toString()}');
+      return Response(statusCode: 1, statusText: e.toString());
     }
   }
 
