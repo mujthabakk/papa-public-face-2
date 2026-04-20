@@ -1,3 +1,5 @@
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+
 class Environments {
   static const String appName = 'PapaBear';
   static const String companyName = 'PapaBear';
@@ -7,6 +9,10 @@ class Environments {
   static const String apiBaseURL = 'https://adminpapa.papabear4u.com/';
 
   static const String websiteURL = 'https://adminpapa.papabear4u.com/';
+
+  //   static const String apiBaseURL = 'https://giatraders.com/';
+
+  // static const String websiteURL = 'https://giatraders.com/';
   static const String imageURL =
       'https://papa-bear.blr1.digitaloceanspaces.com/';
 
@@ -15,4 +21,7 @@ class Environments {
   // static const String websiteURL = 'https://papabear.techinwallet.com/';
   // static const String imageURL =
   //     'https://multi-salon-api.initappz.com/public/storage/images/';
+
+  /// Razorpay Key ID loaded from .env file (RAZORPAY_KEY)
+  static String get razorpayKey => dotenv.env['RAZORPAY_KEY'] ?? '';
 }

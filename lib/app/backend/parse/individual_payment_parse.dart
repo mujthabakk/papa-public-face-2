@@ -94,4 +94,12 @@ class IndividualPaymentParser {
     return sharedPreferencesManager.getString('currencySymbol') ??
         AppConstants.defaultCurrencySymbol;
   }
+
+  Future<Response> verifyRazorPurchase(var payKey) async {
+    return await apiService.getPrivate(
+        AppConstants.verifyRazorPayments + payKey,
+        sharedPreferencesManager.getString('token') ?? '');
+  }
 }
+
+

@@ -101,4 +101,10 @@ class PaymentParser {
         {'uid': sharedPreferencesManager.getString('uid')},
         sharedPreferencesManager.getString('token') ?? '');
   }
+
+  Future<Response> verifyRazorPurchase(var payKey) async {
+    return await apiService.getPrivate(
+        AppConstants.verifyRazorPayments + payKey,
+        sharedPreferencesManager.getString('token') ?? '');
+  }
 }

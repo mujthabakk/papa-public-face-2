@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:salon_user/app/controller/product_cart_controller.dart';
 import 'package:salon_user/app/controller/service_cart_controller.dart';
@@ -19,6 +20,7 @@ void main() async {
     statusBarColor: ThemeProvider.appColor, // status bar color
   ));
   WidgetsFlutterBinding.ensureInitialized();
+  await dotenv.load(fileName: '.env');
   await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,
       name: 'papabear-public-app');

@@ -1,7 +1,6 @@
 import 'package:salon_user/app/backend/api/api.dart';
 import 'package:salon_user/app/backend/parse/account_chat_parse.dart';
 import 'package:salon_user/app/backend/parse/account_parse.dart';
-import 'package:salon_user/app/backend/parse/add_card_parse.dart';
 import 'package:salon_user/app/backend/parse/add_review_parse.dart';
 import 'package:salon_user/app/backend/parse/address_list_parse.dart';
 import 'package:salon_user/app/backend/parse/address_parse.dart';
@@ -58,16 +57,12 @@ import 'package:salon_user/app/backend/parse/slot_parse.dart';
 import 'package:salon_user/app/backend/parse/sortby_parse.dart';
 import 'package:salon_user/app/backend/parse/specialist_parse.dart';
 import 'package:salon_user/app/backend/parse/splash_parse.dart';
-import 'package:salon_user/app/backend/parse/stripe_pay_parse.dart';
-import 'package:salon_user/app/backend/parse/stripe_pay_product_parse.dart';
 import 'package:salon_user/app/backend/parse/tabs_parse.dart';
 import 'package:salon_user/app/backend/parse/top_offers_parse.dart';
 import 'package:salon_user/app/backend/parse/top_packages_parse.dart';
 import 'package:salon_user/app/backend/parse/top_products_parse.dart';
 import 'package:salon_user/app/backend/parse/top_specialist_parse.dart';
 import 'package:salon_user/app/backend/parse/wallet_parse.dart';
-import 'package:salon_user/app/backend/parse/web_payment_parse.dart';
-import 'package:salon_user/app/backend/parse/web_product_payment_parse.dart';
 import 'package:salon_user/app/backend/parse/welcome_parse.dart';
 import 'package:salon_user/app/controller/account_controller.dart';
 import 'package:salon_user/app/controller/address_controller.dart';
@@ -342,31 +337,6 @@ class MainBinding extends Bindings {
 
     Get.lazyPut(
         () => PaymentParser(
-            sharedPreferencesManager: Get.find(), apiService: Get.find()),
-        fenix: true);
-
-    Get.lazyPut(
-        () => AddCardParse(
-            sharedPreferencesManager: Get.find(), apiService: Get.find()),
-        fenix: true);
-
-    Get.lazyPut(
-        () => StripePayParse(
-            sharedPreferencesManager: Get.find(), apiService: Get.find()),
-        fenix: true);
-
-    Get.lazyPut(
-        () => StripePayProductParse(
-            sharedPreferencesManager: Get.find(), apiService: Get.find()),
-        fenix: true);
-
-    Get.lazyPut(
-        () => WebPaymentParse(
-            sharedPreferencesManager: Get.find(), apiService: Get.find()),
-        fenix: true);
-
-    Get.lazyPut(
-        () => WebProductPaymentParse(
             sharedPreferencesManager: Get.find(), apiService: Get.find()),
         fenix: true);
 

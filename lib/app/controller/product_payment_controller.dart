@@ -1,9 +1,9 @@
 import 'dart:convert';
-import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:get/get.dart';
 import 'package:jiffy/jiffy.dart';
+import 'package:razorpay_flutter/razorpay_flutter.dart';
 import 'package:salon_user/app/backend/api/handler.dart';
 import 'package:salon_user/app/backend/models/address_model.dart';
 import 'package:salon_user/app/backend/models/coupons_model.dart';
@@ -18,9 +18,7 @@ import 'package:salon_user/app/controller/address_list_controller.dart';
 import 'package:salon_user/app/controller/coupon_controller.dart';
 import 'package:salon_user/app/controller/product_cart_controller.dart';
 import 'package:salon_user/app/controller/product_order_controller.dart';
-import 'package:salon_user/app/controller/stripe_pay_product_controller.dart';
 import 'package:salon_user/app/controller/tabs_controller.dart';
-import 'package:salon_user/app/controller/web_product_payment_controller.dart';
 import 'package:salon_user/app/env.dart';
 import 'package:salon_user/app/helper/router.dart';
 import 'package:salon_user/app/util/constant.dart';
@@ -104,6 +102,8 @@ class ProductPaymentController extends GetxController implements GetxService {
   double walletDiscount = 0.0;
   double taxAmount = 0.0;
 
+  late Razorpay _razorpay;
+
   ProductPaymentController({required this.parser});
 
   @override
@@ -123,6 +123,34 @@ class ProductPaymentController extends GetxController implements GetxService {
     getFreelancerByID();
     getSavedAddress();
     getPaymentMethods();
+
+    _razorpay = Razorpay();
+    _razorpay.on(Razorpay.EVENT_PAYMENT_SUCCESS, _handlePaymentSuccess);
+    _razorpay.on(Razorpay.EVENT_PAYMENT_ERROR, _handlePaymentError);
+    _razorpay.on(Razorpay.EVENT_EXTERNAL_WALLET, _handleExternalWallet);
+  }
+
+  @override
+  void onClose() {
+    _razorpay.clear();
+    super.onClose();
+  }
+
+  void _handlePaymentSuccess(PaymentSuccessResponse response) {
+    debugPrint('Razorpay Payment Success: ${response.paymentId}');
+    if (response.paymentId != null) {
+      verifyRazorpayPurchase(response.paymentId!);
+    }
+  }
+
+  void _handlePaymentError(PaymentFailureResponse response) {
+    debugPrint('Razorpay Error: ${response.code} - ${response.message}');
+    showToast('Payment failed. Please try again.');
+  }
+
+  void _handleExternalWallet(ExternalWalletResponse response) {
+    debugPrint('External Wallet: ${response.walletName}');
+    showToast('External wallet selected: ${response.walletName}');
   }
 
   Future<void> checkPremiumStatus(String salonId) async {
@@ -369,7 +397,9 @@ class ProductPaymentController extends GetxController implements GetxService {
       _paymentList = [];
       payment.forEach((pay) {
         PaymentModel pays = PaymentModel.fromJson(pay);
-        _paymentList.add(pays);
+        if (pays.id == 1 || pays.id == 5) {
+          _paymentList.add(pays);
+        }
       });
     } else {
       ApiChecker.checkApi(response);
@@ -466,20 +496,8 @@ class ProductPaymentController extends GetxController implements GetxService {
     paymentId = id;
     if (paymentId == 1) {
       payMethodName = 'cod';
-    } else if (paymentId == 2) {
-      payMethodName = 'stripe';
-    } else if (paymentId == 3) {
-      payMethodName = 'paypal';
-    } else if (paymentId == 4) {
-      payMethodName = 'paytm';
     } else if (paymentId == 5) {
       payMethodName = 'razorpay';
-    } else if (paymentId == 6) {
-      payMethodName = 'instamojo';
-    } else if (paymentId == 7) {
-      payMethodName = 'paystack';
-    } else if (paymentId == 8) {
-      payMethodName = 'flutterwave';
     }
     update();
   }
@@ -578,92 +596,59 @@ class ProductPaymentController extends GetxController implements GetxService {
   void onCheckout() {
     if (paymentId == 1) {
       createOrder();
-      // cod
-      //  Order API call
-    } else if (paymentId == 2) {
-      Get.delete<StripePayProductController>(force: true);
-      var gateway = paymentList.firstWhereOrNull(
-          (element) => element.id.toString() == paymentId.toString());
-      // stripe payment
-      Get.toNamed(AppRouter.getProductStripePay(),
-          arguments: [grandTotal, gateway!.currencyCode.toString()]);
-    } else if (paymentId == 3) {
-      Get.delete<WebProductPaymentController>(force: true);
-      var paymentURL = AppConstants.payPalPayLink + grandTotal.toString();
-      Get.toNamed(AppRouter.getWebProductPayment(),
-          arguments: [payMethodName, paymentURL]);
-      // paypal
-    } else if (paymentId == 4) {
-      // paytm
-      Get.delete<WebProductPaymentController>(force: true);
-      var paymentURL = AppConstants.payTmPayLink + grandTotal.toString();
-      Get.toNamed(AppRouter.getWebProductPayment(),
-          arguments: [payMethodName, paymentURL]);
     } else if (paymentId == 5) {
-      // razorpay
-      Get.delete<WebProductPaymentController>(force: true);
-      var paymentPayLoad = {
-        'amount':
-            double.parse((grandTotal * 100).toStringAsFixed(2)).toString(),
-        'email': parser.getEmail(),
-        // 'logo': '${parser.apiService.appBaseUrl}uploads/${parser.getAppLogo()}',
-        'logo':
+      // razorpay - native SDK
+      final int amountInPaise =
+          double.parse((grandTotal * 100).toStringAsFixed(0)).toInt();
+      final options = {
+        'key': Environments.razorpayKey,
+        'amount': amountInPaise,
+        'name': 'PapaBear',
+        'description': 'Product Order',
+        'image':
             'https://papa-bear.blr1.cdn.digitaloceanspaces.com/papalogo.png',
-
-        'name': parser.getName(),
-        'app_color': '#000000'
+        'prefill': {
+          'contact': parser.getPhone(),
+          'email': parser.getEmail(),
+          'name': parser.getName(),
+        },
+        'theme': {'color': '#8C57EE'},
+        'retry': {'enabled': false},
+        'send_sms_hash': true,
+        'remember_customer': false,
       };
 
-      String queryString = Uri(queryParameters: paymentPayLoad).query;
-      var paymentURL = AppConstants.razorPayLink + queryString;
+      Get.dialog(
+          SimpleDialog(
+            children: [
+              Row(
+                children: [
+                  const SizedBox(width: 30),
+                  const CircularProgressIndicator(
+                      color: ThemeProvider.appColor),
+                  const SizedBox(width: 30),
+                  SizedBox(
+                      child: Text('Opening Payment...'.tr,
+                          style: const TextStyle(fontFamily: 'bold'))),
+                ],
+              )
+            ],
+          ),
+          barrierDismissible: false);
 
-      Get.toNamed(AppRouter.getWebProductPayment(),
-          arguments: [payMethodName, paymentURL]);
-    } else if (paymentId == 6) {
-      payWithInstaMojo();
-      // instamojo
-    } else if (paymentId == 7) {
-      var rng = Random();
-      var paykey = List.generate(12, (_) => rng.nextInt(100));
-      Get.delete<WebProductPaymentController>(force: true);
-      var paymentPayLoad = {
-        'email': parser.getEmail(),
-        'amount':
-            double.parse((grandTotal * 100).toStringAsFixed(2)).toString(),
-        'first_name': parser.getFirstName(),
-        'last_name': parser.getLastName(),
-        'ref': paykey.join()
-      };
-      String queryString = Uri(queryParameters: paymentPayLoad).query;
-      var paymentURL = AppConstants.paystackCheckout + queryString;
-
-      Get.toNamed(AppRouter.getWebProductPayment(),
-          arguments: [payMethodName, paymentURL]);
-      // paystock
-    } else if (paymentId == 8) {
-      //flutterwave
-      Get.delete<WebProductPaymentController>(force: true);
-      var gateway = paymentList.firstWhereOrNull(
-          (element) => element.id.toString() == paymentId.toString());
-      var paymentPayLoad = {
-        'amount': grandTotal.toString(),
-        'email': parser.getEmail(),
-        'phone': parser.getPhone(),
-        'name': parser.getName(),
-        'code': gateway!.currencyCode.toString(),
-        'logo': '${parser.apiService.appBaseUrl}uploads/${parser.getAppLogo()}',
-        'app_name': Environments.appName
-      };
-
-      String queryString = Uri(queryParameters: paymentPayLoad).query;
-      var paymentURL = AppConstants.flutterwaveCheckout + queryString;
-
-      Get.toNamed(AppRouter.getWebProductPayment(),
-          arguments: [payMethodName, paymentURL]);
+      Future.delayed(const Duration(milliseconds: 500), () {
+        // Get.back(closeOverlays: true);
+        try {
+          _razorpay.open(options);
+        } catch (e) {
+          debugPrint('Razorpay open error: $e');
+          showToast('Could not open payment screen.');
+        }
+      });
     }
   }
 
-  Future<void> createOrder() async {
+  Future<void> createOrder({String? transactionId}) async {
     Get.dialog(
       SimpleDialog(
         children: [
@@ -717,15 +702,17 @@ class ProductPaymentController extends GetxController implements GetxService {
       "coupon_code":
           selectedCoupon.code != null ? jsonEncode(selectedCoupon) : 'NA',
       "extra": 'NA',
-      "pay_key": 'COD',
+      "pay_key": transactionId ?? 'COD',
       "status": 0,
       "payStatus": 1,
     };
 
+    debugPrint('Create Order Params: $param');
     var response = await parser.createAppoinments(param);
     Get.back();
 
     if (response.statusCode == 200) {
+      debugPrint('Order Create Success: ${response.bodyString}');
       Get.defaultDialog(
         title: '',
         contentPadding: const EdgeInsets.all(20),
@@ -804,63 +791,10 @@ class ProductPaymentController extends GetxController implements GetxService {
         ),
       );
     } else {
+      debugPrint(
+          'Order Create Error: Status ${response.statusCode}, Body: ${response.bodyString}');
       ApiChecker.checkApi(response);
-    }
-    update();
-  }
-
-  Future<void> payWithInstaMojo() async {
-    Get.dialog(
-      SimpleDialog(
-        children: [
-          Row(
-            children: [
-              const SizedBox(
-                width: 30,
-              ),
-              const CircularProgressIndicator(
-                color: ThemeProvider.appColor,
-              ),
-              const SizedBox(
-                width: 30,
-              ),
-              SizedBox(
-                  child: Text(
-                "Please wait".tr,
-                style: const TextStyle(fontFamily: 'bold'),
-              )),
-            ],
-          )
-        ],
-      ),
-      barrierDismissible: false,
-    );
-    var param = {
-      'allow_repeated_payments': 'False',
-      'amount': grandTotal,
-      'buyer_name': parser.getName(),
-      'purpose': 'Orders',
-      'redirect_url': '${parser.apiService.appBaseUrl}/api/v1/success_payments',
-      'phone': parser.getPhone() != '' ? parser.getPhone() : '8888888888888888',
-      'send_email': 'True',
-      'webhook': parser.apiService.appBaseUrl,
-      'send_sms': 'True',
-      'email': parser.getEmail()
-    };
-    Response response = await parser.getInstaMojoPayLink(param);
-    Get.back();
-    if (response.statusCode == 200) {
-      Map<String, dynamic> myMap = Map<String, dynamic>.from(response.body);
-      dynamic body = myMap["success"];
-      if (body['payment_request'] != '' &&
-          body['payment_request']['longurl'] != '') {
-        Get.delete<WebProductPaymentController>(force: true);
-        var paymentURL = body['payment_request']['longurl'];
-        Get.toNamed(AppRouter.getWebPayment(),
-            arguments: [payMethodName, paymentURL]);
-      }
-    } else {
-      ApiChecker.checkApi(response);
+      showToast('Order creation failed. Please try again.');
     }
     update();
   }
@@ -874,11 +808,12 @@ class ProductPaymentController extends GetxController implements GetxService {
   void backOrders() {
     Get.find<ProductCartController>().clearCart();
     Get.offAllNamed(AppRouter.getTabsBarRoute());
-    // Future.delayed(Duration(milliseconds: 100), () {
-    //   Get.find<TabsController>().updateTabId(4);
-    // });
-
     Get.delete<ProductOrderController>(force: true);
     Get.toNamed(AppRouter.getProductOrder());
+  }
+
+  Future<void> verifyRazorpayPurchase(String payKey) async {
+    // Bypassing server-side verification as requested by user
+    createOrder(transactionId: payKey);
   }
 }

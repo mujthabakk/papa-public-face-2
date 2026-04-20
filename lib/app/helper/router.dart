@@ -1,7 +1,6 @@
 import 'package:get/get.dart';
 import 'package:salon_user/app/backend/binding/account_binding.dart';
 import 'package:salon_user/app/backend/binding/account_chat_binding.dart';
-import 'package:salon_user/app/backend/binding/add_card_binding.dart';
 import 'package:salon_user/app/backend/binding/add_review_binding.dart';
 import 'package:salon_user/app/backend/binding/address_binding.dart';
 import 'package:salon_user/app/backend/binding/address_list_binding.dart';
@@ -53,20 +52,15 @@ import 'package:salon_user/app/backend/binding/slot_binding.dart';
 import 'package:salon_user/app/backend/binding/sortby_binding.dart';
 import 'package:salon_user/app/backend/binding/specialist_binding.dart';
 import 'package:salon_user/app/backend/binding/splash_binding.dart';
-import 'package:salon_user/app/backend/binding/stripe_pay_binding.dart';
-import 'package:salon_user/app/backend/binding/stripe_pay_product_binding.dart';
 import 'package:salon_user/app/backend/binding/tabs_binding.dart';
 import 'package:salon_user/app/backend/binding/top_offers_binding.dart';
 import 'package:salon_user/app/backend/binding/top_packages_binding.dart';
 import 'package:salon_user/app/backend/binding/top_products_binding.dart';
 import 'package:salon_user/app/backend/binding/top_specialist_binding.dart';
 import 'package:salon_user/app/backend/binding/wallet_binding.dart';
-import 'package:salon_user/app/backend/binding/web_payment_binding.dart';
-import 'package:salon_user/app/backend/binding/web_product_payment_binding.dart';
 import 'package:salon_user/app/backend/binding/welcome_binding.dart';
 import 'package:salon_user/app/view/account.dart';
 import 'package:salon_user/app/view/account_chat.dart';
-import 'package:salon_user/app/view/add_card.dart';
 import 'package:salon_user/app/view/add_review.dart';
 import 'package:salon_user/app/view/address.dart';
 import 'package:salon_user/app/view/address_list.dart';
@@ -106,7 +100,6 @@ import 'package:salon_user/app/view/payment.dart';
 import 'package:salon_user/app/view/product_order.dart';
 import 'package:salon_user/app/view/product_order_detail.dart';
 import 'package:salon_user/app/view/product_payment.dart';
-import 'package:salon_user/app/view/product_stripe_pay.dart';
 import 'package:salon_user/app/view/products.dart';
 import 'package:salon_user/app/view/products_details.dart';
 import 'package:salon_user/app/view/qr_screen.dart';
@@ -121,15 +114,12 @@ import 'package:salon_user/app/view/slot.dart';
 import 'package:salon_user/app/view/sortby.dart';
 import 'package:salon_user/app/view/freelancer_page.dart';
 import 'package:salon_user/app/view/splash.dart';
-import 'package:salon_user/app/view/stripe_pay.dart';
 import 'package:salon_user/app/view/tabs.dart';
 import 'package:salon_user/app/view/top_offers.dart';
 import 'package:salon_user/app/view/top_packages.dart';
 import 'package:salon_user/app/view/top_products.dart';
 import 'package:salon_user/app/view/top_specialist.dart';
 import 'package:salon_user/app/view/wallet.dart';
-import 'package:salon_user/app/view/web_payment.dart';
-import 'package:salon_user/app/view/web_product_payment.dart';
 import 'package:salon_user/app/view/welcome.dart';
 
 class AppRouter {
@@ -183,11 +173,6 @@ class AppRouter {
 
   static const String paymentRoutes = '/payment';
   static const String errorRoutes = '/error';
-  static const String addNewCardRoutes = '/add_new_card';
-  static const String stripePayRoutes = '/stripePay';
-  static const String stripePayProductRoutes = '/stripePay_product';
-  static const String webPaymentRoutes = '/web_payment';
-  static const String webProductPaymentRoutes = '/web_product_payment';
   static const String individualCategoriesRoutes = '/individual_categories';
   static const String individualPackagesRoutes = '/individual_packages';
   static const String individualCheckoutRoutes = '/individual_checkout';
@@ -259,11 +244,6 @@ class AppRouter {
   static String getRescheduleSlotRoutes() => rescheduleslotRoutes;
   static String getPaymentRoutes() => paymentRoutes;
   static String getErrorRoutes() => errorRoutes;
-  static String getAddCard() => addNewCardRoutes;
-  static String getStripePay() => stripePayRoutes;
-  static String getProductStripePay() => stripePayProductRoutes;
-  static String getWebPayment() => webPaymentRoutes;
-  static String getWebProductPayment() => webProductPaymentRoutes;
   static String getIndividualCategories() => individualCategoriesRoutes;
   static String getIndividualPackages() => individualPackagesRoutes;
   static String getIndividualCheckout() => individualCheckoutRoutes;
@@ -485,26 +465,7 @@ class AppRouter {
         page: () => const PaymentScreen(),
         binding: PaymentBinding()),
     GetPage(name: errorRoutes, page: () => const ErrorScreen()),
-    GetPage(
-        name: addNewCardRoutes,
-        page: () => const AddCardScreen(),
-        binding: AddCardBinding()),
-    GetPage(
-        name: stripePayRoutes,
-        page: () => const StripePay(),
-        binding: StripePayBinding()),
-    GetPage(
-        name: stripePayProductRoutes,
-        page: () => const ProductStripePay(),
-        binding: StripePayProductBinding()),
-    GetPage(
-        name: webPaymentRoutes,
-        page: () => const WebPayment(),
-        binding: WebPaymentBinding()),
-    GetPage(
-        name: webProductPaymentRoutes,
-        page: () => const WebProductPayment(),
-        binding: WebProductPaymentBinding()),
+    // Removed WebPayment and StripePay routes
     // GetPage(
     //     name: notificationRoutes,
     //     page: () => const NotificationPage(),
