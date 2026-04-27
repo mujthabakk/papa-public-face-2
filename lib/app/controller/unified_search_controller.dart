@@ -320,6 +320,9 @@ class UnifiedSearchController extends GetxController implements GetxService {
       "facilities": facilities,
     };
 
+    debugPrint(
+        '[SEARCH_API_PAYLOAD] mode=general lat=${param["lat"]}, lng=${param["lng"]}, query=$query');
+
     print('lat ${parser.getLat()}');
     print('lng ${parser.getLng()}');
 
@@ -401,6 +404,9 @@ class UnifiedSearchController extends GetxController implements GetxService {
       "lat": parser.getLat(),
       "lng": parser.getLng(),
     };
+
+    debugPrint(
+        '[SEARCH_API_PAYLOAD] mode=category lat=${param["lat"]}, lng=${param["lng"]}, category=$selectedCateId');
 
     print('lat ${parser.getLat()}');
     print('lng ${parser.getLng()}');

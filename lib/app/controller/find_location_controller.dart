@@ -29,6 +29,8 @@ class FindLocationController extends GetxController implements GetxService {
 
   final RxDouble myLat = 0.0.obs;
   final RxDouble myLng = 0.0.obs;
+  int _locationRequestId = 0;
+  bool _hasManualSelection = false;
 
   bool isConfirmed = false;
   String savedAddress = '';
@@ -54,12 +56,19 @@ class FindLocationController extends GetxController implements GetxService {
   }
 
   void getCurrentLocation({bool updateSearchText = false}) async {
+    final int requestId = ++_locationRequestId;
     try {
       Position position = await determinePosition();
+
+      if (requestId != _locationRequestId || _hasManualSelection) {
+        return;
+      }
+
       myLat.value = position.latitude;
       myLng.value = position.longitude;
 
       var pinPosition = LatLng(myLat.value, myLng.value);
+      markers.removeWhere((m) => m.markerId.value == 'sourcePin');
       markers.add(
         Marker(
           markerId: const MarkerId('sourcePin'),
@@ -72,6 +81,11 @@ class FindLocationController extends GetxController implements GetxService {
         try {
           List<Placemark> placemarks =
               await placemarkFromCoordinates(myLat.value, myLng.value);
+
+          if (requestId != _locationRequestId || _hasManualSelection) {
+            return;
+          }
+
           if (placemarks.isNotEmpty) {
             Placemark placeMark = placemarks[0];
             String name = placeMark.name.toString();
@@ -175,16 +189,21 @@ class FindLocationController extends GetxController implements GetxService {
   }
 
   void onMapCreated(GoogleMapController controller) {
-    // var pinPosition = LatLng(myLat, myLng);
     mapController = controller;
 
-    getCurrentLocation();
-    markers.add(
-      Marker(
-        markerId: MarkerId('Id-1'),
-        position: LatLng(myLat.value, myLng.value),
-      ),
-    );
+    if (myLat.value == 0.0 && myLng.value == 0.0) {
+      getCurrentLocation();
+    } else {
+      markers.removeWhere((m) => m.markerId.value == 'sourcePin');
+      markers.add(
+        Marker(
+          markerId: const MarkerId('sourcePin'),
+          position: LatLng(myLat.value, myLng.value),
+        ),
+      );
+      mapController.animateCamera(
+          CameraUpdate.newLatLng(LatLng(myLat.value, myLng.value)));
+    }
     update();
   }
 
@@ -226,6 +245,8 @@ class FindLocationController extends GetxController implements GetxService {
     List<Location> locations = await locationFromAddress(address);
     debugPrint(locations.toString());
     if (locations.isNotEmpty) {
+      _hasManualSelection = true;
+      _locationRequestId++;
       _getList = [];
       searchbarText.text = address;
       myLat.value = locations[0].latitude;
@@ -247,6 +268,8 @@ class FindLocationController extends GetxController implements GetxService {
   }
 
   void moveMapToPosition(double lat, double lng) async {
+    _hasManualSelection = true;
+    _locationRequestId++;
     final newPosition = LatLng(lat, lng);
 
     // Update marker position
@@ -284,7 +307,8 @@ class FindLocationController extends GetxController implements GetxService {
   }
 
   void onConfirmLocation() {
-    getLatLngFromAddress(searchbarText.text);
+    debugPrint(
+        '[LOCATION_SAVE] lat=${myLat.value}, lng=${myLng.value}, address=${searchbarText.text}');
     parser.saveLatLng(myLat.value, myLng.value, searchbarText.text);
     Get.delete<TabsController>(force: true);
     Get.delete<HomeController>(force: true);
@@ -296,6 +320,7 @@ class FindLocationController extends GetxController implements GetxService {
   }
 
   void resetSearch() {
+    _hasManualSelection = false;
     searchbarText.clear();
     _getList = [];
     savedAddress = parser.getSavedAddress();
@@ -308,6 +333,8 @@ class FindLocationController extends GetxController implements GetxService {
     String address = parser.getSavedAddress();
 
     if (lat != 0.0 && lng != 0.0 && address.isNotEmpty) {
+      _hasManualSelection = true;
+      _locationRequestId++;
       myLat.value = lat;
       myLng.value = lng;
       searchbarText.text = address;
