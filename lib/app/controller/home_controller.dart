@@ -12,7 +12,6 @@ import 'package:salon_user/app/controller/categories_controller.dart';
 import 'package:salon_user/app/controller/categories_list_controller.dart';
 import 'package:salon_user/app/controller/category_search_controller.dart';
 import 'package:salon_user/app/controller/checkout_controller.dart';
-import 'package:salon_user/app/controller/filter_controller.dart';
 import 'package:salon_user/app/controller/individual_checkout_controller.dart';
 import 'package:salon_user/app/controller/product_cart_controller.dart';
 import 'package:salon_user/app/controller/products_details_controller.dart';
@@ -201,7 +200,9 @@ class HomeController extends GetxController implements GetxService {
   }
 
   void onFilter() {
-    Get.delete<FilterController>(force: true);
+    if (!Get.isRegistered<UnifiedSearchController>()) {
+      Get.put(UnifiedSearchController(parser: Get.find()));
+    }
     Get.toNamed(AppRouter.getFilterRoutes());
   }
 
@@ -287,7 +288,7 @@ class HomeController extends GetxController implements GetxService {
     debugPrint(type);
     if (type == '0') {
       debugPrint('category');
-      Get.delete<CategoriesListController>(force: true);
+      Get.delete<UnifiedSearchController>(force: true);
       Get.toNamed(AppRouter.getCategoriesListRoutes(),
           arguments: [value, 'Offers']);
     } else if (type == '1') {

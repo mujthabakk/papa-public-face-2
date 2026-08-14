@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:salon_user/app/controller/contact_us_controller.dart';
 import 'package:salon_user/app/util/theme.dart';
+import 'package:salon_user/app/view/widgets/elite_ui.dart';
 
 class ContactUsScreen extends StatefulWidget {
   const ContactUsScreen({Key? key}) : super(key: key);
@@ -11,152 +12,57 @@ class ContactUsScreen extends StatefulWidget {
 }
 
 class _ContactUsScreenState extends State<ContactUsScreen> {
+  InputDecoration _dec(String hint) {
+    return InputDecoration(
+      hintText: hint,
+      hintStyle: ThemeProvider.sans(size: 13, color: ThemeProvider.greyColor),
+      filled: true,
+      fillColor: ThemeProvider.surface,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: Color(0xFF2C2C2C)),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: ThemeProvider.gold),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return GetBuilder<ContactUsController>(
       builder: (value) {
         return Scaffold(
-          backgroundColor: ThemeProvider.whiteColor,
-          bottomNavigationBar: Padding(
-            padding: const EdgeInsets.only(
-                top: 40.0, bottom: 20, left: 20, right: 20),
-            child: InkWell(
-              onTap: () {
-                value.saveContacts();
-              },
-              child: Container(
-                width: double.infinity,
-                padding: const EdgeInsets.symmetric(vertical: 13.0),
-                decoration: contentButtonStyle(),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    value.isLogin.value == true
-                        ? const CircularProgressIndicator(
-                            color: ThemeProvider.whiteColor,
-                          )
-                        : Text(
-                            'Submit'.tr,
-                            style: const TextStyle(
-                                color: ThemeProvider.whiteColor,
-                                fontSize: 17,
-                                fontFamily: 'bold'),
-                          ),
-                  ],
-                ),
+          backgroundColor: ThemeProvider.backgroundColor,
+          appBar: const EliteAppBar(showBack: true, title: 'Contact Us'),
+          body: ListView(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+            children: [
+              TextField(
+                controller: value.nameContact,
+                style: ThemeProvider.sans(size: 14),
+                decoration: _dec('Full Name'.tr),
               ),
-            ),
-          ),
-          body: CustomScrollView(
-            slivers: [
-              SliverAppBar(
-                backgroundColor: ThemeProvider.appColor,
-                floating: true,
-                pinned: true,
-                snap: false,
-                elevation: 0,
-                forceElevated: true,
-                iconTheme: const IconThemeData(color: ThemeProvider.whiteColor),
-                titleSpacing: 0,
-                centerTitle: true,
-                title: Text(
-                  'Contact Us'.tr,
-                  style: ThemeProvider.titleStyle,
-                ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: value.emailContanct,
+                keyboardType: TextInputType.emailAddress,
+                style: ThemeProvider.sans(size: 14),
+                decoration: _dec('Email Address'.tr),
               ),
-              SliverList(
-                delegate: SliverChildListDelegate(
-                  [
-                    SingleChildScrollView(
-                      child: Padding(
-                        padding: const EdgeInsets.all(10.0),
-                        child: Column(
-                          children: [
-                            Padding(
-                              padding: const EdgeInsets.symmetric(vertical: 10),
-                              child: SizedBox(
-                                width: double.infinity,
-                                child: TextField(
-                                  controller: value.nameContact,
-                                  decoration: InputDecoration(
-                                    hintText: 'Full Name'.tr,
-                                    hintStyle: const TextStyle(
-                                        color: ThemeProvider.appColor,
-                                        fontSize: 15),
-                                    filled: true,
-                                    fillColor: Colors.white,
-                                    contentPadding: const EdgeInsets.only(
-                                        bottom: 8.0, top: 14.0),
-                                    focusedBorder: const UnderlineInputBorder(
-                                      borderSide: BorderSide(
-                                          color: ThemeProvider.appColor),
-                                    ),
-                                    enabledBorder: const UnderlineInputBorder(
-                                        borderSide:
-                                            BorderSide(color: Colors.grey)),
-                                  ),
-                                ),
-                              ),
-                            ),
-                            Padding(
-                              padding: const EdgeInsets.symmetric(vertical: 10),
-                              child: SizedBox(
-                                width: double.infinity,
-                                child: TextField(
-                                  controller: value.emailContanct,
-                                  decoration: InputDecoration(
-                                    hintText: 'Email Address'.tr,
-                                    hintStyle: const TextStyle(
-                                        color: ThemeProvider.appColor,
-                                        fontSize: 15),
-                                    filled: true,
-                                    fillColor: Colors.white,
-                                    contentPadding: const EdgeInsets.only(
-                                        bottom: 8.0, top: 14.0),
-                                    focusedBorder: const UnderlineInputBorder(
-                                      borderSide: BorderSide(
-                                          color: ThemeProvider.appColor),
-                                    ),
-                                    enabledBorder: const UnderlineInputBorder(
-                                        borderSide:
-                                            BorderSide(color: Colors.grey)),
-                                  ),
-                                ),
-                              ),
-                            ),
-                            Padding(
-                              padding: const EdgeInsets.symmetric(vertical: 10),
-                              child: SizedBox(
-                                width: double.infinity,
-                                child: TextField(
-                                  maxLines: 5,
-                                  controller: value.messageContanct,
-                                  decoration: InputDecoration(
-                                    hintText: 'Message'.tr,
-                                    hintStyle: const TextStyle(
-                                        color: ThemeProvider.appColor,
-                                        fontSize: 15),
-                                    filled: true,
-                                    fillColor: Colors.white,
-                                    contentPadding: const EdgeInsets.only(
-                                        bottom: 8.0, top: 14.0),
-                                    focusedBorder: const UnderlineInputBorder(
-                                      borderSide: BorderSide(
-                                          color: ThemeProvider.appColor),
-                                    ),
-                                    enabledBorder: const UnderlineInputBorder(
-                                        borderSide:
-                                            BorderSide(color: Colors.grey)),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: value.messageContanct,
+                maxLines: 6,
+                style: ThemeProvider.sans(size: 14),
+                decoration: _dec('Message'.tr),
+              ),
+              const SizedBox(height: 24),
+              EliteGoldButton(
+                label: value.isLogin.value ? 'PLEASE WAIT' : 'SUBMIT',
+                onTap: value.saveContacts,
               ),
             ],
           ),
@@ -164,20 +70,4 @@ class _ContactUsScreenState extends State<ContactUsScreen> {
       },
     );
   }
-}
-
-contentButtonStyle() {
-  return const BoxDecoration(
-    borderRadius: BorderRadius.all(
-      Radius.circular(100.0),
-    ),
-    gradient: LinearGradient(
-      begin: Alignment.centerLeft,
-      end: Alignment.centerRight,
-      colors: [
-        Color.fromARGB(229, 52, 1, 255),
-        Color.fromARGB(228, 111, 75, 255),
-      ],
-    ),
-  );
 }

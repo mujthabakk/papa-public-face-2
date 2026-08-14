@@ -720,7 +720,7 @@ class UnifiedSearchController extends GetxController implements GetxService {
     debugPrint(type);
     if (type == '0') {
       debugPrint('category');
-      Get.delete<CategoriesListController>(force: true);
+      Get.delete<UnifiedSearchController>(force: true);
       Get.toNamed(AppRouter.getCategoriesListRoutes(),
           arguments: [value, 'Offers']);
     } else if (type == '1') {

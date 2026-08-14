@@ -3,7 +3,6 @@ import 'package:get/get.dart';
 import 'package:salon_user/app/backend/models/common_notification_model.dart';
 import 'package:salon_user/app/controller/common_notification_controller.dart';
 import 'package:salon_user/app/util/theme.dart';
-import 'package:intl/intl.dart';
 
 class NotificationScreen extends StatefulWidget {
   const NotificationScreen({Key? key}) : super(key: key);
@@ -13,399 +12,338 @@ class NotificationScreen extends StatefulWidget {
 }
 
 class _NotificationScreenState extends State<NotificationScreen> {
+  String _filter = 'All';
+
   @override
   Widget build(BuildContext context) {
     return GetBuilder<CommonNotificationController>(
       builder: (controller) {
+        final items = _filtered(controller.notificationList);
         return Scaffold(
-          backgroundColor: Colors.white,
+          backgroundColor: ThemeProvider.backgroundColor,
           appBar: AppBar(
-            backgroundColor: Colors.transparent,
+            backgroundColor: ThemeProvider.backgroundColor,
             elevation: 0,
             leading: IconButton(
-              icon: const Icon(Icons.arrow_back_ios,
-                  color: ThemeProvider.appColor),
-              onPressed: () => Navigator.of(context).pop(),
+              icon: const Icon(Icons.arrow_back_ios_new,
+                  color: ThemeProvider.gold, size: 20),
+              onPressed: () => Get.back(),
             ),
             title: Text(
-              'Notifications'.tr,
-              style: const TextStyle(
-                color: ThemeProvider.appColor,
-                fontSize: 24,
-                fontWeight: FontWeight.w700,
-              ),
+              'Notifications',
+              style: ThemeProvider.serif(size: 22, color: ThemeProvider.gold),
             ),
             centerTitle: true,
             actions: [
-              IconButton(
-                icon: Icon(Icons.refresh, color: ThemeProvider.appColor),
+              TextButton(
                 onPressed: () {
-                  // Add clear all notifications functionality
-                  controller.getAllNotifications(controller.uid);
+                  for (final n in controller.notificationList) {
+                    if (n.status.toLowerCase() == 'unread') {
+                      controller.readNotifications(n.id.toString());
+                    }
+                  }
                 },
+                child: Text(
+                  'CLEAR ALL',
+                  style: ThemeProvider.sans(
+                    size: 11,
+                    weight: FontWeight.w700,
+                    color: ThemeProvider.greyColor,
+                    letterSpacing: 0.8,
+                  ),
+                ),
               ),
-              SizedBox(
-                width: 5,
-              )
             ],
           ),
-          body: controller.apiCalled
-              ? const Center(
-                  child: CircularProgressIndicator(
-                    color: ThemeProvider.appColor,
-                    strokeWidth: 3,
-                  ),
-                )
-              : controller.notificationList.isEmpty
-                  ? _buildEmptyNotificationsView()
-                  : _buildNotificationsList(controller),
+          body: Column(
+            children: [
+              SizedBox(
+                height: 44,
+                child: ListView(
+                  scrollDirection: Axis.horizontal,
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  children: [
+                    _chip('All'),
+                    _chip('Unread'),
+                    _chip('Offers'),
+                    _chip('Alerts'),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 8),
+              Expanded(
+                child: controller.apiCalled
+                    ? const Center(
+                        child: CircularProgressIndicator(
+                            color: ThemeProvider.gold),
+                      )
+                    : items.isEmpty
+                        ? Center(
+                            child: Text(
+                              'No notifications yet'.tr,
+                              style: ThemeProvider.sans(
+                                  color: ThemeProvider.greyColor),
+                            ),
+                          )
+                        : ListView.builder(
+                            padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+                            itemCount: items.length,
+                            itemBuilder: (context, index) {
+                              final n = items[index];
+                              final showHeader = index == 0 ||
+                                  _section(items[index - 1]) != _section(n);
+                              return Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  if (showHeader)
+                                    Padding(
+                                      padding: const EdgeInsets.only(
+                                          top: 8, bottom: 10),
+                                      child: Text(
+                                        _section(n),
+                                        style: ThemeProvider.sans(
+                                          size: 11,
+                                          weight: FontWeight.w700,
+                                          color: ThemeProvider.greyColor,
+                                          letterSpacing: 1.4,
+                                        ),
+                                      ),
+                                    ),
+                                  _card(controller, n),
+                                ],
+                              );
+                            },
+                          ),
+              ),
+            ],
+          ),
         );
       },
     );
   }
 
-  Widget _buildEmptyNotificationsView() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Image.asset(
-            'assets/images/no_notifications.png',
-            height: 150,
-            width: 150,
-            errorBuilder: (context, error, stackTrace) => Icon(
-              Icons.notifications_off,
-              size: 80,
-              color: Colors.grey[400],
-            ),
-          ),
-          const SizedBox(height: 20),
-          Text(
-            "No notifications yet".tr,
-            style: TextStyle(
-              fontSize: 22,
-              color: Colors.grey[800],
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          const SizedBox(height: 10),
-          Text(
-            "You're all caught up!".tr,
-            style: TextStyle(
-              fontSize: 16,
-              color: Colors.grey[600],
-            ),
-          ),
-        ],
+  List<NotificationItem> _filtered(List<NotificationItem> all) {
+    switch (_filter) {
+      case 'Unread':
+        return all
+            .where((n) => n.status.toLowerCase() == 'unread')
+            .toList();
+      case 'Offers':
+        return all
+            .where((n) =>
+                n.type.toLowerCase().contains('promo') ||
+                n.type.toLowerCase().contains('offer') ||
+                n.title.toLowerCase().contains('offer'))
+            .toList();
+      case 'Alerts':
+        return all
+            .where((n) =>
+                n.type.toLowerCase().contains('payment') ||
+                n.type.toLowerCase().contains('security') ||
+                n.type.toLowerCase() == 'alert')
+            .toList();
+      default:
+        return all;
+    }
+  }
+
+  String _section(NotificationItem n) {
+    final raw = n.data.date;
+    if (raw.isEmpty) return 'EARLIER';
+    try {
+      final d = DateTime.tryParse(raw);
+      if (d == null) return 'EARLIER';
+      final now = DateTime.now();
+      final today = DateTime(now.year, now.month, now.day);
+      final day = DateTime(d.year, d.month, d.day);
+      if (day == today) return 'NEW TODAY';
+      if (day == today.subtract(const Duration(days: 1))) return 'YESTERDAY';
+    } catch (_) {}
+    return 'EARLIER';
+  }
+
+  Widget _chip(String label) {
+    final selected = _filter == label;
+    return Padding(
+      padding: const EdgeInsets.only(right: 8),
+      child: ChoiceChip(
+        label: Text(label),
+        selected: selected,
+        onSelected: (_) => setState(() => _filter = label),
+        selectedColor: ThemeProvider.gold,
+        backgroundColor: Colors.transparent,
+        side: BorderSide(
+          color: selected ? ThemeProvider.gold : const Color(0xFF3A3A3A),
+        ),
+        labelStyle: ThemeProvider.sans(
+          size: 12,
+          weight: FontWeight.w600,
+          color: selected ? Colors.black : Colors.white70,
+        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
       ),
     );
   }
 
-  Widget _buildNotificationsList(CommonNotificationController controller) {
-    return ListView.separated(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
-      itemCount: controller.notificationList.length,
-      separatorBuilder: (context, index) => const SizedBox(height: 16),
-      itemBuilder: (context, index) {
-        var notification = controller.notificationList[index];
-        return GestureDetector(
-          onTap: () {
-            // controller.showNotificationDialog(context, notification);
-          },
-          child: Container(
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.grey.withOpacity(0.15),
-                  spreadRadius: 1,
-                  blurRadius: 8,
-                  offset: const Offset(0, 3),
-                ),
-              ],
-              border: Border.all(
-                color: notification.status == 'Unread'
-                    ? ThemeProvider.appColor.withOpacity(0.3)
-                    : Colors.transparent,
-                width: 1.5,
-              ),
-            ),
-            child: Column(
+  Widget _card(CommonNotificationController controller, NotificationItem n) {
+    final unread = n.status.toLowerCase() == 'unread';
+    final type = n.type.toLowerCase();
+    final isAppointment = type.contains('appointment');
+    final isOffer = type.contains('promo') ||
+        type.contains('offer') ||
+        n.title.toLowerCase().contains('offer');
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        color: ThemeProvider.surface,
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(14),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Top section with status indicator and time
                 Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  width: 40,
+                  height: 40,
                   decoration: BoxDecoration(
-                    color: notification.status == 'Unread'
-                        ? ThemeProvider.appColor.withOpacity(0.05)
-                        : Colors.grey[50],
-                    borderRadius: const BorderRadius.only(
-                      topLeft: Radius.circular(16),
-                      topRight: Radius.circular(16),
-                    ),
+                    color: ThemeProvider.backgroundColor,
+                    borderRadius: BorderRadius.circular(10),
                   ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      // Order/Appointment ID
-                      Row(
-                        children: [
-                          Icon(
-                            _getNotificationTypeIcon(notification.type),
-                            size: 16,
-                            color: ThemeProvider.appColor,
-                          ),
-                          const SizedBox(width: 6),
-                          Text(
-                            _getIdDisplay(notification),
-                            style: TextStyle(
-                              fontWeight: FontWeight.w600,
-                              fontSize: 14,
-                              color: Colors.grey[800],
-                            ),
-                          ),
-                        ],
-                      ),
-                      // Date and status indicator
-                      Row(
-                        children: [
-                          Text(
-                            notification.data.date,
-                            style: TextStyle(
-                              color: Colors.grey[600],
-                              fontSize: 12,
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Container(
-                            width: 8,
-                            height: 8,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: notification.status == 'Unread'
-                                  ? Colors.red
-                                  : Colors.transparent,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
+                  child: Icon(_iconFor(type),
+                      color: ThemeProvider.gold, size: 20),
                 ),
-                // Main content
-                Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Row(
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Notification icon
-                      Container(
-                        padding: const EdgeInsets.all(10),
-                        decoration: BoxDecoration(
-                          color: _getNotificationColor(notification.type)
-                              .withOpacity(0.1),
-                          shape: BoxShape.circle,
-                        ),
-                        child: Icon(
-                          _getNotificationContentIcon(notification.type),
-                          color: _getNotificationColor(notification.type),
-                          size: 24,
+                      Text(
+                        n.title,
+                        style: ThemeProvider.serif(
+                          size: 16,
+                          color: unread || isOffer
+                              ? ThemeProvider.gold
+                              : ThemeProvider.whiteColor,
                         ),
                       ),
-                      const SizedBox(width: 16),
-                      // Notification content
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              notification.title,
-                              style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 16,
-                                color: Colors.grey[900],
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              notification.data.businessName,
-                              style: TextStyle(
-                                fontWeight: FontWeight.w500,
-                                fontSize: 14,
-                                color: ThemeProvider.appColor,
-                              ),
-                            ),
-                            const SizedBox(height: 6),
-                            Text(
-                              notification.message,
-                              style: TextStyle(
-                                color: Colors.grey[700],
-                                fontSize: 14,
-                              ),
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ],
-                        ),
+                      const SizedBox(height: 6),
+                      Text(
+                        n.message,
+                        maxLines: 3,
+                        overflow: TextOverflow.ellipsis,
+                        style: ThemeProvider.sans(
+                            size: 12, color: Colors.white70),
                       ),
                     ],
                   ),
                 ),
-                // Bottom section with price and action button
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                  decoration: BoxDecoration(
-                    color: Colors.grey[50],
-                    borderRadius: const BorderRadius.only(
-                      bottomLeft: Radius.circular(16),
-                      bottomRight: Radius.circular(16),
-                    ),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      // Price
-                      Text(
-                        'INR ${notification.data.price.toStringAsFixed(2)}',
-                        style: TextStyle(
-                          color: ThemeProvider.appColor,
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                        ),
+                Column(
+                  children: [
+                    Text(
+                      n.data.date,
+                      style: ThemeProvider.sans(
+                        size: 10,
+                        color: ThemeProvider.greyColor,
+                        letterSpacing: 0.6,
                       ),
-                      // Action button
-                      ElevatedButton(
-                        onPressed: () {
-                          // Handle action based on notification type
-                          // controller.handleNotificationAction(notification);
-                          controller.showNotificationDialog(
-                              context, notification);
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: ThemeProvider.appColor,
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 16, vertical: 8),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                        ),
-                        child: Text(
-                          _getActionButtonText(
-                              notification.type, notification.data.status),
-                          style: const TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                          ),
+                    ),
+                    if (unread) ...[
+                      const SizedBox(height: 6),
+                      Container(
+                        width: 7,
+                        height: 7,
+                        decoration: const BoxDecoration(
+                          color: ThemeProvider.gold,
+                          shape: BoxShape.circle,
                         ),
                       ),
                     ],
-                  ),
+                  ],
                 ),
               ],
             ),
-          ),
-        );
-      },
+            if (isAppointment) ...[
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () {
+                        controller.readNotifications(n.id.toString());
+                        if (n.data.appointmentId != null) {
+                          controller.onAppointment(n.data.appointmentId!);
+                        }
+                      },
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: Colors.white,
+                        side: const BorderSide(color: Color(0xFF3A3A3A)),
+                        minimumSize: const Size(0, 40),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                      child: Text('Reschedule',
+                          style: ThemeProvider.sans(
+                              size: 12, weight: FontWeight.w600)),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () {
+                        controller.readNotifications(n.id.toString());
+                        if (n.data.appointmentId != null) {
+                          controller.onAppointment(n.data.appointmentId!);
+                        }
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: ThemeProvider.gold,
+                        foregroundColor: Colors.black,
+                        minimumSize: const Size(0, 40),
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                      child: Text('Confirm',
+                          style: ThemeProvider.sans(
+                              size: 12, weight: FontWeight.w700)),
+                    ),
+                  ),
+                ],
+              ),
+            ] else ...[
+              const SizedBox(height: 10),
+              GestureDetector(
+                onTap: () => controller.showNotificationDialog(context, n),
+                child: Text(
+                  isOffer ? 'REDEEM NOW  >' : 'VIEW DETAILS  >',
+                  style: ThemeProvider.sans(
+                    size: 11,
+                    weight: FontWeight.w700,
+                    color: ThemeProvider.gold,
+                    letterSpacing: 0.8,
+                  ),
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
     );
   }
 
-  String _getIdDisplay(NotificationItem notification) {
-    if (notification.type == 'Appointment' &&
-        notification.data.appointmentId != null) {
-      return "Appointment #${notification.data.appointmentId}".tr;
-    } else if (notification.type == 'Product' &&
-        notification.data.orderId != null) {
-      return "Order #${notification.data.orderId}".tr;
-    } else {
-      return "${notification.type.capitalize} #${notification.id}".tr;
+  IconData _iconFor(String type) {
+    if (type.contains('appointment')) return Icons.calendar_today_outlined;
+    if (type.contains('offer') || type.contains('promo')) {
+      return Icons.local_offer_outlined;
     }
-  }
-
-  IconData _getNotificationTypeIcon(String type) {
-    switch (type.toLowerCase()) {
-      case 'appointment':
-        return Icons.calendar_today;
-      case 'order':
-        return Icons.shopping_bag;
-      case 'promotion':
-        return Icons.local_offer;
-      case 'payment':
-        return Icons.payment;
-      default:
-        return Icons.notifications;
-    }
-  }
-
-  IconData _getNotificationContentIcon(String type) {
-    switch (type.toLowerCase()) {
-      case 'appointment':
-        return Icons.event_available;
-      case 'order':
-        return Icons.shopping_cart;
-      case 'promotion':
-        return Icons.discount;
-      case 'payment':
-        return Icons.attach_money;
-      default:
-        return Icons.notifications_active;
-    }
-  }
-
-  Color _getNotificationColor(String type) {
-    switch (type.toLowerCase()) {
-      case 'appointment':
-        return Colors.purple;
-      case 'order':
-        return Colors.blue;
-      case 'promotion':
-        return Colors.orange;
-      case 'payment':
-        return Colors.green;
-      default:
-        return ThemeProvider.appColor;
-    }
-  }
-
-  String _getActionButtonText(String type, String status) {
-    switch (type.toLowerCase()) {
-      case 'appointment':
-        switch (status.toLowerCase()) {
-          case 'confirmed':
-            return 'View Details'.tr;
-          case 'pending':
-            return 'Confirm Now'.tr;
-          case 'cancelled':
-            return 'Rebook'.tr;
-          case 'completed':
-            return 'Rate Service'.tr;
-          default:
-            return 'View'.tr;
-        }
-      case 'order':
-        switch (status.toLowerCase()) {
-          case 'processing':
-            return 'Track Order'.tr;
-          case 'delivered':
-            return 'Review'.tr;
-          case 'cancelled':
-            return 'Reorder'.tr;
-          case 'completed':
-            return 'Buy Again'.tr;
-          default:
-            return 'View Order'.tr;
-        }
-      case 'payment':
-        return 'View Receipt'.tr;
-      case 'promotion':
-        return 'Use Now'.tr;
-      default:
-        return 'View'.tr;
-    }
+    if (type.contains('payment')) return Icons.payments_outlined;
+    if (type.contains('security')) return Icons.settings_outlined;
+    return Icons.notifications_none;
   }
 }

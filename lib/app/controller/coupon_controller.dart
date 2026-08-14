@@ -26,16 +26,24 @@ class CouponController extends GetxController implements GetxService {
   @override
   void onInit() {
     super.onInit();
-    if (Get.arguments[0] == 'product') {
-      action = 'product';
-    } else if (Get.arguments[0] == 'individual-service') {
-      action = 'individual-service';
+    final args = Get.arguments;
+    if (args is List && args.isNotEmpty) {
+      if (args[0] == 'product') {
+        action = 'product';
+      } else if (args[0] == 'individual-service') {
+        action = 'individual-service';
+      } else {
+        action = 'service';
+      }
+      if (args.length > 3) {
+        uid = args[3].toString();
+      }
+      if (args.length > 4) {
+        cartValue = double.tryParse(args[4].toString()) ?? 0.0;
+      }
     } else {
-      action = 'service';
+      action = 'browse';
     }
-    uid = Get.arguments[3];
-    cartValue = double.tryParse(Get.arguments[4]);
-
     getCoupons();
   }
 
@@ -73,9 +81,13 @@ class CouponController extends GetxController implements GetxService {
             bool isNotExpired = expiryDate.isAfter(currentDate) ||
                 expiryDate.isAtSameMomentAs(currentDate);
 
-            bool isValidForFreelancer = data.freelancerIds != null &&
-                (data.freelancerIds == "ALL" ||
-                    data.freelancerIds!.split(',').contains(uid.toString()));
+            bool isValidForFreelancer = uid.isEmpty ||
+                action == 'browse' ||
+                (data.freelancerIds != null &&
+                    (data.freelancerIds == "ALL" ||
+                        data.freelancerIds!
+                            .split(',')
+                            .contains(uid.toString())));
 
             bool isNotMaxUsageExceeded = data.maxUsageExceeded != true;
 
@@ -296,6 +308,10 @@ class CouponController extends GetxController implements GetxService {
   }
 
   void onSaveCoupon() {
+    if (action == 'browse') {
+      Get.back();
+      return;
+    }
     if (action == 'service') {
       if (selectedCouponCode != '') {
         var savedCoupon = _couponList.firstWhere(
@@ -328,6 +344,10 @@ class CouponController extends GetxController implements GetxService {
   }
 
   void onBack() {
+    if (action == 'browse') {
+      Get.back();
+      return;
+    }
     Get.find<PaymentController>().update();
     var context = Get.context as BuildContext;
     Navigator.of(context).pop(true);

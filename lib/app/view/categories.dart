@@ -1,296 +1,170 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:salon_user/app/backend/models/products_model.dart';
 import 'package:salon_user/app/controller/categories_controller.dart';
 import 'package:salon_user/app/controller/product_cart_controller.dart';
+import 'package:salon_user/app/controller/unified_search_controller.dart';
 import 'package:salon_user/app/env.dart';
+import 'package:salon_user/app/helper/router.dart';
 import 'package:salon_user/app/util/theme.dart';
+import 'package:salon_user/app/view/sidemenu.dart';
+import 'package:salon_user/app/view/widgets/elite_ui.dart';
 
-class CategoriesScreen extends StatelessWidget {
+class CategoriesScreen extends StatefulWidget {
   const CategoriesScreen({Key? key}) : super(key: key);
 
   @override
-  Widget build(BuildContext context) {
-    final screenWidth = MediaQuery.of(context).size.width;
-    final screenHeight = MediaQuery.of(context).size.height;
-
-    // Calculate responsive values
-    int crossAxisCount = screenWidth > 600 ? 4 : 3;
-    double itemSpacing = screenWidth * 0.02;
-    double cardPadding = screenWidth * 0.025;
-    double imageHeightRatio = screenHeight > 800 ? 0.12 : 0.10;
-    double fontSize = screenWidth > 600 ? 14 : 11;
-
-    return GetBuilder<CategoriesController>(
-      builder: (controller) {
-        return Scaffold(
-          appBar: AppBar(
-            automaticallyImplyLeading: false,
-            backgroundColor: ThemeProvider.appColor,
-            title: Text('Categories'.tr, style: ThemeProvider.titleStyle),
-            centerTitle: true,
-          ),
-          bottomNavigationBar: Get.find<ProductCartController>()
-                  .savedInCart
-                  .isNotEmpty
-              ? SizedBox(
-                  height: 50,
-                  child: Column(
-                    children: [
-                      SizedBox(
-                        height: 50,
-                        child: InkWell(
-                          onTap: () {
-                            controller.onCart();
-                          },
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 20),
-                            decoration: const BoxDecoration(
-                              color: ThemeProvider.pink,
-                            ),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Text(
-                                  controller.currencySide == 'left'
-                                      ? '${Get.find<ProductCartController>().savedInCart.length} ${'Items'.tr} ${controller.currencySymbol} ${Get.find<ProductCartController>().totalPrice}'
-                                      : ' ${Get.find<ProductCartController>().savedInCart.length} ${'Items'.tr} ${Get.find<ProductCartController>().totalPrice}${controller.currencySymbol}',
-                                  style: const TextStyle(
-                                      color: ThemeProvider.whiteColor),
-                                ),
-                                Text(
-                                  'Goto Cart'.tr,
-                                  style: const TextStyle(
-                                      color: ThemeProvider.whiteColor),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      )
-                    ],
-                  ),
-                )
-              : const SizedBox(),
-          body: controller.apiCalled == false
-              ? const Center(child: CircularProgressIndicator())
-              : controller.productsList.isNotEmpty
-                  ? GridView.builder(
-                      padding: EdgeInsets.all(cardPadding),
-                      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: crossAxisCount,
-                        crossAxisSpacing: itemSpacing,
-                        mainAxisSpacing: itemSpacing,
-                        childAspectRatio: 0.75,
-                      ),
-                      itemCount: controller.productsList.length,
-                      itemBuilder: (context, index) {
-                        final category = controller.productsList[index];
-
-                        return InkWell(
-                          onTap: () {
-                            controller.onSubcategories(category.id as int);
-                          },
-                          child: Container(
-                            margin: EdgeInsets.all(cardPadding * 0.5),
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(12),
-                              boxShadow: const [
-                                BoxShadow(
-                                  color: ThemeProvider.greyColor,
-                                  blurRadius: 5.0,
-                                  offset: Offset(0, 2),
-                                ),
-                              ],
-                            ),
-                            child: Column(
-                              children: [
-                                Expanded(
-                                  flex: 7,
-                                  child: ClipRRect(
-                                    borderRadius: const BorderRadius.only(
-                                      topLeft: Radius.circular(12),
-                                      topRight: Radius.circular(12),
-                                    ),
-                                    child: Image.network(
-                                      '${Environments.imageURL}${category.cover}',
-                                      width: double.infinity,
-                                      fit: BoxFit.cover,
-                                      errorBuilder: (context, error, stackTrace) =>
-                                          Image.asset(
-                                        'assets/images/notfound.png',
-                                        fit: BoxFit.cover,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                                Expanded(
-                                  flex: 3,
-                                  child: Padding(
-                                    padding: EdgeInsets.symmetric(
-                                      horizontal: cardPadding,
-                                      vertical: cardPadding * 0.5,
-                                    ),
-                                    child: Center(
-                                      child: Text(
-                                        category.name.toString(),
-                                        maxLines: 2,
-                                        overflow: TextOverflow.ellipsis,
-                                        textAlign: TextAlign.center,
-                                        style: TextStyle(
-                                          fontSize: fontSize,
-                                          color: const Color.fromARGB(255, 87, 87, 87),
-                                          fontWeight: FontWeight.w600,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        );
-                      },
-                    )
-                  : Center(
-                      child: Text('No Categories Found'.tr,
-                          style: ThemeProvider.titleStyle),
-                    ),
-        );
-      },
-    );
-  }
+  State<CategoriesScreen> createState() => _CategoriesScreenState();
 }
 
-class SubcategoriesScreen extends StatelessWidget {
-  const SubcategoriesScreen({Key? key}) : super(key: key);
+class _CategoriesScreenState extends State<CategoriesScreen> {
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
+
+  void _openSearch() {
+    Get.delete<UnifiedSearchController>(force: true);
+    Get.toNamed(AppRouter.getSearchRoutes());
+  }
 
   @override
   Widget build(BuildContext context) {
-    final categoryId = Get.arguments[0]; // Pass the selected category ID
-    final screenWidth = MediaQuery.of(context).size.width;
-    final screenHeight = MediaQuery.of(context).size.height;
-
-    // Calculate responsive values
-    int crossAxisCount = screenWidth > 600 ? 4 : 3;
-    double itemSpacing = screenWidth * 0.02;
-    double cardPadding = screenWidth * 0.025;
-    double imageHeightRatio = screenHeight > 800 ? 0.12 : 0.10;
-    double fontSize = screenWidth > 600 ? 14 : 11;
-
     return GetBuilder<CategoriesController>(
       builder: (controller) {
-        // Find the category with the matching categoryId
-        final category = controller.productsList.firstWhere(
-          (element) => element.id.toString() == categoryId.toString(),
-          orElse: () => ProductsModel(),
-        );
-
-        // Extract subcategories from the selected category
-        final subCategories = category.subCates ?? [];
-
         return Scaffold(
-          appBar: AppBar(
-            backgroundColor: ThemeProvider.appColor,
-            title: Text(
-              category.name ?? 'Category',
-              style: ThemeProvider.titleStyle,
-            ),
-            centerTitle: true,
-          ),
-          body: controller.apiCalled
-              ? subCategories.isNotEmpty
-                  ? GridView.builder(
-                      padding: EdgeInsets.all(cardPadding),
-                      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: crossAxisCount,
-                        crossAxisSpacing: itemSpacing,
-                        mainAxisSpacing: itemSpacing,
-                        childAspectRatio: 0.75,
+          key: _scaffoldKey,
+          backgroundColor: ThemeProvider.backgroundColor,
+          drawer: const SideMenuScreen(),
+          body: controller.apiCalled == false
+              ? const Center(
+                  child: CircularProgressIndicator(color: ThemeProvider.gold),
+                )
+              : Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    SafeArea(
+                      bottom: false,
+                      child: EliteAppBar(
+                        onMenu: () => _scaffoldKey.currentState?.openDrawer(),
                       ),
-                      itemCount: subCategories.length,
-                      itemBuilder: (context, index) {
-                        final subCategory = subCategories[index];
-
-                        return InkWell(
-                          onTap: () {
-                            controller.onProducts(
-                              categoryId as int,
-                              subCategory.id as int,
-                            );
-                          },
-                          child: Container(
-                            margin: EdgeInsets.all(cardPadding * 0.5),
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(12),
-                              boxShadow: const [
-                                BoxShadow(
-                                  color: ThemeProvider.greyColor,
-                                  blurRadius: 5.0,
-                                  offset: Offset(0, 2),
-                                ),
-                              ],
-                            ),
-                            child: Column(
-                              children: [
-                                Expanded(
-                                  flex: 7,
-                                  child: ClipRRect(
-                                    borderRadius: const BorderRadius.only(
-                                      topLeft: Radius.circular(12),
-                                      topRight: Radius.circular(12),
-                                    ),
-                                    child: Image.network(
-                                      '${Environments.imageURL}${subCategory.cover}',
-                                      width: double.infinity,
-                                      fit: BoxFit.cover,
-                                      errorBuilder: (context, error, stackTrace) =>
-                                          Image.asset(
-                                        'assets/images/notfound.png',
-                                        fit: BoxFit.cover,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                                Expanded(
-                                  flex: 3,
-                                  child: Padding(
-                                    padding: EdgeInsets.symmetric(
-                                      horizontal: cardPadding,
-                                      vertical: cardPadding * 0.5,
-                                    ),
-                                    child: Center(
-                                      child: Text(
-                                        subCategory.name ?? '',
-                                        maxLines: 2,
-                                        overflow: TextOverflow.ellipsis,
-                                        textAlign: TextAlign.center,
-                                        style: TextStyle(
-                                          fontSize: fontSize,
-                                          color: const Color.fromARGB(255, 87, 87, 87),
-                                          fontWeight: FontWeight.w600,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        );
-                      },
-                    )
-                  : Center(
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
                       child: Text(
-                        'No Subcategories Found'.tr,
-                        style: ThemeProvider.titleStyle,
+                        'Categories'.tr,
+                        style: ThemeProvider.serif(
+                            size: 28, weight: FontWeight.w700),
+                      ),
+                    ),
+                    EliteSearchBar(
+                      hint: 'Search categories...'.tr,
+                      onTap: _openSearch,
+                    ),
+                    const SizedBox(height: 8),
+                    Expanded(
+                      child: controller.productsList.isEmpty
+                          ? Center(
+                              child: Text(
+                                'No Categories'.tr,
+                                style: ThemeProvider.serif(
+                                    size: 16, color: ThemeProvider.gold),
+                              ),
+                            )
+                          : ListView.builder(
+                              padding: const EdgeInsets.only(bottom: 100),
+                              itemCount: controller.productsList.length,
+                              itemBuilder: (context, index) {
+                                final category = controller.productsList[index];
+                                return GestureDetector(
+                                  onTap: () => controller
+                                      .onSubcategories(category.id as int),
+                                  child: Container(
+                                    height: 160,
+                                    margin: const EdgeInsets.fromLTRB(
+                                        16, 0, 16, 12),
+                                    child: ClipRRect(
+                                      borderRadius: BorderRadius.circular(12),
+                                      child: Stack(
+                                        fit: StackFit.expand,
+                                        children: [
+                                          EliteNetworkImage(
+                                            url:
+                                                '${Environments.imageURL}${category.cover}',
+                                          ),
+                                          const DecoratedBox(
+                                            decoration: BoxDecoration(
+                                              gradient: LinearGradient(
+                                                begin: Alignment.topCenter,
+                                                end: Alignment.bottomCenter,
+                                                colors: [
+                                                  Colors.transparent,
+                                                  Colors.black87,
+                                                ],
+                                              ),
+                                            ),
+                                          ),
+                                          Positioned(
+                                            left: 16,
+                                            bottom: 16,
+                                            child: Column(
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.start,
+                                              children: [
+                                                Text(
+                                                  category.name ?? '',
+                                                  style: ThemeProvider.serif(
+                                                    size: 24,
+                                                    weight: FontWeight.w700,
+                                                  ),
+                                                ),
+                                                const SizedBox(height: 6),
+                                                Container(
+                                                  width: 36,
+                                                  height: 3,
+                                                  color: ThemeProvider.gold,
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                );
+                              },
+                            ),
+                    ),
+                  ],
+                ),
+          bottomNavigationBar:
+              Get.find<ProductCartController>().savedInCart.isNotEmpty
+                  ? InkWell(
+                      onTap: controller.onCart,
+                      child: Container(
+                        height: 50,
+                        color: ThemeProvider.gold,
+                        padding: const EdgeInsets.symmetric(horizontal: 20),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              '${Get.find<ProductCartController>().savedInCart.length} ${'Items'.tr}',
+                              style: ThemeProvider.sans(
+                                size: 13,
+                                weight: FontWeight.w600,
+                                color: Colors.black,
+                              ),
+                            ),
+                            Text(
+                              'Goto Cart'.tr,
+                              style: ThemeProvider.sans(
+                                size: 13,
+                                weight: FontWeight.w700,
+                                color: Colors.black,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     )
-              : const Center(
-                  child: CircularProgressIndicator(),
-                ),
+                  : const SizedBox.shrink(),
         );
       },
     );

@@ -1,9 +1,10 @@
 import 'package:country_code_picker/country_code_picker.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import 'package:salon_user/app/controller/register_controller.dart';
 import 'package:salon_user/app/util/theme.dart';
-import 'package:get/get.dart';
+import 'package:salon_user/app/view/widgets/elite_ui.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({Key? key}) : super(key: key);
@@ -14,371 +15,142 @@ class RegisterScreen extends StatefulWidget {
 
 class _RegisterScreenState extends State<RegisterScreen> {
   bool passwordVisible = false;
+
+  InputDecoration _dec(String label, {Widget? suffix}) {
+    return InputDecoration(
+      labelText: label,
+      labelStyle: ThemeProvider.sans(size: 13, color: ThemeProvider.greyColor),
+      filled: true,
+      fillColor: ThemeProvider.surface,
+      suffixIcon: suffix,
+      floatingLabelBehavior: FloatingLabelBehavior.never,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: Color(0xFF2C2C2C)),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: ThemeProvider.gold),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return GetBuilder<RegisterController>(builder: (value) {
       return Scaffold(
-        backgroundColor: Colors.white,
-        appBar: AppBar(
-          elevation: 0,
-          backgroundColor: ThemeProvider.appColor,
-          leading: IconButton(
-            icon: const Icon(
-              Icons.arrow_back,
-              color: ThemeProvider.whiteColor,
+        backgroundColor: ThemeProvider.backgroundColor,
+        appBar: const EliteAppBar(showBack: true, title: 'Create Account'),
+        body: ListView(
+          padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
+          children: [
+            TextField(
+              controller: value.firstNameTextEditor,
+              style: ThemeProvider.sans(size: 14),
+              decoration: _dec('First Name'.tr),
             ),
-            onPressed: () {
-              Get.back();
-            },
-          ),
-          title: Text(
-            'Create an Account'.tr,
-            style: ThemeProvider.titleStyle,
-          ),
-        ),
-        body: SingleChildScrollView(
-          reverse: true,
-          child: Center(
-            child: Column(
-              children: [
-                const SizedBox(
-                  height: 20,
-                ),
-                Padding(
-                  padding:
-                      const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      TextFormField(
-                        controller: value.firstNameTextEditor,
-                        textInputAction: TextInputAction.next,
-                        textCapitalization: TextCapitalization.sentences,
-                        decoration: InputDecoration(
-                          labelText: 'First Name'.tr,
-                          filled: true,
-                          fillColor: Colors.white,
-                          contentPadding: const EdgeInsets.only(
-                              bottom: 8.0, top: 14.0, right: 15, left: 15),
-                          focusedBorder: const OutlineInputBorder(
-                            borderRadius: BorderRadius.all(Radius.circular(20)),
-                            borderSide: BorderSide(color: Colors.blueAccent),
-                          ),
-                          enabledBorder: const OutlineInputBorder(
-                              borderRadius:
-                                  BorderRadius.all(Radius.circular(20)),
-                              borderSide: BorderSide(color: Colors.grey)),
-                          disabledBorder: const OutlineInputBorder(
-                              borderRadius:
-                                  BorderRadius.all(Radius.circular(20)),
-                              borderSide: BorderSide(color: Colors.grey)),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                Padding(
-                  padding:
-                      const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      TextFormField(
-                        controller: value.lastNameTextEditor,
-                        textInputAction: TextInputAction.next,
-                        textCapitalization: TextCapitalization.sentences,
-                        decoration: InputDecoration(
-                          labelText: 'Last Name'.tr,
-                          filled: true,
-                          fillColor: Colors.white,
-                          contentPadding: const EdgeInsets.only(
-                              bottom: 8.0, top: 14.0, right: 15, left: 15),
-                          focusedBorder: const OutlineInputBorder(
-                            borderRadius: BorderRadius.all(Radius.circular(20)),
-                            borderSide: BorderSide(color: Colors.blueAccent),
-                          ),
-                          enabledBorder: const OutlineInputBorder(
-                              borderRadius:
-                                  BorderRadius.all(Radius.circular(20)),
-                              borderSide: BorderSide(color: Colors.grey)),
-                          disabledBorder: const OutlineInputBorder(
-                              borderRadius:
-                                  BorderRadius.all(Radius.circular(20)),
-                              borderSide: BorderSide(color: Colors.grey)),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                Padding(
-                  padding:
-                      const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      TextFormField(
-                        controller: value.emailTextEditor,
-                        textInputAction: TextInputAction.next,
-                        textCapitalization: TextCapitalization.sentences,
-                        decoration: InputDecoration(
-                          labelText: 'Email Address'.tr,
-                          filled: true,
-                          fillColor: Colors.white,
-                          contentPadding: const EdgeInsets.only(
-                              bottom: 8.0, top: 14.0, right: 15, left: 15),
-                          focusedBorder: const OutlineInputBorder(
-                            borderRadius: BorderRadius.all(Radius.circular(20)),
-                            borderSide: BorderSide(color: Colors.blueAccent),
-                          ),
-                          enabledBorder: const OutlineInputBorder(
-                              borderRadius:
-                                  BorderRadius.all(Radius.circular(20)),
-                              borderSide: BorderSide(color: Colors.grey)),
-                          disabledBorder: const OutlineInputBorder(
-                              borderRadius:
-                                  BorderRadius.all(Radius.circular(20)),
-                              borderSide: BorderSide(color: Colors.grey)),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                Row(
-                  children: <Widget>[
-                    Expanded(
-                      flex: 1,
-                      child: Padding(
-                        padding: const EdgeInsets.only(right: 5, top: 10),
-                        child: CountryCodePicker(
-                          onChanged: (e) =>
-                              value.updateCountryCode(e.dialCode.toString()),
-                          initialSelection: 'IN',
-                          favorite: const ['+91', 'IN'],
-                          showCountryOnly: false,
-                          showOnlyCountryWhenClosed: false,
-                          alignLeft: false,
-                        ),
-                      ),
-                    ),
-                    Expanded(
-                      flex: 3,
-                      child: Padding(
-                        padding: const EdgeInsets.only(right: 16, top: 10),
-                        child: TextFormField(
-                          controller: value.mobileTextEditor,
-                          textInputAction: TextInputAction.next,
-                          keyboardType: TextInputType.number,
-                          decoration: InputDecoration(
-                            labelText: 'Mobile Number'.tr,
-                            filled: true,
-                            fillColor: Colors.white,
-                            contentPadding: const EdgeInsets.only(
-                                bottom: 8.0, top: 14.0, right: 15, left: 15),
-                            focusedBorder: const OutlineInputBorder(
-                              borderRadius:
-                                  BorderRadius.all(Radius.circular(20)),
-                              borderSide: BorderSide(color: Colors.blueAccent),
-                            ),
-                            enabledBorder: const OutlineInputBorder(
-                              borderRadius:
-                                  BorderRadius.all(Radius.circular(20)),
-                              borderSide: BorderSide(color: Colors.grey),
-                            ),
-                            disabledBorder: const OutlineInputBorder(
-                              borderRadius:
-                                  BorderRadius.all(Radius.circular(20)),
-                              borderSide: BorderSide(color: Colors.grey),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                Padding(
-                  padding:
-                      const EdgeInsets.symmetric(vertical: 19, horizontal: 16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      TextFormField(
-                        controller: value.passwordTextEditor,
-                        textInputAction: TextInputAction.next,
-                        obscureText: passwordVisible == true ? false : true,
-                        decoration: InputDecoration(
-                          labelText: 'Password'.tr,
-                          filled: true,
-                          contentPadding: const EdgeInsets.only(
-                              bottom: 8.0, top: 14.0, right: 15, left: 15),
-                          focusedBorder: const OutlineInputBorder(
-                            borderRadius: BorderRadius.all(Radius.circular(20)),
-                            borderSide: BorderSide(color: Colors.blueAccent),
-                          ),
-                          enabledBorder: const OutlineInputBorder(
-                              borderRadius:
-                                  BorderRadius.all(Radius.circular(20)),
-                              borderSide: BorderSide(color: Colors.grey)),
-                          disabledBorder: const OutlineInputBorder(
-                              borderRadius:
-                                  BorderRadius.all(Radius.circular(20)),
-                              borderSide: BorderSide(color: Colors.grey)),
-                          suffixIcon: IconButton(
-                            onPressed: () {
-                              setState(() {
-                                passwordVisible = !passwordVisible;
-                              });
-                            },
-                            icon: Icon(
-                              passwordVisible == false
-                                  ? Icons.visibility
-                                  : Icons.visibility_off,
-                              color: ThemeProvider.appColor,
-                            ),
-                          ),
-                          fillColor: Colors.white,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                Padding(
-                  padding:
-                      const EdgeInsets.symmetric(vertical: 4, horizontal: 16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      TextFormField(
-                        controller: value.referralCodeTextEditor,
-                        textInputAction: TextInputAction.next,
-                        textCapitalization: TextCapitalization.sentences,
-                        decoration: InputDecoration(
-                            labelText: 'Referral Code'.tr,
-                            filled: true,
-                            fillColor: Colors.white,
-                            contentPadding: const EdgeInsets.only(
-                                bottom: 8.0, top: 14.0, right: 15, left: 15),
-                            focusedBorder: const OutlineInputBorder(
-                              borderRadius:
-                                  BorderRadius.all(Radius.circular(20)),
-                              borderSide: BorderSide(color: Colors.blueAccent),
-                            ),
-                            enabledBorder: const OutlineInputBorder(
-                                borderRadius:
-                                    BorderRadius.all(Radius.circular(20)),
-                                borderSide: BorderSide(color: Colors.grey)),
-                            disabledBorder: const OutlineInputBorder(
-                                borderRadius:
-                                    BorderRadius.all(Radius.circular(20)),
-                                borderSide: BorderSide(color: Colors.grey))),
-                      ),
-                    ],
-                  ),
-                ),
-                Container(
-                  alignment: Alignment.center,
-                  padding:
-                      const EdgeInsets.symmetric(vertical: 5, horizontal: 20),
-                  child: Center(
-                      child: Text.rich(TextSpan(
-                          text: 'By continuing, you agree to our '.tr,
-                          style: const TextStyle(
-                              fontSize: 10,
-                              fontFamily: 'regular',
-                              color: ThemeProvider.blackColor),
-                          children: <TextSpan>[
-                        TextSpan(
-                            text: 'Terms of Service'.tr,
-                            style: const TextStyle(
-                              fontSize: 10,
-                              color: ThemeProvider.blackColor,
-                              fontFamily: 'bold',
-                              decoration: TextDecoration.underline,
-                            ),
-                            recognizer: TapGestureRecognizer()
-                              ..onTap = () {
-                                value.onAppPages('Terms & Conditions'.tr, '3');
-                              }),
-                        TextSpan(
-                            text: ' and '.tr,
-                            style: const TextStyle(
-                                fontSize: 10,
-                                fontFamily: 'regular',
-                                color: ThemeProvider.blackColor),
-                            children: <TextSpan>[
-                              TextSpan(
-                                  text: 'Privacy Policy'.tr,
-                                  style: const TextStyle(
-                                      fontSize: 10,
-                                      color: ThemeProvider.blackColor,
-                                      fontFamily: 'bold',
-                                      decoration: TextDecoration.underline),
-                                  recognizer: TapGestureRecognizer()
-                                    ..onTap = () {
-                                      value.onAppPages(
-                                          'Privacy Policy'.tr, '2');
-                                    })
-                            ])
-                      ]))),
-                ),
-                Padding(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 16, vertical: 20.0),
-                  child: InkWell(
-                    onTap: () {
-                      value.onRegister();
-                    },
-                    child: Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.symmetric(vertical: 13.0),
-                      decoration: const BoxDecoration(
-                          borderRadius: BorderRadius.all(
-                            Radius.circular(50.0),
-                          ),
-                          color: ThemeProvider.appColor),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text(
-                            'Sign Up'.tr,
-                            style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 17,
-                                fontFamily: 'bold'),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-                Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 20),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(
-                          'You have already account ?'.tr,
-                          style: const TextStyle(fontSize: 14),
-                        ),
-                        const SizedBox(
-                          width: 10,
-                        ),
-                        InkWell(
-                          onTap: () {
-                            Get.back();
-                          },
-                          child: Text(
-                            'Log in'.tr,
-                            style: const TextStyle(
-                                fontFamily: 'bold',
-                                fontSize: 14,
-                                color: ThemeProvider.appColor),
-                          ),
-                        ),
-                      ],
-                    )),
-              ],
+            const SizedBox(height: 12),
+            TextField(
+              controller: value.lastNameTextEditor,
+              style: ThemeProvider.sans(size: 14),
+              decoration: _dec('Last Name'.tr),
             ),
-          ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: value.emailTextEditor,
+              keyboardType: TextInputType.emailAddress,
+              style: ThemeProvider.sans(size: 14),
+              decoration: _dec('Email Address'.tr),
+            ),
+            const SizedBox(height: 12),
+            Container(
+              decoration: BoxDecoration(
+                color: ThemeProvider.surface,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: const Color(0xFF2C2C2C)),
+              ),
+              child: Row(
+                children: [
+                  CountryCodePicker(
+                    onChanged: (e) =>
+                        value.updateCountryCode(e.dialCode.toString()),
+                    initialSelection: 'IN',
+                    favorite: const ['+91', 'IN'],
+                    showFlag: false,
+                    padding: EdgeInsets.zero,
+                    textStyle: ThemeProvider.sans(size: 14),
+                    dialogBackgroundColor: ThemeProvider.surface,
+                  ),
+                  Expanded(
+                    child: TextField(
+                      controller: value.mobileTextEditor,
+                      keyboardType: TextInputType.phone,
+                      style: ThemeProvider.sans(size: 14),
+                      decoration: InputDecoration(
+                        border: InputBorder.none,
+                        hintText: 'Phone Number'.tr,
+                        hintStyle: ThemeProvider.sans(
+                            size: 14, color: ThemeProvider.greyColor),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: value.passwordTextEditor,
+              obscureText: !passwordVisible,
+              style: ThemeProvider.sans(size: 14),
+              decoration: _dec(
+                'Password'.tr,
+                suffix: IconButton(
+                  onPressed: () =>
+                      setState(() => passwordVisible = !passwordVisible),
+                  icon: Icon(
+                    passwordVisible ? Icons.visibility_off : Icons.visibility,
+                    color: ThemeProvider.gold,
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: value.referralCodeTextEditor,
+              style: ThemeProvider.sans(size: 14),
+              decoration: _dec('Referral Code'.tr),
+            ),
+            const SizedBox(height: 16),
+            Text.rich(
+              TextSpan(
+                text: 'By continuing, you agree to our '.tr,
+                style: ThemeProvider.sans(
+                    size: 11, color: ThemeProvider.greyColor),
+                children: [
+                  TextSpan(
+                    text: 'Terms of Service'.tr,
+                    style: ThemeProvider.sans(
+                        size: 11, color: ThemeProvider.gold),
+                    recognizer: TapGestureRecognizer()
+                      ..onTap = () =>
+                          value.onAppPages('Terms & Conditions'.tr, '3'),
+                  ),
+                  TextSpan(text: ' and '.tr),
+                  TextSpan(
+                    text: 'Privacy Policy'.tr,
+                    style: ThemeProvider.sans(
+                        size: 11, color: ThemeProvider.gold),
+                    recognizer: TapGestureRecognizer()
+                      ..onTap = () =>
+                          value.onAppPages('Privacy Policy'.tr, '2'),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 20),
+            EliteGoldButton(label: 'CREATE ACCOUNT', onTap: value.onRegister),
+          ],
         ),
       );
     });

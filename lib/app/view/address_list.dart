@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:salon_user/app/controller/address_list_controller.dart';
 import 'package:salon_user/app/util/theme.dart';
-import 'package:skeletons/skeletons.dart';
+import 'package:salon_user/app/view/widgets/elite_ui.dart';
 
 class AddressListScreen extends StatefulWidget {
   const AddressListScreen({Key? key}) : super(key: key);
@@ -17,152 +17,76 @@ class _AddressListScreenState extends State<AddressListScreen> {
     return GetBuilder<AddressListController>(
       builder: (value) {
         return Scaffold(
-          backgroundColor: ThemeProvider.whiteColor,
-          bottomNavigationBar: value.addressList.isNotEmpty
-              ? Container(
-                  padding: const EdgeInsets.all(16),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: InkWell(
-                          onTap: () {
-                            value.saveAndClose();
-                          },
-                          child: Container(
-                            height: 50,
-                            width: double.infinity,
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(10),
-                              color: ThemeProvider.greenColor,
-                            ),
-                            child: Center(
-                              child: Text(
-                                'Save'.tr,
-                                style: const TextStyle(
-                                    color: ThemeProvider.whiteColor),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: InkWell(
-                          onTap: () {
-                            Navigator.pop(context);
-                          },
-                          child: Container(
-                            height: 50,
-                            width: double.infinity,
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(10),
-                              color: ThemeProvider.redColor,
-                            ),
-                            child: Center(
-                              child: Text(
-                                'Cancel'.tr,
-                                style: const TextStyle(
-                                    color: ThemeProvider.whiteColor),
-                              ),
-                            ),
-                          ),
-                        ),
-                      )
-                    ],
-                  ),
-                )
-              : const SizedBox(),
-          appBar: AppBar(
-            backgroundColor: ThemeProvider.appColor,
-            elevation: 0,
-            iconTheme: const IconThemeData(color: ThemeProvider.whiteColor),
-            titleSpacing: 0,
-            centerTitle: true,
-            title: Text(
-              'Select Address'.tr,
-              style: ThemeProvider.titleStyle,
-            ),
-            actions: [
-              Container(
-                margin:
-                    const EdgeInsets.symmetric(vertical: 10, horizontal: 10),
-                padding: const EdgeInsets.symmetric(horizontal: 10),
-                decoration: BoxDecoration(
-                  color: ThemeProvider.greenColor,
-                  borderRadius: BorderRadius.circular(5),
-                ),
-                child: InkWell(
-                  onTap: () {
-                    value.onNewAddress();
-                  },
-                  child: Center(
-                    child: Text(
-                      'Add Address'.tr,
-                      style: const TextStyle(
-                          fontSize: 10,
-                          fontFamily: 'bold',
-                          color: ThemeProvider.whiteColor),
-                    ),
-                  ),
-                ),
-              ),
-            ],
+          backgroundColor: ThemeProvider.backgroundColor,
+          appBar: EliteAppBar(
+            showBack: true,
+            title: 'Select Address',
+            onMore: value.onNewAddress,
           ),
           body: value.apiCalled == false
-              ? SkeletonListView()
-              : value.addressList.isNotEmpty
-                  ? ListView.builder(
-                      padding: const EdgeInsets.all(16),
-                      itemCount: value.addressList.length,
-                      itemBuilder: (context, i) => Card(
-                        child: ListTile(
-                          horizontalTitleGap: 0,
-                          minVerticalPadding: 20,
-                          title: Padding(
-                            padding: const EdgeInsets.only(bottom: 6),
-                            child: Text(
-                              value.titles[value.addressList[i].title as int]
-                                  .toString(),
-                            ),
-                          ),
-                          subtitle: Text(
-                            '${value.addressList[i].address} '
-                            '${value.addressList[i].house} '
-                            '${value.addressList[i].landmark} '
-                            '${value.addressList[i].pincode}',
-                          ),
-                          trailing: Radio(
-                            activeColor: ThemeProvider.appColor,
-                            value: value.addressList[i].id.toString(),
-                            groupValue: value.selectedAddressId,
-                            onChanged: (data) {
-                              value.saveAdd(data.toString());
-                            },
-                          ),
-                        ),
+              ? const Center(
+                  child: CircularProgressIndicator(color: ThemeProvider.gold),
+                )
+              : value.addressList.isEmpty
+                  ? Center(
+                      child: Text(
+                        'No Data Found!'.tr,
+                        style: ThemeProvider.sans(color: ThemeProvider.greyColor),
                       ),
                     )
-                  : ListView(
-                      padding: const EdgeInsets.all(16),
+                  : ListView.builder(
+                      padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+                      itemCount: value.addressList.length,
+                      itemBuilder: (context, i) {
+                        final a = value.addressList[i];
+                        final selected =
+                            value.selectedAddressId == a.id.toString();
+                        return EliteCard(
+                          borderColor: selected ? ThemeProvider.gold : null,
+                          child: RadioListTile<String>(
+                            value: a.id.toString(),
+                            groupValue: value.selectedAddressId,
+                            activeColor: ThemeProvider.gold,
+                            onChanged: (data) =>
+                                value.saveAdd(data.toString()),
+                            title: Text(
+                              value.titles[a.title as int],
+                              style: ThemeProvider.serif(size: 16),
+                            ),
+                            subtitle: Text(
+                              '${a.address} ${a.house} ${a.landmark} ${a.pincode}',
+                              style: ThemeProvider.sans(
+                                  size: 12, color: ThemeProvider.greyColor),
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+          bottomNavigationBar: value.addressList.isEmpty
+              ? const SizedBox()
+              : SafeArea(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+                    child: Row(
                       children: [
-                        const SizedBox(height: 20),
-                        SizedBox(
-                          height: 80,
-                          width: 80,
-                          child: Image.asset(
-                            "assets/images/no-data.png",
-                            fit: BoxFit.cover,
+                        Expanded(
+                          child: EliteGoldButton(
+                            label: 'SAVE',
+                            onTap: value.saveAndClose,
                           ),
                         ),
-                        const SizedBox(height: 30),
-                        Center(
-                          child: Text(
-                            'No Data Found!'.tr,
-                            style: const TextStyle(fontFamily: 'bold'),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: EliteGoldButton(
+                            label: 'CANCEL',
+                            outlined: true,
+                            onTap: () => Get.back(),
                           ),
                         ),
                       ],
                     ),
+                  ),
+                ),
         );
       },
     );

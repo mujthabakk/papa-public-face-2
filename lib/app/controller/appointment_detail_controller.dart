@@ -712,7 +712,7 @@ class AppointmentDetailController extends GetxController
     return BoxDecoration(
         border: Border(
             bottom:
-                BorderSide(width: 1, color: ThemeProvider.greyColor.shade300)));
+                BorderSide(width: 1, color: ThemeProvider.greyColor)));
   }
 
   Future<void> launchInBrowser() async {

@@ -1,18 +1,12 @@
-/*
-  Authors : initappz (Rahul Jograna)
-  Website : https://initappz.com/
-  App Name : Ultimate Salon Full App Flutter V2
-  This App Template Source code is licensed as per the
-  terms found in the Website https://initappz.com/license
-  Copyright and Good Faith Purchasers © 2023-present initappz.
-*/
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:salon_user/app/controller/account_controller.dart';
 import 'package:salon_user/app/controller/reset_password_controller.dart';
+import 'package:salon_user/app/controller/tabs_controller.dart';
+import 'package:salon_user/app/env.dart';
 import 'package:salon_user/app/helper/router.dart';
 import 'package:salon_user/app/util/theme.dart';
-import 'package:salon_user/app/env.dart';
+import 'package:salon_user/app/view/widgets/elite_ui.dart';
 
 class SideMenuScreen extends StatefulWidget {
   const SideMenuScreen({Key? key}) : super(key: key);
@@ -22,274 +16,222 @@ class SideMenuScreen extends StatefulWidget {
 }
 
 class _SideMenuScreenState extends State<SideMenuScreen> {
-  bool isOpen = false;
-
   @override
   Widget build(BuildContext context) {
     return GetBuilder<AccountController>(builder: (value) {
       return Drawer(
-        child: ListView(
-          padding: const EdgeInsets.all(0),
-          children: <Widget>[
-            value.parser.haveLoggedIn()
-                ? SizedBox(
-                    height: 190,
-                    child: DrawerHeader(
-                      decoration: const BoxDecoration(
-                        color: ThemeProvider.appColor,
-                      ),
-                      padding: const EdgeInsets.all(16),
-                      child: Column(
-                        children: [
-                          ClipRRect(
-                            borderRadius: BorderRadius.circular(100),
-                            child: FadeInImage(
-                              height: 70,
-                              width: 70,
-                              image: NetworkImage(
-                                  '${Environments.imageURL}${value.cover}'),
-                              placeholder: const AssetImage(
-                                  "assets/images/placeholder.jpeg"),
-                              imageErrorBuilder: (context, error, stackTrace) {
-                                return Image.asset(
-                                  'assets/images/notfound.png',
-                                  fit: BoxFit.cover,
-                                  height: 70,
-                                  width: 70,
-                                );
-                              },
-                              fit: BoxFit.cover,
+        backgroundColor: ThemeProvider.backgroundColor,
+        child: SafeArea(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Align(
+                alignment: Alignment.centerRight,
+                child: IconButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  icon: const Icon(Icons.close, color: Colors.white70),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Stack(
+                      children: [
+                        Container(
+                          width: 88,
+                          height: 88,
+                          padding: const EdgeInsets.all(3),
+                          decoration: BoxDecoration(
+                            border: Border.all(
+                                color: ThemeProvider.gold, width: 2.5),
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(12),
+                            child: value.parser.haveLoggedIn()
+                                ? EliteNetworkImage(
+                                    url:
+                                        '${Environments.imageURL}${value.cover}',
+                                    fit: BoxFit.cover,
+                                  )
+                                : Image.asset('assets/images/placeholder.jpeg',
+                                    fit: BoxFit.cover),
+                          ),
+                        ),
+                        if (value.parser.haveLoggedIn())
+                          Positioned(
+                            right: 0,
+                            bottom: 0,
+                            child: Container(
+                              width: 22,
+                              height: 22,
+                              decoration: const BoxDecoration(
+                                color: ThemeProvider.gold,
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(Icons.check,
+                                  size: 14, color: Colors.black),
                             ),
                           ),
-                          const SizedBox(
-                            height: 10,
-                          ),
-                          Text(
-                            '${value.firstName} ${value.lastName}',
-                            style: const TextStyle(
-                                fontFamily: 'bold',
-                                fontSize: 14,
-                                color: ThemeProvider.whiteColor),
-                          ),
-                          Text(
-                            value.email,
-                            style: const TextStyle(
-                                color: ThemeProvider.whiteColor,
-                                fontSize: 10,
-                                fontFamily: 'regular'),
-                          ),
-                        ],
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      value.parser.haveLoggedIn()
+                          ? '${value.firstName} ${value.lastName}'
+                          : 'Guest',
+                      style: ThemeProvider.serif(
+                        size: 26,
+                        color: ThemeProvider.gold,
+                        weight: FontWeight.w600,
                       ),
                     ),
-                  )
-                : const SizedBox(
-                    height: 50,
-                  ),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              decoration: const BoxDecoration(
-                  border: Border(
-                      bottom: BorderSide(
-                          width: 1, color: ThemeProvider.backgroundColor))),
-              child: ListView(
-                shrinkWrap: true,
-                physics: const ScrollPhysics(),
-                padding: const EdgeInsets.all(0),
-                children: [
-                  value.parser.haveLoggedIn() == false
-                      ? ListTile(
-                          onTap: () {
-                            Scaffold.of(context).openEndDrawer();
-                            value.onLogin();
-                          },
-                          contentPadding: const EdgeInsets.all(0),
-                          leading: const Icon(Icons.receipt_outlined,
-                              color: ThemeProvider.greyColor),
-                          title: Text('Sign In / Sign Up'.tr,
-                              style: sidemenuTitle()),
-                        )
-                      : const SizedBox(),
-                  value.parser.haveLoggedIn()
-                      ? ListTile(
-                          onTap: () {
-                            Scaffold.of(context).openEndDrawer();
-                            Get.toNamed(AppRouter.appointmentDetailRoutes);
-                          },
-                          contentPadding: const EdgeInsets.all(0),
-                          leading: const Icon(Icons.receipt_outlined,
-                              color: ThemeProvider.greyColor),
-                          title: Text('Appointment'.tr, style: sidemenuTitle()),
-                        )
-                      : const SizedBox(),
-                  value.parser.haveLoggedIn()
-                      ? ListTile(
-                          onTap: () {
-                            Scaffold.of(context).openEndDrawer();
-                            Get.toNamed(AppRouter.addressRoutes);
-                          },
-                          contentPadding: const EdgeInsets.all(0),
-                          leading: const Icon(Icons.location_on_outlined,
-                              color: ThemeProvider.greyColor),
-                          title: Text('Address'.tr, style: sidemenuTitle()),
-                        )
-                      : const SizedBox(),
-                  value.parser.haveLoggedIn()
-                      ? ListTile(
-                          onTap: () {
-                            Scaffold.of(context).openEndDrawer();
-                            Get.toNamed(AppRouter.walletRoutes);
-                          },
-                          contentPadding: const EdgeInsets.all(0),
-                          leading: const Icon(
-                              Icons.account_balance_wallet_outlined,
-                              color: ThemeProvider.greyColor),
-                          title: Text('Wallet'.tr, style: sidemenuTitle()),
-                        )
-                      : const SizedBox(),
-                  value.parser.haveLoggedIn()
-                      ? ListTile(
-                          onTap: () {
-                            Scaffold.of(context).openEndDrawer();
-                            Get.toNamed(AppRouter.referAndEarnRoutes);
-                          },
-                          contentPadding: const EdgeInsets.all(0),
-                          leading: const Icon(Icons.savings_outlined,
-                              color: ThemeProvider.greyColor),
-                          title:
-                              Text('Refer & Earn'.tr, style: sidemenuTitle()),
-                        )
-                      : const SizedBox(),
-                  ListTile(
-                    onTap: () {
-                      Scaffold.of(context).openEndDrawer();
+                    if (value.parser.haveLoggedIn() && value.email.isNotEmpty)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 6),
+                        child: Text(
+                          value.email,
+                          style: ThemeProvider.sans(
+                            size: 12,
+                            color: ThemeProvider.greyColor,
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 24),
+              Expanded(
+                child: ListView(
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                  children: [
+                    _item(Icons.home_outlined, 'Home', () {
+                      Navigator.pop(context);
+                      Get.find<TabsController>().updateTabId(0);
+                    }, active: true),
+                    _item(Icons.location_on_outlined, 'Nearby', () {
+                      Navigator.pop(context);
+                      Get.find<TabsController>().updateTabId(1);
+                    }),
+                    if (value.parser.haveLoggedIn())
+                      _item(Icons.calendar_today_outlined, 'My Appointments',
+                          () {
+                        Navigator.pop(context);
+                        Get.find<TabsController>().updateTabId(4);
+                      }),
+                    _item(Icons.grid_view_outlined, 'Categories', () {
+                      Navigator.pop(context);
+                      Get.find<TabsController>().updateTabId(3);
+                    }),
+                    if (value.parser.haveLoggedIn())
+                      _item(Icons.card_giftcard_outlined, 'Redeem Rewards', () {
+                        Navigator.pop(context);
+                        Get.toNamed(AppRouter.getCouponRoutes());
+                      }),
+                    _item(Icons.shopping_cart_outlined, 'Cart', () {
+                      Navigator.pop(context);
+                      Get.toNamed(AppRouter.getCartRoutes());
+                    }),
+                    if (value.parser.haveLoggedIn())
+                      _item(Icons.card_giftcard, 'Refer & Earn', () {
+                        Navigator.pop(context);
+                        Get.toNamed(AppRouter.referAndEarnRoutes);
+                      }, highlight: true),
+                    _item(Icons.settings_outlined, 'Settings', () {
+                      Navigator.pop(context);
                       Get.delete<ResetPasswordController>(force: true);
                       Get.toNamed(AppRouter.getResetPasswordRoute());
-                    },
-                    contentPadding: const EdgeInsets.all(0),
-                    leading: const Icon(Icons.code_rounded,
-                        color: ThemeProvider.greyColor),
-                    title: Text('Change Password'.tr, style: sidemenuTitle()),
-                  ),
-                  ListTile(
-                    onTap: () {
-                      Scaffold.of(context).openEndDrawer();
-                      Get.toNamed(AppRouter.languagesRoutes);
-                    },
-                    contentPadding: const EdgeInsets.all(0),
-                    leading: const Icon(Icons.language_outlined,
-                        color: ThemeProvider.greyColor),
-                    title: Text('Languages'.tr, style: sidemenuTitle()),
-                  ),
-                  value.parser.haveLoggedIn()
-                      ? ListTile(
-                          onTap: () {
-                            Scaffold.of(context).openEndDrawer();
-                            Get.toNamed(AppRouter.accountChatRoutes);
-                          },
-                          contentPadding: const EdgeInsets.all(0),
-                          leading: const Icon(Icons.message_outlined,
-                              color: ThemeProvider.greyColor),
-                          title: Text('Chats'.tr, style: sidemenuTitle()),
-                        )
-                      : const SizedBox(),
-                  ListTile(
-                    onTap: () {
-                      Scaffold.of(context).openEndDrawer();
-                      Get.toNamed(AppRouter.contactUsRoutes);
-                    },
-                    contentPadding: const EdgeInsets.all(0),
-                    leading: const Icon(Icons.contact_page_outlined,
-                        color: ThemeProvider.greyColor),
-                    title: Text('Contact Us'.tr, style: sidemenuTitle()),
-                  ),
-                ],
+                    }),
+                    if (!value.parser.haveLoggedIn())
+                      _item(Icons.login, 'Sign In / Sign Up', () {
+                        Navigator.pop(context);
+                        value.onLogin();
+                      }, highlight: true),
+                  ],
+                ),
               ),
-            ),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: ListView(
-                physics: const ScrollPhysics(),
-                shrinkWrap: true,
-                padding: const EdgeInsets.all(0),
-                children: [
-                  ListTile(
-                    onTap: () {
-                      Scaffold.of(context).openEndDrawer();
-                      value.onAppPages('Frequently Asked Questions'.tr, '5');
-                    },
-                    contentPadding: const EdgeInsets.all(0),
-                    leading: const Icon(Icons.flag_outlined,
-                        color: ThemeProvider.greyColor),
-                    title: Text('Frequently Asked Questions'.tr,
-                        style: sidemenuTitle()),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
+                child: OutlinedButton(
+                  onPressed: () {
+                    Navigator.pop(context);
+                    if (value.parser.haveLoggedIn()) {
+                      value.logout();
+                    } else {
+                      value.onLogin();
+                    }
+                  },
+                  style: OutlinedButton.styleFrom(
+                    minimumSize: const Size(double.infinity, 48),
+                    side: const BorderSide(color: Color(0xFF3A3A3A)),
+                    foregroundColor: ThemeProvider.logoutRose,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
                   ),
-                  ListTile(
-                    onTap: () {
-                      Scaffold.of(context).openEndDrawer();
-                      value.onAppPages('Help'.tr, '6');
-                    },
-                    contentPadding: const EdgeInsets.all(0),
-                    leading: const Icon(Icons.help_outline,
-                        color: ThemeProvider.greyColor),
-                    title: Text('Help'.tr, style: sidemenuTitle()),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(Icons.logout, size: 18),
+                      const SizedBox(width: 8),
+                      Text(
+                        'LOGOUT SESSION',
+                        style: ThemeProvider.sans(
+                          size: 12,
+                          weight: FontWeight.w600,
+                          color: ThemeProvider.logoutRose,
+                          letterSpacing: 1.2,
+                        ),
+                      ),
+                    ],
                   ),
-                  ListTile(
-                    onTap: () {
-                      Scaffold.of(context).openEndDrawer();
-                      value.onAppPages('Privacy Policy'.tr, '2');
-                    },
-                    contentPadding: const EdgeInsets.all(0),
-                    leading: const Icon(Icons.security_outlined,
-                        color: ThemeProvider.greyColor),
-                    title: Text('Privacy Policy'.tr, style: sidemenuTitle()),
-                  ),
-                  ListTile(
-                    onTap: () {
-                      Scaffold.of(context).openEndDrawer();
-                      value.onAppPages('Terms & Conditions'.tr, '3');
-                    },
-                    contentPadding: const EdgeInsets.all(0),
-                    leading: const Icon(Icons.privacy_tip_outlined,
-                        color: ThemeProvider.greyColor),
-                    title:
-                        Text('Terms & Conditions'.tr, style: sidemenuTitle()),
-                  ),
-                  ListTile(
-                    onTap: () {
-                      Scaffold.of(context).openEndDrawer();
-                      value.onAppPages('About us'.tr, '1');
-                    },
-                    contentPadding: const EdgeInsets.all(0),
-                    leading: const Icon(Icons.info_outline,
-                        color: ThemeProvider.greyColor),
-                    title: Text('About'.tr, style: sidemenuTitle()),
-                  ),
-                  value.parser.haveLoggedIn()
-                      ? ListTile(
-                          onTap: () {
-                            Scaffold.of(context).openEndDrawer();
-                            Get.toNamed(AppRouter.login);
-                          },
-                          contentPadding: const EdgeInsets.all(0),
-                          leading: const Icon(Icons.logout,
-                              color: ThemeProvider.greyColor),
-                          title: Text('Logout'.tr, style: sidemenuTitle()),
-                        )
-                      : const SizedBox(),
-                ],
+                ),
               ),
-            )
-          ],
+              Padding(
+                padding: const EdgeInsets.only(bottom: 16),
+                child: Center(
+                  child: Text(
+                    'PAPA BEAR ELITE V4.2.1',
+                    style: ThemeProvider.sans(
+                      size: 10,
+                      color: const Color(0xFF5A5A5A),
+                      letterSpacing: 1,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       );
     });
   }
 
-  // Widget _buildProfile() {
-  //   return ;
-  // }
-
-  sidemenuTitle() {
-    return const TextStyle(fontFamily: 'bold');
+  Widget _item(IconData icon, String label, VoidCallback onTap,
+      {bool active = false, bool highlight = false}) {
+    final color = active || highlight
+        ? ThemeProvider.gold
+        : const Color(0xFFBDBDBD);
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: 2),
+      decoration: BoxDecoration(
+        color: active ? const Color(0xFF2A2A2A) : Colors.transparent,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: ListTile(
+        onTap: onTap,
+        leading: Icon(icon, color: color, size: 22),
+        title: Text(
+          label,
+          style: ThemeProvider.sans(
+            size: 15,
+            weight: FontWeight.w500,
+            color: color,
+          ),
+        ),
+      ),
+    );
   }
 }

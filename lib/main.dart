@@ -17,7 +17,8 @@ import 'firebase_options.dart';
 void main() async {
   SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle.light);
   SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
-    statusBarColor: ThemeProvider.appColor, // status bar color
+    statusBarColor: ThemeProvider.backgroundColor,
+    statusBarIconBrightness: Brightness.light,
   ));
   WidgetsFlutterBinding.ensureInitialized();
   await dotenv.load(fileName: '.env');
@@ -41,9 +42,9 @@ class MyApp extends StatelessWidget {
       splitScreenMode: true,
       builder: (context, child) {
         return GetMaterialApp(
-          theme: ThemeData.light(useMaterial3: false),
+          theme: dark,
           title: AppConstants.appName,
-          color: const Color.fromARGB(225, 140, 87, 238),
+          color: ThemeProvider.gold,
           debugShowCheckedModeBanner: false,
           navigatorKey: Get.key,
           initialRoute: AppRouter.splash,

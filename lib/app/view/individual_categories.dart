@@ -21,7 +21,7 @@ class _IndividualCategoriesScreenState
     return GetBuilder<IndividualCategoriesController>(
       builder: (value) {
         return Scaffold(
-          backgroundColor: ThemeProvider.whiteColor,
+          backgroundColor: ThemeProvider.backgroundColor,
           appBar: AppBar(
             backgroundColor: ThemeProvider.appColor,
             iconTheme: const IconThemeData(color: ThemeProvider.whiteColor),

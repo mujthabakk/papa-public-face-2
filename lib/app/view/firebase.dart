@@ -1,11 +1,4 @@
-/*
-  Authors : initappz (Rahul Jograna)
-  Website : https://initappz.com/
-  App Name : Ultimate Salon Full App Flutter V2
-  This App Template Source code is licensed as per the
-  terms found in the Website https://initappz.com/license
-  Copyright and Good Faith Purchasers © 2023-present initappz.
-*/
+/*Papabear*/
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:salon_user/app/controller/firebase_controller.dart';
@@ -69,13 +62,14 @@ class _FirebaseVerificationScreenState
   Widget build(BuildContext context) {
     return GetBuilder<FirebaseController>(builder: (value) {
       return Scaffold(
+        backgroundColor: ThemeProvider.backgroundColor,
         appBar: AppBar(
-          backgroundColor: ThemeProvider.appColor,
+          backgroundColor: ThemeProvider.backgroundColor,
           automaticallyImplyLeading: false,
           elevation: 0.0,
           centerTitle: false,
           title: Text('Verify your phone number'.tr,
-              style: ThemeProvider.titleStyle),
+              style: ThemeProvider.serif(size: 18, color: ThemeProvider.gold)),
         ),
         body: Stack(
           children: <Widget>[

@@ -49,12 +49,12 @@ class _IndividualPackagesScreenState extends State<IndividualPackagesScreen> {
       builder: (controller) {
         if (!controller.apiCalled) {
           return const Center(
-            child: CircularProgressIndicator(color: ThemeProvider.appColor),
+            child: CircularProgressIndicator(color: ThemeProvider.gold),
           );
         }
 
         return Scaffold(
-          backgroundColor: ThemeProvider.whiteColor,
+          backgroundColor: ThemeProvider.backgroundColor,
           body: NestedScrollView(
             controller: _scrollController,
             headerSliverBuilder: (context, innerBoxIsScrolled) => [

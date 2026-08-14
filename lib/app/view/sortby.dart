@@ -18,9 +18,12 @@ class SortByScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: ThemeProvider.backgroundColor,
       appBar: AppBar(
-        title: Text('Sort By'),
-        backgroundColor: ThemeProvider.appColor,
+        title: Text('Sort By',
+            style: ThemeProvider.serif(size: 20, color: ThemeProvider.gold)),
+        backgroundColor: ThemeProvider.backgroundColor,
+        iconTheme: const IconThemeData(color: ThemeProvider.gold),
       ),
       body: ListView.builder(
         itemCount: sortOptions.length,

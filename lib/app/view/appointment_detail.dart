@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:salon_user/app/controller/appointment_detail_controller.dart';
 import 'package:salon_user/app/env.dart';
+import 'package:salon_user/app/helper/router.dart';
 import 'package:salon_user/app/util/theme.dart';
+import 'package:salon_user/app/view/widgets/elite_ui.dart';
 
 class AppointmentDetailScreen extends StatefulWidget {
   const AppointmentDetailScreen({Key? key}) : super(key: key);
@@ -18,577 +20,415 @@ class _AppointmentDetailScreenState extends State<AppointmentDetailScreen> {
     return GetBuilder<AppointmentDetailController>(
       builder: (value) {
         return Scaffold(
-          backgroundColor: ThemeProvider.whiteColor,
-          appBar: AppBar(
-            backgroundColor: ThemeProvider.appColor,
-            elevation: 0,
-            centerTitle: true,
-            iconTheme: const IconThemeData(color: ThemeProvider.whiteColor),
-            title: Text(
-              'Appointment Detail'.tr,
-              style: ThemeProvider.titleStyle,
-            ),
-            actions: <Widget>[
-              IconButton(
-                onPressed: () => value.launchInBrowser(),
-                icon: const Icon(Icons.print_outlined),
-              ),
-              IconButton(
-                onPressed: () => value.openHelpModal(),
-                icon: const Icon(Icons.question_mark_outlined),
-              ),
-            ],
+          backgroundColor: ThemeProvider.backgroundColor,
+          appBar: EliteAppBar(
+            showBack: true,
+            title: 'Invoice',
+            onMore: value.openHelpModal,
           ),
           body: value.apiCalled != true
               ? const Center(
-                  child: CircularProgressIndicator(
-                    color: ThemeProvider.appColor,
-                  ),
+                  child: CircularProgressIndicator(color: ThemeProvider.gold),
                 )
-              : _buildAppointmentDetails(value),
+              : ListView(
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+                  children: [
+                    _successHeader(value),
+                    const SizedBox(height: 22),
+                    _transactionCard(value),
+                    const SizedBox(height: 14),
+                    _receiptCard(value),
+                    const SizedBox(height: 14),
+                    _providerCard(value),
+                  ],
+                ),
           bottomNavigationBar: value.apiCalled == false
               ? const SizedBox()
-              : _buildBottomBar(value),
+              : _bottomBar(value),
         );
       },
     );
   }
 
-  Widget _buildAppointmentDetails(AppointmentDetailController value) {
-    return SingleChildScrollView(
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          children: [
-            _buildInfoCard(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildProviderInfo(value),
-                  const Divider(height: 24, thickness: 1),
-                  _buildSectionHeader('Booking Date & Time'.tr),
-                  const SizedBox(height: 8),
-                  _buildInfoRow('Booking Date'.tr, value.savedDate),
-                  const SizedBox(height: 4),
-                  _buildInfoRow('Booking Time'.tr, value.slot),
-                ],
-              ),
-            ),
-            const SizedBox(height: 16),
-            if (value.appointmentInfo.items!.services!.isNotEmpty ||
-                value.appointmentInfo.items!.packages!.isNotEmpty)
-              _buildInfoCard(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    if (value.appointmentInfo.items!.services!.isNotEmpty) ...[
-                      _buildSectionHeader('Services'.tr),
-                      const SizedBox(height: 8),
-                      ..._buildServices(value),
-                      const SizedBox(height: 16),
-                    ],
-                    if (value.appointmentInfo.items!.packages!.isNotEmpty) ...[
-                      _buildSectionHeader('Packages'.tr),
-                      const SizedBox(height: 8),
-                      ..._buildPackages(value),
-                    ],
-                  ],
-                ),
-              ),
-            const SizedBox(height: 16),
-            _buildInfoCard(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildSectionHeader('Pricing'.tr),
-                  const SizedBox(height: 12),
-                  _buildInfoRow(
-                      'Discount'.tr, _formatCurrency(value.discount, value)),
-                  const SizedBox(height: 4),
-                  _buildInfoRow('Wallet Discount'.tr,
-                      _formatCurrency(value.walletDiscount, value)),
-                  const SizedBox(height: 4),
-                  _buildInfoRow('Distance Cost'.tr,
-                      _formatCurrency(value.distanceCost, value)),
-                  const SizedBox(height: 4),
-                  _buildInfoRow('Service Tax (5%)'.tr,
-                      _formatCurrency(value.serviceTax, value)),
-                  const SizedBox(height: 4),
-                  _buildInfoRow(
-                      'Total'.tr, _formatCurrency(value.total, value)),
-                  const SizedBox(height: 4),
-                  _buildInfoRow(
-                      'Payment Method'.tr,
-                      value
-                          .paymentName[value.appointmentInfo.payMethod as int]),
-                  const Divider(height: 24, thickness: 1),
-                  _buildInfoRow(
-                    'Total Amount'.tr,
-                    _formatCurrency(value.grandTotal, value),
-                    labelStyle: const TextStyle(
-                        fontSize: 16, fontWeight: FontWeight.bold),
-                    valueStyle: const TextStyle(
-                      color: ThemeProvider.appColor,
-                      fontFamily: 'bold',
-                      fontSize: 16,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildInfoCard({required Widget child}) {
-    return Container(
-      width: double.infinity,
-      decoration: BoxDecoration(
-        color: ThemeProvider.whiteColor,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: ThemeProvider.greyColor.withOpacity(0.2),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      padding: const EdgeInsets.all(16),
-      child: child,
-    );
-  }
-
-  Widget _buildGenderIcon(int? gender) {
-    if (gender == null) return const SizedBox.shrink();
-
-    IconData icon;
-    Color color;
-    String text;
-
-    switch (gender) {
-      case 0:
-        icon = Icons.child_care;
-        color = Colors.orange;
-        text = 'Kids';
-        break;
-      case 1:
-        icon = Icons.male;
-        color = Colors.blue;
-        text = 'Male';
-        break;
-      case 2:
-        icon = Icons.female;
-        color = Colors.pink;
-        text = 'Female';
-        break;
-      default:
-        icon = Icons.group;
-        color = Colors.green;
-        text = 'Family';
-        break;
-    }
-
-    return Row(
-      mainAxisSize: MainAxisSize.min,
+  Widget _successHeader(AppointmentDetailController value) {
+    final paid = value.appointmentInfo.status != 5 &&
+        value.appointmentInfo.status != 6;
+    return Column(
       children: [
-        Icon(icon, size: 16, color: color),
-        const SizedBox(width: 4),
-        Text(
-          ' $text - ',
-          style: TextStyle(
-            fontSize: 14,
-            color: color,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildProviderInfo(AppointmentDetailController value) {
-    final bool isSalon = value.appointmentInfo.salonId != 0;
-    final String providerName = isSalon
-        ? value.appointmentInfo.salonInfo!.name.toString()
-        : '${value.appointmentInfo.ownerInfo!.firstName} ${value.appointmentInfo.ownerInfo!.lastName}';
-    final String providerAddress = isSalon
-        ? value.appointmentInfo.salonInfo!.address.toString()
-        : value.appointmentInfo.individualInfo!.address.toString();
-    final String providerImage = isSalon
-        ? '${Environments.imageURL}${value.appointmentInfo.salonInfo!.cover}'
-        : '${Environments.imageURL}${value.appointmentInfo.ownerInfo!.cover}';
-    final String providerId = isSalon
-        ? value.appointmentInfo.salonId.toString()
-        : value.appointmentInfo.freelancerId.toString();
-
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        ClipRRect(
-          borderRadius: BorderRadius.circular(10),
-          child: SizedBox.fromSize(
-            size: const Size.fromRadius(35),
-            child: FadeInImage(
-              image: NetworkImage(providerImage),
-              placeholder: const AssetImage("assets/images/placeholder.jpeg"),
-              imageErrorBuilder: (context, error, stackTrace) {
-                return Image.asset(
-                  'assets/images/notfound.png',
-                  fit: BoxFit.cover,
-                  height: 70,
-                  width: 70,
-                );
-              },
-              fit: BoxFit.cover,
-            ),
-          ),
-        ),
-        const SizedBox(width: 16),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                providerName,
-                style: const TextStyle(
-                  fontFamily: 'bold',
-                  fontSize: 16,
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                providerAddress,
-                style: const TextStyle(
-                  fontSize: 14,
-                  color: Colors.grey,
-                ),
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
+        Container(
+          width: 72,
+          height: 72,
+          decoration: BoxDecoration(
+            color: ThemeProvider.surface,
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: ThemeProvider.gold.withValues(alpha: 0.28),
+                blurRadius: 22,
               ),
             ],
           ),
-        ),
-        IconButton(
-          onPressed: () {
-            value.onContactInfo(
-              providerName,
-              value.appointmentInfo.ownerInfo!.mobile!,
-              value.appointmentInfo.ownerInfo!.email!,
-              providerId,
-            );
-          },
-          icon: const Icon(
-            Icons.info_outline,
-            color: ThemeProvider.appColor,
+          child: Center(
+            child: Container(
+              width: 42,
+              height: 42,
+              decoration: const BoxDecoration(
+                color: ThemeProvider.gold,
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                paid ? Icons.check : Icons.close,
+                color: Colors.black,
+                size: 24,
+              ),
+            ),
           ),
+        ),
+        const SizedBox(height: 14),
+        Text(
+          paid ? 'PAYMENT SUCCESSFUL' : value.orderStatus.toUpperCase(),
+          style: ThemeProvider.sans(
+            size: 11,
+            weight: FontWeight.w700,
+            color: ThemeProvider.gold,
+            letterSpacing: 1.6,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          _money(value.grandTotal, value),
+          style: ThemeProvider.serif(size: 36, color: ThemeProvider.gold),
         ),
       ],
     );
   }
 
-  Widget _buildSectionHeader(String title) {
-    return Text(
-      title,
-      style: const TextStyle(
-        color: ThemeProvider.appColor,
-        fontFamily: 'bold',
-        fontSize: 16,
-      ),
-    );
-  }
-
-  Widget _buildInfoRow(String label, String value,
-      {TextStyle? labelStyle, TextStyle? valueStyle}) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+  Widget _transactionCard(AppointmentDetailController value) {
+    final methodIndex = value.appointmentInfo.payMethod ?? 0;
+    final method = methodIndex >= 0 && methodIndex < value.paymentName.length
+        ? value.paymentName[methodIndex]
+        : 'NA';
+    return EliteCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            label,
-            style:
-                labelStyle ?? const TextStyle(color: Colors.grey, fontSize: 14),
+            'TRANSACTION DETAILS',
+            style: ThemeProvider.sans(
+              size: 11,
+              weight: FontWeight.w700,
+              color: ThemeProvider.greyColor,
+              letterSpacing: 1.4,
+            ),
           ),
+          const SizedBox(height: 14),
+          _kv('Date', value.savedDate),
+          _kv('Time', value.slot),
+          _kv('Transaction ID', '#PB-${value.appointmentId}',
+              valueColor: ThemeProvider.gold, valueWeight: FontWeight.w700),
+          _kv('Payment Method', method),
+          _kv('Status', value.orderStatus),
+        ],
+      ),
+    );
+  }
+
+  Widget _receiptCard(AppointmentDetailController value) {
+    final services = value.appointmentInfo.items?.services ?? [];
+    final packages = value.appointmentInfo.items?.packages ?? [];
+    return EliteCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
           Text(
-            value,
-            style: valueStyle ??
-                const TextStyle(fontWeight: FontWeight.w500, fontSize: 14),
+            'ITEMIZED RECEIPT',
+            style: ThemeProvider.sans(
+              size: 11,
+              weight: FontWeight.w700,
+              color: ThemeProvider.greyColor,
+              letterSpacing: 1.4,
+            ),
+          ),
+          const SizedBox(height: 14),
+          ...services.map(
+            (s) => _itemRow(
+              s.name.toString(),
+              _genderLabel(s.gender),
+              _money(s.off ?? s.price, value),
+            ),
+          ),
+          ...packages.map(
+            (p) => _itemRow(
+              p.name.toString(),
+              'Package',
+              _money(p.off ?? p.price, value),
+            ),
+          ),
+          if (_positive(value.discount))
+            _itemRow(
+              'Discount'.tr,
+              'Applied offer'.tr,
+              _money(value.discount, value),
+              muted: true,
+            ),
+          if (_positive(value.walletDiscount))
+            _itemRow(
+              'Wallet'.tr,
+              '',
+              _money(value.walletDiscount, value),
+              muted: true,
+            ),
+          if (_positive(value.distanceCost))
+            _itemRow(
+              'Distance Cost'.tr,
+              'Travel'.tr,
+              _money(value.distanceCost, value),
+              muted: true,
+            ),
+          if (_positive(value.serviceTax))
+            _itemRow(
+              'Taxes'.tr,
+              'Service tax'.tr,
+              _money(value.serviceTax, value),
+              muted: true,
+            ),
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 12),
+            child: Row(
+              children: List.generate(
+                24,
+                (i) => Expanded(
+                  child: Container(
+                    height: 1,
+                    margin: const EdgeInsets.symmetric(horizontal: 2),
+                    color: const Color(0xFF3A3A3A),
+                  ),
+                ),
+              ),
+            ),
+          ),
+          Row(
+            children: [
+              Text('Total Paid', style: ThemeProvider.serif(size: 20)),
+              const Spacer(),
+              Text(
+                _money(value.grandTotal, value),
+                style: ThemeProvider.serif(size: 20, color: ThemeProvider.gold),
+              ),
+            ],
           ),
         ],
       ),
     );
   }
 
-  List<Widget> _buildServices(AppointmentDetailController controller) {
-    return List.generate(
-      controller.appointmentInfo.items!.services!.length,
-      (index) {
-        final service = controller.appointmentInfo.items!.services![index];
-        return Padding(
-          padding: const EdgeInsets.only(bottom: 8),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              _buildGenderIcon(service.gender),
-              const SizedBox(
-                width: 5,
-              ),
-              Expanded(
-                child: Text(
-                  service.name.toString(),
-                  style: const TextStyle(fontSize: 14),
-                ),
-              ),
-              RichText(
-                text: TextSpan(
-                  children: [
-                    TextSpan(
-                      text: _formatCurrency(service.price, controller),
-                      style: const TextStyle(
-                        fontSize: 14,
-                        color: Colors.grey,
-                        decoration: TextDecoration.lineThrough,
-                      ),
-                    ),
-                    const TextSpan(text: '  '),
-                    TextSpan(
-                      text: _formatCurrency(service.off, controller),
-                      style: const TextStyle(
-                        fontSize: 14,
-                        color: ThemeProvider.blackColor,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
+  Widget _providerCard(AppointmentDetailController value) {
+    final isSalon = value.appointmentInfo.salonId != 0;
+    final name = isSalon
+        ? value.appointmentInfo.salonInfo!.name.toString()
+        : '${value.appointmentInfo.ownerInfo!.firstName} ${value.appointmentInfo.ownerInfo!.lastName}';
+    final address = isSalon
+        ? value.appointmentInfo.salonInfo!.address.toString()
+        : value.appointmentInfo.individualInfo!.address.toString();
+    final image = isSalon
+        ? '${Environments.imageURL}${value.appointmentInfo.salonInfo!.cover}'
+        : '${Environments.imageURL}${value.appointmentInfo.ownerInfo!.cover}';
+    final id = isSalon
+        ? value.appointmentInfo.salonId.toString()
+        : value.appointmentInfo.freelancerId.toString();
+    return EliteCard(
+      child: Row(
+        children: [
+          ClipRRect(
+            borderRadius: BorderRadius.circular(10),
+            child: SizedBox(
+              width: 56,
+              height: 56,
+              child: EliteNetworkImage(url: image),
+            ),
           ),
-        );
-      },
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(name, style: ThemeProvider.serif(size: 16)),
+                const SizedBox(height: 4),
+                Text(
+                  address,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: ThemeProvider.sans(
+                      size: 12, color: ThemeProvider.greyColor),
+                ),
+              ],
+            ),
+          ),
+          IconButton(
+            onPressed: () => value.onContactInfo(
+              name,
+              value.appointmentInfo.ownerInfo!.mobile!,
+              value.appointmentInfo.ownerInfo!.email!,
+              id,
+            ),
+            icon: const Icon(Icons.chat_bubble_outline,
+                color: ThemeProvider.gold),
+          ),
+        ],
+      ),
     );
   }
 
-  List<Widget> _buildPackages(AppointmentDetailController controller) {
-    return List.generate(
-      controller.appointmentInfo.items!.packages!.length,
-      (index) {
-        final package = controller.appointmentInfo.items!.packages![index];
-        return Container(
-          margin: const EdgeInsets.only(bottom: 12),
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: Colors.grey.shade50,
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Expanded(
-                    child: Text(
-                      package.name.toString(),
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 14,
-                      ),
-                    ),
+  Widget _bottomBar(AppointmentDetailController value) {
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            EliteGoldButton(
+              label: 'DOWNLOAD RECEIPT',
+              icon: Icons.download,
+              onTap: value.launchInBrowser,
+            ),
+            const SizedBox(height: 10),
+            EliteGoldButton(
+              label: 'BACK TO HOME',
+              outlined: true,
+              icon: Icons.home_outlined,
+              onTap: () {
+                Get.offAllNamed(AppRouter.getTabsBarRoute());
+              },
+            ),
+            if (value.appointmentInfo.status == 0) ...[
+              const SizedBox(height: 10),
+              TextButton(
+                onPressed: () => value.onUpdateAppointmentStatus(5),
+                child: Text(
+                  'CANCEL APPOINTMENT',
+                  style: ThemeProvider.sans(
+                    size: 12,
+                    weight: FontWeight.w700,
+                    color: ThemeProvider.logoutRose,
+                    letterSpacing: 1,
                   ),
-                  RichText(
-                    text: TextSpan(
-                      children: [
-                        TextSpan(
-                          text: _formatCurrency(package.price, controller),
-                          style: const TextStyle(
-                            fontSize: 14,
-                            color: Colors.grey,
-                            decoration: TextDecoration.lineThrough,
-                          ),
-                        ),
-                        const TextSpan(text: '  '),
-                        TextSpan(
-                          text: _formatCurrency(package.off, controller),
-                          style: const TextStyle(
-                            fontSize: 14,
-                            color: ThemeProvider.blackColor,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ],
-                    ),
+                ),
+              ),
+            ],
+            if (value.appointmentInfo.status == 4) ...[
+              const SizedBox(height: 10),
+              TextButton(
+                onPressed: () => value
+                    .onAddReview(value.appointmentInfo.freelancerId as int),
+                child: Text(
+                  'ADD REVIEW',
+                  style: ThemeProvider.sans(
+                    size: 12,
+                    weight: FontWeight.w700,
+                    color: ThemeProvider.gold,
+                    letterSpacing: 1,
+                  ),
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _kv(String label, String value,
+      {Color? valueColor, FontWeight? valueWeight}) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Row(
+        children: [
+          Text(label,
+              style: ThemeProvider.sans(
+                  size: 13, color: ThemeProvider.greyColor)),
+          const Spacer(),
+          Flexible(
+            child: Text(
+              value,
+              textAlign: TextAlign.right,
+              style: ThemeProvider.sans(
+                size: 13,
+                weight: valueWeight ?? FontWeight.w500,
+                color: valueColor ?? ThemeProvider.whiteColor,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _itemRow(String title, String subtitle, String price,
+      {bool muted = false}) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: muted
+                      ? ThemeProvider.sans(
+                          size: 13, color: ThemeProvider.greyColor)
+                      : ThemeProvider.sans(
+                          size: 14, weight: FontWeight.w600),
+                ),
+                if (subtitle.isNotEmpty) ...[
+                  const SizedBox(height: 2),
+                  Text(
+                    subtitle,
+                    style: ThemeProvider.sans(
+                        size: 11, color: ThemeProvider.greyColor),
                   ),
                 ],
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Included Services:',
-                style: TextStyle(
-                  fontSize: 12,
-                  color: Colors.grey.shade700,
-                ),
-              ),
-              const SizedBox(height: 4),
-              ...List.generate(
-                package.services!.length,
-                (serviceIndex) => Padding(
-                  padding: const EdgeInsets.only(left: 8, top: 4),
-                  child: Row(
-                    children: [
-                      Icon(
-                        Icons.check_circle,
-                        size: 14,
-                        color: Colors.green.shade300,
-                      ),
-                      const SizedBox(width: 4),
-                      _buildGenderIcon(package.services![serviceIndex].gender),
-                      const SizedBox(
-                        width: 5,
-                      ),
-                      Expanded(
-                        child: Text(
-                          package.services![serviceIndex].name.toString(),
-                          style: const TextStyle(fontSize: 12),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
+              ],
+            ),
           ),
-        );
-      },
+          Text(
+            price,
+            style: ThemeProvider.sans(
+              size: 13,
+              weight: FontWeight.w600,
+              color: muted ? ThemeProvider.greyColor : ThemeProvider.gold,
+            ),
+          ),
+        ],
+      ),
     );
   }
 
-  Widget _buildBottomBar(AppointmentDetailController value) {
-    // Appointment status handling
-    if (value.appointmentInfo.status == 1 ||
-        value.appointmentInfo.status == 2 ||
-        value.appointmentInfo.status == 3 ||
-        value.appointmentInfo.status == 7 ||
-        value.appointmentInfo.status == 8 ||
-        value.appointmentInfo.status == 5 ||
-        value.appointmentInfo.status == 6) {
-      // Status display
-      return Container(
-        padding: const EdgeInsets.all(16),
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black12,
-              blurRadius: 5,
-              offset: Offset(0, -2),
-            ),
-          ],
-        ),
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 12),
-          decoration: BoxDecoration(
-            color: ThemeProvider.appColor.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Text(
-            '${'Your Appoinments Status'.tr} : ${value.orderStatus}',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontWeight: FontWeight.w500,
-              color: ThemeProvider.appColor,
-            ),
-          ),
-        ),
-      );
-    } else if (value.appointmentInfo.status == 0) {
-      // Cancel button
-      return Container(
-        padding: const EdgeInsets.all(16),
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black12,
-              blurRadius: 5,
-              offset: Offset(0, -2),
-            ),
-          ],
-        ),
-        child: SizedBox(
-          width: double.infinity,
-          height: 48,
-          child: ElevatedButton(
-            onPressed: () => value.onUpdateAppointmentStatus(5),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: ThemeProvider.appColor,
-              foregroundColor: ThemeProvider.whiteColor,
-              elevation: 2,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-            ),
-            child: Text(
-              'Cancel'.tr,
-              style: const TextStyle(
-                letterSpacing: 1,
-                fontSize: 16,
-                fontFamily: 'bold',
-              ),
-            ),
-          ),
-        ),
-      );
-    } else if (value.appointmentInfo.status == 4) {
-      // Add review button
-      return Container(
-        padding: const EdgeInsets.all(16),
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black12,
-              blurRadius: 5,
-              offset: Offset(0, -2),
-            ),
-          ],
-        ),
-        child: SizedBox(
-          width: double.infinity,
-          height: 48,
-          child: ElevatedButton(
-            onPressed: () =>
-                value.onAddReview(value.appointmentInfo.freelancerId as int),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: ThemeProvider.pink,
-              foregroundColor: ThemeProvider.whiteColor,
-              elevation: 2,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-            ),
-            child: Text(
-              'Add Review'.tr,
-              style: const TextStyle(
-                letterSpacing: 1,
-                fontSize: 16,
-                fontFamily: 'bold',
-              ),
-            ),
-          ),
-        ),
-      );
-    } else {
-      return const SizedBox();
+  String _genderLabel(int? gender) {
+    switch (gender) {
+      case 0:
+        return 'Kids';
+      case 1:
+        return 'Male';
+      case 2:
+        return 'Female';
+      default:
+        return 'Service';
     }
   }
 
-  String _formatCurrency(
-      dynamic amount, AppointmentDetailController controller) {
-    return controller.currencySide == 'left'
-        ? '${controller.currencySymbol}${amount.toString()}'
-        : '${amount.toString()}${controller.currencySymbol}';
+  bool _positive(dynamic amount) {
+    return (double.tryParse(amount.toString()) ?? 0) > 0;
+  }
+
+  String _money(dynamic amount, AppointmentDetailController value) {
+    return elitePrice(
+      value.currencySide,
+      value.currencySymbol,
+      double.tryParse(amount.toString()) ?? 0,
+      digits: 2,
+    );
   }
 }

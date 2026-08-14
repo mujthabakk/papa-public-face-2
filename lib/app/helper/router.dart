@@ -114,6 +114,7 @@ import 'package:salon_user/app/view/slot.dart';
 import 'package:salon_user/app/view/sortby.dart';
 import 'package:salon_user/app/view/freelancer_page.dart';
 import 'package:salon_user/app/view/splash.dart';
+import 'package:salon_user/app/view/subcategories.dart';
 import 'package:salon_user/app/view/tabs.dart';
 import 'package:salon_user/app/view/top_offers.dart';
 import 'package:salon_user/app/view/top_packages.dart';

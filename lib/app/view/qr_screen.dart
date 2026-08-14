@@ -13,9 +13,12 @@ class QRViewExample extends StatelessWidget {
 
     return GetBuilder<QRController>(builder: (controller) {
       return Scaffold(
+        backgroundColor: ThemeProvider.backgroundColor,
         appBar: AppBar(
-          backgroundColor: ThemeProvider.appColor,
-          title: const Text('Scan QR Code'),
+          backgroundColor: ThemeProvider.backgroundColor,
+          title: Text('Scan QR Code',
+              style: ThemeProvider.serif(size: 20, color: ThemeProvider.gold)),
+          iconTheme: const IconThemeData(color: ThemeProvider.gold),
           actions: [
             Obx(
               () => IconButton(

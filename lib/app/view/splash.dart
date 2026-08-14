@@ -138,17 +138,18 @@ class _SplashScreenState extends State<SplashScreen> {
           //     alignment: Alignment.center,
           //   ), //CircularAvatar
           // ),
-          const Positioned(
+          Positioned(
             top: 180,
             child: Center(
               child: Text(
-                Environments.appName,
-                style: TextStyle(
-                    color: ThemeProvider.whiteColor,
-                    fontFamily: 'bold',
-                    fontSize: 20),
+                'PAPA BEAR',
+                style: ThemeProvider.serif(
+                    color: ThemeProvider.gold,
+                    size: 22,
+                    weight: FontWeight.w700,
+                    letterSpacing: 3),
               ),
-            ), //CircularAvatar
+            ),
           ),
           const Positioned(
             bottom: 50,

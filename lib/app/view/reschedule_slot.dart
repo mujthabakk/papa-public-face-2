@@ -18,7 +18,7 @@ class _RescheduleSlotScreenState extends State<RescheduleSlotScreen> {
     return GetBuilder<RescheduleSlotController>(
       builder: (value) {
         return Scaffold(
-          backgroundColor: ThemeProvider.whiteColor,
+          backgroundColor: ThemeProvider.backgroundColor,
           appBar: AppBar(
             backgroundColor: ThemeProvider.appColor,
             elevation: 0,
@@ -27,13 +27,13 @@ class _RescheduleSlotScreenState extends State<RescheduleSlotScreen> {
             centerTitle: true,
             title: Text(
               'Reschedule Slots'.tr,
-              style: ThemeProvider.titleStyle,
+              style: ThemeProvider.serif(size: 20, color: ThemeProvider.gold),
             ),
           ),
           body: value.apiCalled == false
               ? const Center(
                   child:
-                      CircularProgressIndicator(color: ThemeProvider.appColor),
+                      CircularProgressIndicator(color: ThemeProvider.gold),
                 )
               : SingleChildScrollView(
                   child: Padding(
@@ -73,8 +73,8 @@ class _RescheduleSlotScreenState extends State<RescheduleSlotScreen> {
                             height: 90,
                             controller: value.controller,
                             initialSelectedDate: DateTime.now(),
-                            selectionColor: ThemeProvider.appColor,
-                            selectedTextColor: Colors.white,
+                            selectionColor: ThemeProvider.gold,
+                            selectedTextColor: Colors.black,
                             activeDates: List.generate(
                                 30,
                                 (index) =>

@@ -22,15 +22,7 @@ class _IntroScreenState extends State<IntroScreen> {
     return GetBuilder<IntroController>(builder: (value) {
       return Scaffold(
         extendBodyBehindAppBar: true,
-        // appBar: AppBar(
-        //   elevation: 0,
-        //   backgroundColor: ThemeProvider.whiteColor,
-        //   title: Row(
-        //     mainAxisAlignment: MainAxisAlignment.end,
-        //   ),
-        //   actions: <Widget>[getLanguages()],
-        // ),
-        backgroundColor: ThemeProvider.whiteColor,
+        backgroundColor: ThemeProvider.backgroundColor,
         body: _buildBody(),
         bottomNavigationBar: SafeArea(
           child: SizedBox(
@@ -45,8 +37,6 @@ class _IntroScreenState extends State<IntroScreen> {
                   _buildBottomNavigationBar3()
                 else if (currentIndex == 3)
                   _buildBottomNavigationBar4()
-                // else if (currentIndex == 4)
-                //   _buildBottomNavigationBar5()
               ],
             ),
           ),
@@ -62,7 +52,7 @@ class _IntroScreenState extends State<IntroScreen> {
         padding: const EdgeInsets.symmetric(vertical: 20),
         child: IconButton(
           icon: const Icon(Icons.translate),
-          color: ThemeProvider.appColor,
+          color: ThemeProvider.gold,
           tooltip: "Save Todo and Retrun to List".tr,
           onPressed: () {},
         ),
@@ -116,8 +106,6 @@ class _IntroScreenState extends State<IntroScreen> {
                     _buildSlide3(context)
                   else if (i == 3)
                     _buildSlide4(context),
-                  // else if (i == 4)
-                  //   _buildSlide5(context),
                   _buildDots()
                 ],
               ),
@@ -128,46 +116,58 @@ class _IntroScreenState extends State<IntroScreen> {
     );
   }
 
+  Widget _slideCopy(String title, String body) {
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+          child: Text(
+            title,
+            textAlign: TextAlign.center,
+            style: ThemeProvider.serif(
+              size: 22,
+              weight: FontWeight.w700,
+              color: ThemeProvider.gold,
+            ),
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.only(
+              top: 8.0, right: 18, left: 18, bottom: 8),
+          child: Text(
+            body,
+            textAlign: TextAlign.center,
+            style: ThemeProvider.sans(
+              size: 15,
+              weight: FontWeight.w500,
+              color: Colors.white70,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _slideImage(String asset) {
+    return Container(
+      height: 360,
+      decoration: BoxDecoration(
+        image: DecorationImage(
+          image: AssetImage(asset),
+          fit: BoxFit.contain,
+        ),
+      ),
+    );
+  }
+
   Widget _buildSlide1(BuildContext context) {
     return Column(
       children: [
-        Container(
-          height: 360,
-          decoration: const BoxDecoration(
-            image: DecorationImage(
-                image: AssetImage(
-                  'assets/sliders/1.png',
-                ),
-                fit: BoxFit.contain),
-          ),
-        ),
-        Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-              child: Text(
-                'Discover Your Perfect Hair Look'.tr,
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                    fontFamily: 'bold',
-                    color: ThemeProvider.blackColor,
-                    fontSize: 19),
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.only(
-                  top: 8.0, right: 18, left: 18, bottom: 8),
-              child: Text(
-                'Book top-rated hair stylists for cuts, colors, and styles that suit your vibe'
-                    .tr,
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                    color: Color.fromARGB(255, 62, 62, 62),
-                    fontSize: 15,
-                    fontWeight: FontWeight.bold),
-              ),
-            ),
-          ],
+        _slideImage('assets/sliders/1.png'),
+        _slideCopy(
+          'Discover Your Perfect Hair Look'.tr,
+          'Book top-rated hair stylists for cuts, colors, and styles that suit your vibe'
+              .tr,
         ),
       ],
     );
@@ -176,42 +176,10 @@ class _IntroScreenState extends State<IntroScreen> {
   Widget _buildSlide2(BuildContext context) {
     return Column(
       children: [
-        Container(
-          height: 360,
-          decoration: const BoxDecoration(
-            image: DecorationImage(
-                image: AssetImage(
-                  'assets/sliders/2.png',
-                ),
-                fit: BoxFit.contain),
-          ),
-        ),
-        Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-              child: Text(
-                'Glow Up Starts Here'.tr,
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                    fontFamily: 'bold',
-                    color: ThemeProvider.blackColor,
-                    fontSize: 19),
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.only(
-                  top: 8.0, right: 18, left: 18, bottom: 8),
-              child: Text(
-                'Facials, makeup, skincare & more — all at your fingertips.'.tr,
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                    color: Color.fromARGB(255, 62, 62, 62),
-                    fontSize: 15,
-                    fontWeight: FontWeight.bold),
-              ),
-            ),
-          ],
+        _slideImage('assets/sliders/2.png'),
+        _slideCopy(
+          'Glow Up Starts Here'.tr,
+          'Facials, makeup, skincare & more — all at your fingertips.'.tr,
         ),
       ],
     );
@@ -220,43 +188,11 @@ class _IntroScreenState extends State<IntroScreen> {
   Widget _buildSlide3(BuildContext context) {
     return Column(
       children: [
-        Container(
-          height: 360,
-          decoration: const BoxDecoration(
-            image: DecorationImage(
-                image: AssetImage(
-                  'assets/sliders/3.png',
-                ),
-                fit: BoxFit.contain),
-          ),
-        ),
-        Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-              child: Text(
-                'Crush Your Fitness Goals'.tr,
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                    fontFamily: 'bold',
-                    color: ThemeProvider.blackColor,
-                    fontSize: 19),
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.only(
-                  top: 8.0, right: 18, left: 18, bottom: 8),
-              child: Text(
-                'Find the best gyms and certified trainers near you. Book your session today!'
-                    .tr,
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                    color: Color.fromARGB(255, 62, 62, 62),
-                    fontSize: 15,
-                    fontWeight: FontWeight.bold),
-              ),
-            ),
-          ],
+        _slideImage('assets/sliders/3.png'),
+        _slideCopy(
+          'Crush Your Fitness Goals'.tr,
+          'Find the best gyms and certified trainers near you. Book your session today!'
+              .tr,
         ),
       ],
     );
@@ -265,43 +201,11 @@ class _IntroScreenState extends State<IntroScreen> {
   Widget _buildSlide4(BuildContext context) {
     return Column(
       children: [
-        Container(
-          height: 360,
-          decoration: const BoxDecoration(
-            image: DecorationImage(
-                image: AssetImage(
-                  'assets/sliders/4.png',
-                ),
-                fit: BoxFit.contain),
-          ),
-        ),
-        Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-              child: Text(
-                'Relax. Recharge. Repeat'.tr,
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                    fontFamily: 'bold',
-                    color: ThemeProvider.blackColor,
-                    fontSize: 19),
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.only(
-                  top: 8.0, right: 18, left: 18, bottom: 8),
-              child: Text(
-                'Pamper yourself with spa therapies, massages, and self-care treatments'
-                    .tr,
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                    color: Color.fromARGB(255, 62, 62, 62),
-                    fontSize: 15,
-                    fontWeight: FontWeight.bold),
-              ),
-            ),
-          ],
+        _slideImage('assets/sliders/4.png'),
+        _slideCopy(
+          'Relax. Recharge. Repeat'.tr,
+          'Pamper yourself with spa therapies, massages, and self-care treatments'
+              .tr,
         ),
       ],
     );
@@ -323,11 +227,11 @@ class _IntroScreenState extends State<IntroScreen> {
                   margin: const EdgeInsets.symmetric(
                       vertical: 8.0, horizontal: 4.0),
                   decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: (Theme.of(context).brightness == Brightness.dark
-                              ? ThemeProvider.whiteColor
-                              : ThemeProvider.blackColor)
-                          .withOpacity(currentIndex == entry.key ? 0.9 : 0.4)),
+                    shape: BoxShape.circle,
+                    color: ThemeProvider.gold.withValues(
+                      alpha: currentIndex == entry.key ? 0.9 : 0.35,
+                    ),
+                  ),
                 ),
               );
             }).toList(),
@@ -337,248 +241,100 @@ class _IntroScreenState extends State<IntroScreen> {
     );
   }
 
-  Widget _buildBottomNavigationBar1() {
-    return Container(
-      decoration: const BoxDecoration(
-        color: ThemeProvider.whiteColor,
+  ButtonStyle get _goldButton {
+    return ElevatedButton.styleFrom(
+      backgroundColor: ThemeProvider.gold,
+      foregroundColor: ThemeProvider.blackColor,
+      elevation: 0,
+      shadowColor: ThemeProvider.appColorShadow,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(32.0)),
+      minimumSize: const Size(100, 40),
+    );
+  }
+
+  Widget _primaryAction(String label, VoidCallback onPressed) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+      child: SizedBox(
+        height: 50,
+        child: ElevatedButton(
+          style: _goldButton,
+          onPressed: onPressed,
+          child: Center(
+            child: Text(
+              label,
+              style: ThemeProvider.sans(
+                size: 15,
+                weight: FontWeight.w700,
+                color: ThemeProvider.blackColor,
+              ),
+            ),
+          ),
+        ),
       ),
+    );
+  }
+
+  Widget _textAction(String label, VoidCallback onPressed) {
+    return Padding(
+      padding: const EdgeInsets.all(10.0),
+      child: TextButton(
+        onPressed: onPressed,
+        child: Center(
+          child: Text(
+            label,
+            style: ThemeProvider.sans(
+              size: 15,
+              weight: FontWeight.w700,
+              color: ThemeProvider.gold,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _bar({required Widget primary, required Widget secondary}) {
+    return Container(
+      color: ThemeProvider.backgroundColor,
       child: Column(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-            child: SizedBox(
-              height: 50,
-              child: ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: ThemeProvider.appColor,
-                  shadowColor: ThemeProvider.appColorShadow,
-                  elevation: 3,
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(32.0)),
-                  minimumSize: const Size(100, 40), //////// HERE
-                ),
-                onPressed: () {
-                  _controller.nextPage();
-                },
-                child: Center(
-                  child: Text(
-                    'Next'.tr,
-                    style: const TextStyle(
-                        fontFamily: 'bold', color: ThemeProvider.whiteColor),
-                  ),
-                ),
-              ),
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(10.0),
-            child: TextButton(
-              onPressed: () {
-                Get.toNamed(AppRouter.chooseLocationRoutes);
-              },
-              child: Center(
-                child: Text(
-                  'Skip'.tr,
-                  style: const TextStyle(
-                      fontFamily: 'bold', color: ThemeProvider.blackColor),
-                ),
-              ),
-            ),
-          ),
-        ],
+        children: [primary, secondary],
+      ),
+    );
+  }
+
+  Widget _buildBottomNavigationBar1() {
+    return _bar(
+      primary: _primaryAction('Next'.tr, () => _controller.nextPage()),
+      secondary: _textAction(
+        'Skip'.tr,
+        () => Get.toNamed(AppRouter.chooseLocationRoutes),
       ),
     );
   }
 
   Widget _buildBottomNavigationBar2() {
-    return Container(
-      decoration: const BoxDecoration(
-        color: ThemeProvider.whiteColor,
-      ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-            child: SizedBox(
-              height: 50,
-              child: ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: ThemeProvider.appColor,
-                  shadowColor: ThemeProvider.appColorShadow,
-                  elevation: 3,
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(32.0)),
-                  minimumSize: const Size(100, 40), //////// HERE
-                ),
-                onPressed: () {
-                  _controller.previousPage();
-                },
-                child: Center(
-                  child: Text(
-                    'Previous'.tr,
-                    style: const TextStyle(
-                        fontFamily: 'bold', color: ThemeProvider.whiteColor),
-                  ),
-                ),
-              ),
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(10.0),
-            child: TextButton(
-              onPressed: () {
-                // Get.toNamed(AppRouter.chooseLocationRoutes);
-                _controller.nextPage();
-              },
-              child: Center(
-                child: Text(
-                  'Next'.tr,
-                  style: const TextStyle(
-                      fontFamily: 'bold', color: ThemeProvider.blackColor),
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
+    return _bar(
+      primary: _primaryAction('Previous'.tr, () => _controller.previousPage()),
+      secondary: _textAction('Next'.tr, () => _controller.nextPage()),
     );
   }
 
   Widget _buildBottomNavigationBar3() {
-    return Container(
-      decoration: const BoxDecoration(
-        color: ThemeProvider.whiteColor,
-      ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-            child: SizedBox(
-              height: 50,
-              child: ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: ThemeProvider.appColor,
-                  shadowColor: ThemeProvider.appColorShadow,
-                  elevation: 3,
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(32.0)),
-                  minimumSize: const Size(100, 40), //////// HERE
-                ),
-                onPressed: () {
-                  _controller.previousPage();
-                },
-                child: Center(
-                  child: Text(
-                    'Previous'.tr,
-                    style: const TextStyle(
-                        fontFamily: 'bold', color: ThemeProvider.whiteColor),
-                  ),
-                ),
-              ),
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(10.0),
-            child: TextButton(
-              onPressed: () {
-                // Get.toNamed(AppRouter.chooseLocationRoutes);
-                _controller.nextPage();
-              },
-              child: Center(
-                child: Text(
-                  'Next'.tr,
-                  style: const TextStyle(
-                      fontFamily: 'bold', color: ThemeProvider.blackColor),
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
+    return _bar(
+      primary: _primaryAction('Previous'.tr, () => _controller.previousPage()),
+      secondary: _textAction('Next'.tr, () => _controller.nextPage()),
     );
   }
 
   Widget _buildBottomNavigationBar4() {
-    return Container(
-      decoration: const BoxDecoration(
-        color: ThemeProvider.whiteColor,
+    return _bar(
+      primary: _primaryAction(
+        'Get Started'.tr,
+        () => Get.toNamed(AppRouter.chooseLocationRoutes),
       ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-            child: SizedBox(
-              height: 50,
-              child: ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: ThemeProvider.appColor,
-                  shadowColor: ThemeProvider.appColorShadow,
-                  elevation: 3,
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(32.0)),
-                  minimumSize: const Size(100, 40), //////// HERE
-                ),
-                onPressed: () {
-                  Get.toNamed(AppRouter.chooseLocationRoutes);
-                },
-                child: Center(
-                  child: Text(
-                    'Get Started'.tr,
-                    style: const TextStyle(
-                        fontFamily: 'bold', color: ThemeProvider.whiteColor),
-                  ),
-                ),
-              ),
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(10.0),
-            child: TextButton(
-              onPressed: () {
-                _controller.previousPage();
-              },
-              child: Center(
-                child: Text(
-                  'Previous'.tr,
-                  style: const TextStyle(
-                      fontFamily: 'bold', color: ThemeProvider.blackColor),
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
+      secondary: _textAction('Previous'.tr, () => _controller.previousPage()),
     );
   }
-}
-
-contentButtonStyle1() {
-  return const BoxDecoration(
-    borderRadius: BorderRadius.all(
-      Radius.circular(50.0),
-    ),
-    color: ThemeProvider.blackColor,
-  );
-}
-
-contentButtonStyle2() {
-  return const BoxDecoration(
-    borderRadius: BorderRadius.all(
-      Radius.circular(50.0),
-    ),
-    color: ThemeProvider.appColor,
-  );
-}
-
-contentButtonStyle3() {
-  return const BoxDecoration(
-    borderRadius: BorderRadius.all(
-      Radius.circular(50.0),
-    ),
-    color: ThemeProvider.redColor,
-  );
 }

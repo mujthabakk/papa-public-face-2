@@ -1142,6 +1142,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:salon_user/app/controller/new_address_controller.dart';
+import 'package:salon_user/app/helper/map_style.dart';
 import 'package:salon_user/app/util/theme.dart';
 
 class NewAddressScreen extends StatefulWidget {
@@ -1153,20 +1154,20 @@ class NewAddressScreen extends StatefulWidget {
 
 class _NewAddressScreenState extends State<NewAddressScreen> {
   // Modern Color Scheme
-  static const Color primary = ThemeProvider.appColor;
-  static const Color primaryDark = ThemeProvider.appColor;
-  static const Color success = Color(0xFF10B981);
-  static const Color warning = Color(0xFFF59E0B);
-  static const Color error = Color(0xFFEF4444);
-  static const Color info = Color(0xFF3B82F6);
-  static const Color background = Color(0xFFF8F9FA);
-  static const Color cardBackground = Colors.white;
-  static const Color textPrimary = Color(0xFF2C3E50);
-  static const Color textSecondary = Color(0xFF64748B);
-  static const Color textLight = Color(0xFF94A3B8);
-  static const Color borderLight = Color(0xFFE2E8F0);
-  static const Color shadowLight = Color(0x0F000000);
-  static const Color surfaceBackground = Color(0xFFF1F5F9);
+  static const Color primary = ThemeProvider.gold;
+  static const Color primaryDark = ThemeProvider.gold;
+  static const Color success = Color(0xFF2E7D32);
+  static const Color warning = Color(0xFFF2D338);
+  static const Color error = Color(0xFFE53935);
+  static const Color info = ThemeProvider.gold;
+  static const Color background = ThemeProvider.backgroundColor;
+  static const Color cardBackground = ThemeProvider.surface;
+  static const Color textPrimary = ThemeProvider.whiteColor;
+  static const Color textSecondary = ThemeProvider.greyColor;
+  static const Color textLight = ThemeProvider.greyColor;
+  static const Color borderLight = Color(0xFF2C2C2C);
+  static const Color shadowLight = Color(0x00000000);
+  static const Color surfaceBackground = ThemeProvider.surface;
 
   @override
   Widget build(BuildContext context) {
@@ -1191,32 +1192,16 @@ class _NewAddressScreenState extends State<NewAddressScreen> {
 
   PreferredSizeWidget _buildAppBar(NewAddressController value) {
     return AppBar(
-      backgroundColor: primary,
+      backgroundColor: ThemeProvider.backgroundColor,
       elevation: 0,
       centerTitle: true,
       leading: IconButton(
-        icon: const Icon(Icons.arrow_back, color: Colors.white),
+        icon: const Icon(Icons.arrow_back_ios_new, color: ThemeProvider.gold),
         onPressed: () => Get.back(),
       ),
       title: Text(
         value.action == 'new' ? 'Add New Address'.tr : 'Edit Address'.tr,
-        style: const TextStyle(
-          color: Colors.white,
-          fontSize: 20,
-          fontWeight: FontWeight.w600,
-        ),
-      ),
-      flexibleSpace: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              primary,
-              primary.withOpacity(0.8),
-            ],
-          ),
-        ),
+        style: ThemeProvider.serif(size: 20, color: ThemeProvider.gold),
       ),
     );
   }
@@ -1597,6 +1582,7 @@ class _NewAddressScreenState extends State<NewAddressScreen> {
             return Stack(
               children: [
                 GoogleMap(
+                  style: Utils.mapStyles,
                   myLocationButtonEnabled: false,
                   myLocationEnabled: true,
                   onMapCreated: value.onMapCreated,

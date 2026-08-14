@@ -14,9 +14,14 @@ class FilterScreenCat extends StatefulWidget {
 class _FilterScreenState extends State<FilterScreenCat> {
   @override
   Widget build(BuildContext context) {
-    return GetBuilder<UnifiedSearchController>(builder: (controller) {
+    return GetBuilder<UnifiedSearchController>(
+      init: Get.isRegistered<UnifiedSearchController>()
+          ? Get.find<UnifiedSearchController>()
+          : UnifiedSearchController(parser: Get.find()),
+      autoRemove: false,
+      builder: (controller) {
       return Scaffold(
-        backgroundColor: ThemeProvider.whiteColor,
+        backgroundColor: ThemeProvider.backgroundColor,
         body: CustomScrollView(
           slivers: [
             SliverAppBar(

@@ -568,16 +568,16 @@ class IndividualPaymentScreen extends StatefulWidget {
 
 class _IndividualPaymentScreenState extends State<IndividualPaymentScreen> {
   // App Colors
-  static const Color primary = ThemeProvider.pink;
-  static const Color primaryDark = ThemeProvider.pink;
-  static const Color success = Color(0xFF10B981);
-  static const Color successDark = Color(0xFF059669);
-  static const Color warning = Color(0xFFF59E0B);
-  static const Color error = Color(0xFFEF4444);
-  static const Color background = Color(0xFFF8F9FA);
-  static const Color cardBackground = Colors.white;
-  static const Color textPrimary = Color(0xFF2C3E50);
-  static const Color textSecondary = Color(0xFF64748B);
+  static const Color primary = ThemeProvider.gold;
+  static const Color primaryDark = ThemeProvider.gold;
+  static const Color success = Color(0xFF2E7D32);
+  static const Color successDark = Color(0xFF1B5E20);
+  static const Color warning = Color(0xFFF2D338);
+  static const Color error = Color(0xFFE53935);
+  static const Color background = ThemeProvider.backgroundColor;
+  static const Color cardBackground = ThemeProvider.surface;
+  static const Color textPrimary = ThemeProvider.whiteColor;
+  static const Color textSecondary = ThemeProvider.greyColor;
   static const Color textLight = Color(0xFF94A3B8);
   static const Color textHint = Color(0xFFCBD5E1);
   static const Color borderLight = Color(0xFFE2E8F0);

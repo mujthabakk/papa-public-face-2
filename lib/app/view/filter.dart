@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_rating_bar/flutter_rating_bar.dart';
 import 'package:get/get.dart';
 import 'package:salon_user/app/controller/unified_search_controller.dart';
+import 'package:salon_user/app/helper/router.dart';
 import 'package:salon_user/app/util/theme.dart';
 
 class FilterScreen extends StatefulWidget {
@@ -14,9 +15,14 @@ class FilterScreen extends StatefulWidget {
 class _FilterScreenState extends State<FilterScreen> {
   @override
   Widget build(BuildContext context) {
-    return GetBuilder<UnifiedSearchController>(builder: (controller) {
+    return GetBuilder<UnifiedSearchController>(
+      init: Get.isRegistered<UnifiedSearchController>()
+          ? Get.find<UnifiedSearchController>()
+          : UnifiedSearchController(parser: Get.find()),
+      autoRemove: false,
+      builder: (controller) {
       return Scaffold(
-        backgroundColor: ThemeProvider.whiteColor,
+        backgroundColor: ThemeProvider.backgroundColor,
         body: CustomScrollView(
           slivers: [
             SliverAppBar(
@@ -53,8 +59,11 @@ class _FilterScreenState extends State<FilterScreen> {
                       ),
                       InkWell(
                         onTap: () {
-                          Get.back();
                           controller.getSearchResult(controller.lastSearch);
+                          Get.back();
+                          if (Get.currentRoute != AppRouter.searchRoutes) {
+                            Get.toNamed(AppRouter.getSearchRoutes());
+                          }
                         },
                         child: Text(
                           'Done'.tr,

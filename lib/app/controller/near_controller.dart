@@ -1,11 +1,4 @@
-/*
-  Authors : initappz (Rahul Jograna)
-  Website : https://initappz.com/
-  App Name : Ultimate Salon Full App Flutter V2
-  This App Template Source code is licensed as per the
-  terms found in the Website https://initappz.com/license
-  Copyright and Good Faith Purchasers © 2023-present initappz.
-*/
+/*Papabear*/
 import 'dart:async';
 import 'package:flutter/cupertino.dart';
 import 'package:get/get.dart';
@@ -16,6 +9,7 @@ import 'package:salon_user/app/backend/models/salon_model.dart';
 import 'package:salon_user/app/backend/parse/near_parse.dart';
 import 'package:salon_user/app/controller/services_controller.dart';
 import 'package:salon_user/app/controller/specialist_controller.dart';
+import 'package:salon_user/app/controller/unified_search_controller.dart';
 import 'package:salon_user/app/helper/router.dart';
 
 const double cameraZoom = 16;
@@ -114,6 +108,9 @@ class NearController extends GetxController implements GetxService {
   }
 
   void onFilter() {
+    if (!Get.isRegistered<UnifiedSearchController>()) {
+      Get.put(UnifiedSearchController(parser: Get.find()));
+    }
     Get.toNamed(AppRouter.getFilterRoutes(), arguments: ['']);
   }
 

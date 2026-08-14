@@ -1,18 +1,9 @@
-/*
-  Authors : initappz (Rahul Jograna)
-  Website : https://initappz.com/
-  App Name : Ultimate Salon Full App Flutter V2
-  This App Template Source code is licensed as per the
-  terms found in the Website https://initappz.com/license
-  Copyright and Good Faith Purchasers © 2023-present initappz.
-*/
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:salon_user/app/controller/all_categories_controller.dart';
 import 'package:salon_user/app/env.dart';
 import 'package:salon_user/app/util/theme.dart';
-import 'package:skeletons/skeletons.dart';
-import 'package:cached_network_image/cached_network_image.dart';
+import 'package:salon_user/app/view/widgets/elite_ui.dart';
 
 class AllCategoriesScreen extends StatefulWidget {
   const AllCategoriesScreen({Key? key}) : super(key: key);
@@ -22,154 +13,184 @@ class AllCategoriesScreen extends StatefulWidget {
 }
 
 class _AllCategoriesScreenState extends State<AllCategoriesScreen> {
+  static const _icons = [
+    Icons.spa_outlined,
+    Icons.self_improvement,
+    Icons.brush_outlined,
+    Icons.back_hand_outlined,
+    Icons.water_drop_outlined,
+    Icons.auto_awesome,
+  ];
+
+  IconData _icon(String? name, int i) {
+    final n = (name ?? '').toLowerCase();
+    if (n.contains('hair') || n.contains('skin')) return Icons.spa_outlined;
+    if (n.contains('therap') || n.contains('massage')) {
+      return Icons.self_improvement;
+    }
+    if (n.contains('tatto')) return Icons.brush_outlined;
+    if (n.contains('nail')) return Icons.back_hand_outlined;
+    if (n.contains('infus') || n.contains('iv')) {
+      return Icons.water_drop_outlined;
+    }
+    return _icons[i % _icons.length];
+  }
+
   @override
   Widget build(BuildContext context) {
     return GetBuilder<AllCategoriesController>(
       builder: (value) {
         return Scaffold(
-          backgroundColor: ThemeProvider.whiteColor,
-          appBar: AppBar(
-            backgroundColor: ThemeProvider.appColor,
-            elevation: 0,
-            iconTheme: const IconThemeData(color: ThemeProvider.whiteColor),
-            titleSpacing: 0,
-            centerTitle: true,
-            title: Text(
-              'All Categories'.tr,
-              style: ThemeProvider.titleStyle,
-            ),
+          backgroundColor: ThemeProvider.backgroundColor,
+          appBar: EliteAppBar(
+            showBack: true,
+            title: 'Top Services',
+            onMore: () {},
           ),
           body: value.apiCalled == false
-              ? SingleChildScrollView(
-                  child: Column(children: [
-                    GridView(
-                      padding: EdgeInsets.zero,
-                      gridDelegate:
-                          const SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: 3,
-                        mainAxisSpacing: 1,
-                        crossAxisSpacing: 1,
-                        childAspectRatio: 90 / 100,
-                      ),
-                      shrinkWrap: true,
-                      physics: const ScrollPhysics(),
-                      children: List.generate(
-                          10,
-                          (index) => Padding(
-                                padding: const EdgeInsets.all(8.0),
-                                child: SkeletonLine(
-                                  style: SkeletonLineStyle(
-                                      height: 130,
-                                      width: 120,
-                                      borderRadius: BorderRadius.circular(10)),
-                                ),
-                              )),
-                    ),
-                  ]),
+              ? const Center(
+                  child: CircularProgressIndicator(color: ThemeProvider.gold),
                 )
-              : SingleChildScrollView(
-                  child: Column(
-                    children: [
-                      GridView.builder(
-                        padding: EdgeInsets.zero,
-                        gridDelegate:
-                            const SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: 3,
-                          mainAxisSpacing: 1,
-                          crossAxisSpacing: 1,
-                          childAspectRatio: 90 / 100,
+              : value.categoriesList.isEmpty
+                  ? Center(
+                      child: Padding(
+                        padding: const EdgeInsets.only(top: 80),
+                        child: Text(
+                          'No Categories'.tr,
+                          style: ThemeProvider.serif(
+                              size: 16, color: ThemeProvider.gold),
                         ),
-                        shrinkWrap: true,
-                        physics: const ScrollPhysics(),
-                        itemCount: value.categoriesList.length,
-                        itemBuilder: (context, index) {
-                          var item = value.categoriesList[index];
-                          return InkWell(
-                            onTap: () {
-                              value.onCategoriesList(
-                                  item.id as int, item.name.toString());
-                            },
-                            child: Container(
-                              height: 150,
-                              width: 150,
-                              margin: const EdgeInsets.all(10),
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                borderRadius: BorderRadius.circular(10),
-                                boxShadow: const [
-                                  BoxShadow(
-                                    color: ThemeProvider.greyColor,
-                                    blurRadius: 5.0,
-                                  ),
-                                ],
-                              ),
-                              child: Stack(
-                                alignment: Alignment.center,
-                                children: [
-                                  Align(
-                                    alignment: Alignment.topCenter,
-                                    child: SizedBox(
-                                      height: 67,
-                                      width: double.infinity,
-                                      child: ClipRRect(
-                                        borderRadius: const BorderRadius.only(
-                                          topLeft: Radius.circular(10),
-                                          topRight: Radius.circular(10),
-                                        ),
-                                        child: CachedNetworkImage(
-                                          imageUrl:
-                                              '${Environments.imageURL}${item.cover.toString()}',
-                                          placeholder: (context, url) =>
-                                              const Image(
-                                                  image: AssetImage(
-                                                      "assets/images/placeholder.jpeg"),
-                                                  fit: BoxFit.cover),
-                                          errorWidget: (context, url, error) =>
-                                              Image.asset(
-                                                  "assets/images/notfound.png",
-                                                  fit: BoxFit.cover),
-                                          fit: BoxFit.cover,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                  Padding(
-                                    padding: const EdgeInsets.symmetric(
-                                        vertical: 10, horizontal: 10),
-                                    child: Column(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.center,
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.center,
-                                      children: [
-                                        const SizedBox(
-                                          height: 62,
-                                        ),
-                                        Text(
-                                          item.name.toString(),
-                                          maxLines: 2,
-                                          overflow: TextOverflow.ellipsis,
-                                          textAlign: TextAlign.center,
-                                          style: const TextStyle(
-                                              fontSize: 12.5,
-                                              color: Color.fromARGB(
-                                                  255, 87, 87, 87),
-                                              fontWeight: FontWeight.w600),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          );
-                        },
                       ),
-                    ],
-                  ),
+                    )
+                  : ListView(
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
+                  children: [
+                    Text(
+                      'Top Services'.tr,
+                      style: ThemeProvider.serif(
+                        size: 32,
+                        weight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    ...value.categoriesList.asMap().entries.map((e) {
+                      final item = e.value;
+                      final featured = e.key == 0;
+                      return featured
+                          ? _featured(value, item, e.key)
+                          : _card(value, item, e.key);
+                    }),
+                  ],
                 ),
         );
       },
+    );
+  }
+
+  Widget _featured(AllCategoriesController value, dynamic item, int i) {
+    return GestureDetector(
+      onTap: () =>
+          value.onCategoriesList(item.id as int, item.name.toString()),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 14),
+        height: 220,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(14),
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            EliteNetworkImage(
+              url: '${Environments.imageURL}${item.cover}',
+              fit: BoxFit.cover,
+            ),
+            Container(
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [Colors.transparent, Color(0xE60D0D0D)],
+                ),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Icon(_icon(item.name, i), color: ThemeProvider.gold),
+                  const Spacer(),
+                  Text(item.name ?? '',
+                      style: ThemeProvider.serif(size: 24)),
+                  if ((item.extraField ?? '').toString().isNotEmpty) ...[
+                    const SizedBox(height: 6),
+                    Text(
+                      item.extraField.toString(),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: ThemeProvider.sans(size: 12, color: Colors.white70),
+                    ),
+                  ],
+                  const SizedBox(height: 12),
+                  EliteGoldButton(
+                    label: 'VIEW TREATMENTS',
+                    onTap: () => value.onCategoriesList(
+                        item.id as int, item.name.toString()),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _card(AllCategoriesController value, dynamic item, int i) {
+    return GestureDetector(
+      onTap: () =>
+          value.onCategoriesList(item.id as int, item.name.toString()),
+      child: EliteCard(
+        child: Stack(
+          children: [
+            Positioned(
+              right: 0,
+              top: 0,
+              child: Icon(
+                _icon(item.name, i),
+                size: 72,
+                color: ThemeProvider.gold.withValues(alpha: 0.08),
+              ),
+            ),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  width: 36,
+                  height: 36,
+                  decoration: BoxDecoration(
+                    border: Border.all(color: ThemeProvider.gold),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Icon(_icon(item.name, i),
+                      color: ThemeProvider.gold, size: 18),
+                ),
+                const SizedBox(height: 12),
+                Text(item.name ?? '', style: ThemeProvider.serif(size: 22)),
+                if ((item.extraField ?? '').toString().isNotEmpty) ...[
+                  const SizedBox(height: 6),
+                  Text(
+                    item.extraField.toString(),
+                    style: ThemeProvider.sans(size: 13, color: Colors.white70)
+                        .copyWith(height: 1.45),
+                  ),
+                ],
+              ],
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

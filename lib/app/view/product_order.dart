@@ -1,9 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:jiffy/jiffy.dart';
+import 'package:salon_user/app/backend/models/appointment_model.dart';
+import 'package:salon_user/app/backend/models/product_salon_model.dart';
+import 'package:salon_user/app/controller/add_review_controller.dart';
+import 'package:salon_user/app/controller/booking_controller.dart';
 import 'package:salon_user/app/controller/product_order_controller.dart';
 import 'package:salon_user/app/env.dart';
+import 'package:salon_user/app/helper/router.dart';
 import 'package:salon_user/app/util/theme.dart';
-import 'package:skeletons/skeletons.dart';
+import 'package:salon_user/app/view/widgets/elite_ui.dart';
 
 class ProductOrderScreen extends StatefulWidget {
   const ProductOrderScreen({Key? key}) : super(key: key);
@@ -13,308 +19,331 @@ class ProductOrderScreen extends StatefulWidget {
 }
 
 class _ProductOrderScreenState extends State<ProductOrderScreen> {
+  int _tab = 0;
+
+  String _fmt(String? raw) {
+    if (raw == null || raw.isEmpty) return '';
+    try {
+      return Jiffy.parse(raw).format(pattern: 'MMM dd, yyyy');
+    } catch (_) {
+      return raw;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    return GetBuilder<ProductOrderController>(builder: (controller) {
-      return Scaffold(
-        backgroundColor: Color.fromARGB(255, 225, 225, 225),
-        appBar: AppBar(
-          title: Text('Order History'.tr,
-              style: const TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.w600,
-                color: Colors.white,
-              )),
-          centerTitle: true,
-          flexibleSpace: Container(
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                colors: [ThemeProvider.appColor, ThemeProvider.appColor],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-            ),
+    return GetBuilder<ProductOrderController>(
+      builder: (c) {
+        return Scaffold(
+          backgroundColor: ThemeProvider.backgroundColor,
+          appBar: EliteAppBar(
+            showBack: true,
+            title: 'My History',
+            onMore: c.getProductById,
           ),
-          bottom: controller.parser.haveLoggedIn() == true
-              ? TabBar(
-                  controller: controller.tabController,
-                  indicatorColor: Colors.white,
-                  indicatorWeight: 3,
-                  labelStyle: const TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w500,
-                  ),
-                  tabs: [
-                    Tab(text: 'New'.tr),
-                    Tab(text: 'Old'.tr),
-                  ],
+          body: !c.parser.haveLoggedIn()
+              ? Center(
+                  child: Text('Please log in to view history',
+                      style: ThemeProvider.sans(size: 13, color: Colors.white70)),
                 )
-              : null,
-        ),
-        body: controller.apiCalled == false
-            ? _buildShimmerLoader()
-            : TabBarView(
-                controller: controller.tabController,
-                children: [
-                  _buildOrderList(controller.productSalonList, 'New'),
-                  _buildOrderList(controller.productSalonListOld, 'Old'),
-                ],
-              ),
-      );
-    });
+              : c.apiCalled == false
+                  ? const Center(
+                      child: CircularProgressIndicator(
+                          color: ThemeProvider.gold),
+                    )
+                  : Column(
+                      children: [
+                        Container(
+                          margin: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+                          padding: const EdgeInsets.all(4),
+                          decoration: BoxDecoration(
+                            color: ThemeProvider.surface,
+                            borderRadius: BorderRadius.circular(24),
+                          ),
+                          child: Row(
+                            children: [
+                              _seg('Services', 0),
+                              _seg('Products', 1),
+                            ],
+                          ),
+                        ),
+                        Expanded(
+                          child: _tab == 0 ? _services() : _products(c),
+                        ),
+                      ],
+                    ),
+        );
+      },
+    );
   }
 
-  Widget _buildOrderList(List<dynamic> orders, String type) {
-    return orders.isEmpty
-        ? _buildEmptyState(type)
-        : ListView.separated(
-            padding: const EdgeInsets.all(16),
-            itemCount: orders.length,
-            separatorBuilder: (_, __) => const SizedBox(height: 16),
-            itemBuilder: (context, index) => _OrderCard(order: orders[index]),
-          );
-  }
-
-  Widget _buildEmptyState(String type) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Image.asset('assets/images/empty-order.png', width: 150, height: 150),
-          const SizedBox(height: 24),
-          Text(
-            type == 'New' ? 'No New Orders!'.tr : 'No Past Orders!'.tr,
-            style: const TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w600,
-              color: ThemeProvider.appColor,
+  Widget _seg(String label, int i) {
+    final on = _tab == i;
+    return Expanded(
+      child: GestureDetector(
+        onTap: () => setState(() => _tab = i),
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 10),
+          decoration: BoxDecoration(
+            color: on ? ThemeProvider.gold : Colors.transparent,
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Text(
+            label,
+            textAlign: TextAlign.center,
+            style: ThemeProvider.sans(
+              size: 13,
+              weight: FontWeight.w600,
+              color: on ? Colors.black : ThemeProvider.greyColor,
             ),
           ),
-          const SizedBox(height: 8),
-          Text(
-            'Your orders will appear here'.tr,
-            style: const TextStyle(color: ThemeProvider.greyColor),
+        ),
+      ),
+    );
+  }
+
+  Widget _services() {
+    if (!Get.isRegistered<BookingController>()) {
+      return Center(
+        child: Text('Open Appointments to load service history',
+            style: ThemeProvider.sans(size: 13, color: Colors.white70)),
+      );
+    }
+    return GetBuilder<BookingController>(
+      builder: (b) {
+        final list = [...b.appointmentList, ...b.appointmentListOld];
+        if (list.isEmpty) {
+          return Center(
+            child: Text('No service history',
+                style: ThemeProvider.sans(size: 13, color: Colors.white70)),
+          );
+        }
+        return ListView.builder(
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+          itemCount: list.length,
+          itemBuilder: (_, i) => _serviceCard(b, list[i]),
+        );
+      },
+    );
+  }
+
+  Widget _serviceCard(BookingController b, AppointmentModel a) {
+    final title = a.items?.services?.isNotEmpty == true
+        ? a.items!.services!.first.name
+        : (a.items?.packages?.isNotEmpty == true
+            ? a.items!.packages!.first.name
+            : a.salonInfo?.name);
+    final cover = a.items?.services?.isNotEmpty == true
+        ? a.items!.services!.first.cover
+        : (a.salonInfo?.cover ?? a.ownerInfo?.cover);
+    final provider = a.salonInfo?.name ??
+        '${a.ownerInfo?.firstName ?? ''} ${a.ownerInfo?.lastName ?? ''}'.trim();
+    final reviewed = a.status == 4;
+    return EliteCard(
+      padding: EdgeInsets.zero,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Stack(
+            children: [
+              EliteNetworkImage(
+                url: '${Environments.imageURL}$cover',
+                height: 140,
+                width: double.infinity,
+                radius:
+                    const BorderRadius.vertical(top: Radius.circular(14)),
+              ),
+              Positioned(
+                top: 10,
+                right: 10,
+                child: Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  color: reviewed ? ThemeProvider.gold : Colors.black54,
+                  child: Text(
+                    (b.statusName[a.status ?? 0]).toUpperCase(),
+                    style: ThemeProvider.sans(
+                      size: 9,
+                      weight: FontWeight.w700,
+                      color: reviewed ? Colors.black : Colors.white,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          Padding(
+            padding: const EdgeInsets.all(14),
+            child: Column(
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(title ?? 'Service',
+                          style: ThemeProvider.serif(
+                              size: 18, color: ThemeProvider.gold)),
+                    ),
+                    Text(
+                      elitePrice(b.currencySide, b.currencySymbol, a.grandTotal,
+                          digits: 0),
+                      style: ThemeProvider.serif(
+                          size: 18, color: ThemeProvider.gold),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 6),
+                Row(
+                  children: [
+                    const Icon(Icons.calendar_today,
+                        size: 12, color: ThemeProvider.greyColor),
+                    Text(' ${_fmt(a.saveDate)}',
+                        style: ThemeProvider.sans(
+                            size: 12, color: ThemeProvider.greyColor)),
+                    const Text('  •  ',
+                        style: TextStyle(color: ThemeProvider.greyColor)),
+                    const Icon(Icons.person_outline,
+                        size: 12, color: ThemeProvider.greyColor),
+                    Expanded(
+                      child: Text(' $provider',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: ThemeProvider.sans(
+                              size: 12, color: ThemeProvider.greyColor)),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                Row(
+                  children: [
+                    ...List.generate(
+                      5,
+                      (i) => Icon(
+                        reviewed ? Icons.star : Icons.star_border,
+                        size: 16,
+                        color: reviewed
+                            ? ThemeProvider.gold
+                            : ThemeProvider.greyColor,
+                      ),
+                    ),
+                    const Spacer(),
+                    if (a.status == 4)
+                      TextButton(
+                        onPressed: () {
+                          Get.delete<AddReviewController>(force: true);
+                          Get.toNamed(AppRouter.getAddReviewsRoutes(),
+                              arguments: [
+                                'owner',
+                                cover ?? '',
+                                provider,
+                                ((a.salonId ?? 0) != 0
+                                        ? a.salonId
+                                        : a.freelancerId)
+                                    .toString(),
+                              ]);
+                        },
+                        style: TextButton.styleFrom(
+                          backgroundColor: ThemeProvider.gold,
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 10, vertical: 6),
+                        ),
+                        child: Text('WRITE REVIEW',
+                            style: ThemeProvider.sans(
+                              size: 10,
+                              weight: FontWeight.w700,
+                              color: ThemeProvider.blackColor,
+                            )),
+                      )
+                    else
+                      Text('Reviewed',
+                          style: ThemeProvider.sans(
+                              size: 12, color: ThemeProvider.greyColor)),
+                  ],
+                ),
+              ],
+            ),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildShimmerLoader() {
+  Widget _products(ProductOrderController c) {
+    final list = [...c.productSalonList, ...c.productSalonListOld];
+    if (list.isEmpty) {
+      return Center(
+        child: Text('No product orders',
+            style: ThemeProvider.sans(size: 13, color: Colors.white70)),
+      );
+    }
     return ListView.builder(
-      padding: const EdgeInsets.all(16),
-      itemCount: 5,
-      itemBuilder: (_, __) => Container(
-        margin: const EdgeInsets.only(bottom: 16),
-        child: SkeletonItem(
-          child: Column(
-            children: [
-              SkeletonAvatar(
-                style: SkeletonAvatarStyle(
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+      itemCount: list.length,
+      itemBuilder: (_, i) => _productCard(c, list[i]),
+    );
+  }
+
+  Widget _productCard(ProductOrderController c, ProductSalonModel o) {
+    final name = o.orders?.isNotEmpty == true
+        ? o.orders!.first.name
+        : 'Product Order';
+    final cover = o.orders?.isNotEmpty == true ? o.orders!.first.cover : '';
+    final done = o.status == 4;
+    return GestureDetector(
+      onTap: () => c.onProductDetail(o.id as int),
+      child: EliteCard(
+        padding: EdgeInsets.zero,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Stack(
+              children: [
+                EliteNetworkImage(
+                  url: '${Environments.imageURL}$cover',
+                  height: 140,
                   width: double.infinity,
-                  height: 160,
-                  borderRadius: BorderRadius.circular(12),
+                  radius:
+                      const BorderRadius.vertical(top: Radius.circular(14)),
                 ),
-              ),
-              const SizedBox(height: 12),
-              SkeletonParagraph(
-                style: SkeletonParagraphStyle(
-                  lines: 3,
-                  spacing: 6,
-                  lineStyle: SkeletonLineStyle(
-                    height: 12,
-                    borderRadius: BorderRadius.circular(8),
+                Positioned(
+                  top: 10,
+                  right: 10,
+                  child: Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    color: done ? ThemeProvider.gold : Colors.black54,
+                    child: Text(
+                      (c.statusName[o.status ?? 0]).toUpperCase(),
+                      style: ThemeProvider.sans(
+                        size: 9,
+                        weight: FontWeight.w700,
+                        color: done ? Colors.black : Colors.white,
+                      ),
+                    ),
                   ),
                 ),
-              ),
-              const SizedBox(height: 12),
-              SkeletonParagraph(
-                style: SkeletonParagraphStyle(
-                  lines: 3,
-                  spacing: 6,
-                  lineStyle: SkeletonLineStyle(
-                    height: 12,
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _OrderCard extends StatelessWidget {
-  final dynamic order;
-
-  const _OrderCard({required this.order});
-
-  @override
-  Widget build(BuildContext context) {
-    final controller = Get.find<ProductOrderController>();
-    final status = controller.statusName[order.status as int].tr;
-
-    return InkWell(
-      onTap: () {
-        controller.onProductDetail(order.id as int);
-      },
-      child: Card(
-        elevation: 2,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
+              ],
+            ),
+            Padding(
+              padding: const EdgeInsets.all(14),
+              child: Row(
                 children: [
-                  _buildProviderImage(),
-                  const SizedBox(width: 12),
                   Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          order.type == 'salon'
-                              ? order.salonInfo!.name.toString()
-                              : '${order.freelancerInfo!.firstName} ${order.freelancerInfo!.lastName}',
-                          style: const TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          '${order.address!.address} • ${order.address!.pincode}',
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            fontSize: 12,
-                            color: ThemeProvider.greyColor,
-                          ),
-                        ),
-                      ],
-                    ),
+                    child: Text(name ?? '',
+                        style: ThemeProvider.serif(
+                            size: 18, color: ThemeProvider.gold)),
                   ),
-                  _buildStatusChip(status),
-                ],
-              ),
-              const SizedBox(height: 16),
-              ...order.orders!
-                  .map<Widget>((item) => Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 4),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Flexible(
-                              child: Text.rich(
-                                TextSpan(
-                                  children: [
-                                    TextSpan(text: '${item.name} '),
-                                    TextSpan(
-                                      text: '× ${item.quantity}',
-                                      style: const TextStyle(
-                                          color: ThemeProvider.greyColor),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                            Text(
-                              controller.currencySide == 'left'
-                                  ? '${controller.currencySymbol}${(item.sellPrice * item.quantity).toStringAsFixed(2)}'
-                                  : '${(item.sellPrice * item.quantity).toStringAsFixed(2)}${controller.currencySymbol}',
-                              style:
-                                  const TextStyle(fontWeight: FontWeight.w500),
-                            ),
-                          ],
-                        ),
-                      ))
-                  .toList(),
-              const Divider(height: 32),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text('Grand Total:'.tr,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.w600,
-                        fontSize: 14,
-                      )),
                   Text(
-                    controller.currencySide == 'left'
-                        ? '${controller.currencySymbol}${order.grandTotal}'
-                        : '${order.grandTotal}${controller.currencySymbol}',
-                    style: const TextStyle(
-                      fontWeight: FontWeight.w600,
-                      fontSize: 14,
-                      color: ThemeProvider.appColor,
-                    ),
+                    elitePrice(c.currencySide, c.currencySymbol, o.grandTotal,
+                        digits: 2),
+                    style: ThemeProvider.serif(
+                        size: 18, color: ThemeProvider.gold),
                   ),
                 ],
               ),
-              const SizedBox(height: 8),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text('Order Date:'.tr,
-                      style: const TextStyle(
-                        fontSize: 12,
-                        color: ThemeProvider.greyColor,
-                      )),
-                  Text(
-                    order.createdAt.toString(),
-                    style: const TextStyle(
-                      fontSize: 12,
-                      color: ThemeProvider.greyColor,
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
-    );
-  }
-
-  Widget _buildProviderImage() {
-    final controller = Get.find<ProductOrderController>();
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(8),
-      child: FadeInImage(
-        image: NetworkImage(
-          '${Environments.imageURL}${order.type == 'salon' ? order.salonInfo!.cover : order.freelancerInfo!.cover}',
-        ),
-        placeholder: const AssetImage("assets/images/placeholder.jpeg"),
-        width: 50,
-        height: 50,
-        fit: BoxFit.cover,
-        imageErrorBuilder: (_, __, ___) => Container(
-          width: 50,
-          height: 50,
-          color: ThemeProvider.greyColor,
-          child: const Icon(Icons.business, color: Colors.white),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildStatusChip(String status) {
-    Color statusColor = ThemeProvider.appColor;
-    if (status.toLowerCase() == 'completed') statusColor = Colors.green;
-    if (status.toLowerCase() == 'cancelled') statusColor = Colors.red;
-
-    return Chip(
-      label: Text(status,
-          style: const TextStyle(
-            color: Colors.white,
-            fontSize: 12,
-          )),
-      backgroundColor: statusColor,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
     );
   }
 }

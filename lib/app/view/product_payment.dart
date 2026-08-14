@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:salon_user/app/controller/product_cart_controller.dart';
 import 'package:salon_user/app/controller/product_payment_controller.dart';
 import 'package:salon_user/app/env.dart';
+import 'package:salon_user/app/helper/map_style.dart';
 import 'package:salon_user/app/util/theme.dart';
-import 'package:skeletons/skeletons.dart';
+import 'package:salon_user/app/view/widgets/elite_ui.dart';
 
 class ProductPaymentScreen extends StatefulWidget {
   const ProductPaymentScreen({Key? key}) : super(key: key);
@@ -14,743 +16,389 @@ class ProductPaymentScreen extends StatefulWidget {
 }
 
 class _ProductPaymentScreenState extends State<ProductPaymentScreen> {
+  String _addrTitle(int? t) {
+    switch (t) {
+      case 1:
+        return 'Residence – Primary';
+      case 2:
+        return 'Office';
+      case 3:
+        return 'Other';
+      default:
+        return 'Address';
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return GetBuilder<ProductPaymentController>(
       builder: (value) {
         return Scaffold(
-          backgroundColor: const Color(0xFFF8F9FA),
-          appBar: AppBar(
-            backgroundColor: Colors.white,
-            elevation: 0,
-            iconTheme: const IconThemeData(color: Color(0xFF2C3E50)),
-            titleSpacing: 0,
-            centerTitle: true,
-            title: Text(
-              'Payment'.tr,
-              style: const TextStyle(
-                color: Color(0xFF2C3E50),
-                fontSize: 18,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            bottom: PreferredSize(
-              preferredSize: const Size.fromHeight(1),
-              child: Container(
-                height: 1,
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [
-                      Colors.grey.shade200,
-                      Colors.grey.shade100,
-                    ],
-                  ),
-                ),
-              ),
-            ),
+          backgroundColor: ThemeProvider.backgroundColor,
+          appBar: EliteAppBar(
+            showBack: true,
+            title: 'Checkout',
+            onMore: () {},
           ),
           body: value.paymentAPICalled == false
               ? const Center(
-                  child: CircularProgressIndicator(
-                    color: Color(0xFF6C63FF),
-                    strokeWidth: 3,
-                  ),
+                  child: CircularProgressIndicator(color: ThemeProvider.gold),
                 )
-              : SingleChildScrollView(
-                  physics: const BouncingScrollPhysics(),
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Offers & Benefits Section
-                      _buildSectionTitle(
-                          'Offers & Benefits'.tr, Icons.local_offer),
-                      const SizedBox(height: 12),
-                      _buildOfferCard(value),
-                      const SizedBox(height: 8),
-                      _buildWalletCard(value),
-                      const SizedBox(height: 24),
-
-                      // Notes Section
-                      _buildSectionTitle('Add Notes'.tr, Icons.note_add),
-                      const SizedBox(height: 12),
-                      _buildNotesCard(value),
-                      const SizedBox(height: 24),
-
-                      // Bill Details Section
-                      _buildSectionTitle('Bill Summary'.tr, Icons.receipt_long),
-                      const SizedBox(height: 12),
-                      _buildBillDetailsCard(value),
-                      const SizedBox(height: 24),
-
-                      // Payment Methods Section
-                      _buildSectionTitle('Payment Methods'.tr, Icons.payment),
-                      const SizedBox(height: 12),
-                      _buildPaymentMethodsSection(value),
-                      const SizedBox(height: 100), // Bottom padding for FAB
-                    ],
-                  ),
+              : ListView(
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+                  children: [
+                    _address(value),
+                    const SizedBox(height: 16),
+                    _payments(value),
+                    const SizedBox(height: 16),
+                    _wallet(value),
+                    const SizedBox(height: 16),
+                    EliteCard(
+                      child: TextField(
+                        controller: value.notesEditor,
+                        maxLines: 3,
+                        style: ThemeProvider.sans(size: 13),
+                        decoration: InputDecoration(
+                          hintText: 'Add delivery notes...',
+                          hintStyle: ThemeProvider.sans(
+                              size: 13, color: ThemeProvider.greyColor),
+                          border: InputBorder.none,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    _summary(value),
+                    const SizedBox(height: 12),
+                    _promo(value),
+                  ],
                 ),
-          bottomNavigationBar: _buildBottomSection(value),
         );
       },
     );
   }
 
-  Widget _buildSectionTitle(String title, IconData icon) {
-    return Row(
+  Widget _header(IconData icon, String title) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Row(
+        children: [
+          Icon(icon, color: ThemeProvider.gold, size: 18),
+          const SizedBox(width: 8),
+          Text(title,
+              style: ThemeProvider.serif(size: 18, color: ThemeProvider.gold)),
+        ],
+      ),
+    );
+  }
+
+  Widget _address(ProductPaymentController value) {
+    final lat = double.tryParse(value.addressInfo.lat ?? '') ?? 0;
+    final lng = double.tryParse(value.addressInfo.lng ?? '') ?? 0;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Container(
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: const Color(0xFF6C63FF).withOpacity(0.1),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Icon(
-            icon,
-            color: const Color(0xFF6C63FF),
-            size: 20,
-          ),
-        ),
-        const SizedBox(width: 12),
-        Text(
-          title,
-          style: const TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-            color: Color(0xFF2C3E50),
+        _header(Icons.location_on_outlined, 'Delivery Address'),
+        EliteCard(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    width: 36,
+                    height: 36,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF121212),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Icon(Icons.home_outlined,
+                        color: ThemeProvider.gold, size: 18),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      value.haveAddress
+                          ? _addrTitle(value.addressInfo.title)
+                          : 'Add address',
+                      style: ThemeProvider.serif(size: 15),
+                    ),
+                  ),
+                  GestureDetector(
+                    onTap: value.onSelectAddress,
+                    child: Text('Change',
+                        style: ThemeProvider.sans(
+                            size: 12, color: ThemeProvider.gold)),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Text(
+                value.haveAddress
+                    ? '${value.addressInfo.house ?? ''} ${value.addressInfo.address ?? ''} ${value.addressInfo.landmark ?? ''} ${value.addressInfo.pincode ?? ''}'
+                    : 'Please add your delivery address',
+                style: ThemeProvider.sans(
+                    size: 12, color: ThemeProvider.greyColor),
+              ),
+              if (value.haveAddress && lat != 0) ...[
+                const SizedBox(height: 12),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(10),
+                  child: SizedBox(
+                    height: 110,
+                    child: GoogleMap(
+                      style: Utils.mapStyles,
+                      markers: {
+                        Marker(
+                          markerId: const MarkerId('addr'),
+                          position: LatLng(lat, lng),
+                        ),
+                      },
+                      initialCameraPosition:
+                          CameraPosition(target: LatLng(lat, lng), zoom: 14),
+                      zoomControlsEnabled: false,
+                      myLocationButtonEnabled: false,
+                      liteModeEnabled: true,
+                    ),
+                  ),
+                ),
+              ],
+            ],
           ),
         ),
       ],
     );
   }
 
-  Widget _buildOfferCard(ProductPaymentController value) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.shade200,
-            blurRadius: 10,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: () {
-            if (value.isWalletChecked == false) {
-              value.onCoupon(
-                  value.offerId,
-                  value.offerName,
-                  Get.find<ProductCartController>()
-                      .totalPrice
-                      .toStringAsFixed(2));
-            }
-          },
-          borderRadius: BorderRadius.circular(16),
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: value.offerName.isEmpty
-                        ? const Color(0xFF10B981).withOpacity(0.1)
-                        : const Color(0xFF059669).withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Icon(
-                    value.offerName.isEmpty
-                        ? Icons.add_circle_outline
-                        : Icons.check_circle,
-                    color: value.offerName.isEmpty
-                        ? const Color(0xFF10B981)
-                        : const Color(0xFF059669),
-                    size: 24,
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        value.offerName.isEmpty
-                            ? 'Apply Coupon Code'.tr
-                            : 'Coupon Applied'.tr,
-                        style: const TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                          color: Color(0xFF2C3E50),
-                        ),
-                      ),
-                      if (value.offerName.isNotEmpty) ...[
-                        const SizedBox(height: 4),
-                        Text(
-                          value.offerName,
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Colors.grey.shade600,
-                          ),
-                        ),
-                      ],
-                    ],
-                  ),
-                ),
-                Icon(
-                  Icons.chevron_right,
-                  color: Colors.grey.shade400,
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildWalletCard(ProductPaymentController value) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: value.isWalletChecked
-            ? Border.all(color: const Color(0xFF6C63FF), width: 2)
-            : null,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.shade200,
-            blurRadius: 10,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: const Color(0xFFF59E0B).withOpacity(0.1),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: const Icon(
-                Icons.account_balance_wallet,
-                color: Color(0xFFF59E0B),
-                size: 24,
-              ),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+  Widget _payments(ProductPaymentController value) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _header(Icons.account_balance_wallet_outlined, 'Payment Method'),
+        ...List.generate(value.paymentList.length, (i) {
+          if (!value.checkPremium && i == 0) return const SizedBox.shrink();
+          final p = value.paymentList[i];
+          final selected = p.id == value.paymentId;
+          return GestureDetector(
+            onTap: () => value.selectPaymentMethod(p.id as int),
+            child: EliteCard(
+              borderColor: selected ? ThemeProvider.gold : null,
+              child: Row(
                 children: [
-                  Text(
-                    'Wallet Balance'.tr,
-                    style: const TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: Color(0xFF2C3E50),
+                  EliteNetworkImage(
+                    url: '${Environments.imageURL}${p.cover}',
+                    width: 40,
+                    height: 40,
+                    radius: BorderRadius.circular(8),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(p.name ?? '',
+                            style: ThemeProvider.sans(
+                                size: 14, weight: FontWeight.w600)),
+                        if (selected)
+                          Text('Default',
+                              style: ThemeProvider.sans(
+                                  size: 11, color: ThemeProvider.gold)),
+                      ],
                     ),
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    value.currencySide == 'left'
-                        ? '${value.currencySymbol}${value.balance.toStringAsFixed(2)}'
-                        : '${value.balance.toStringAsFixed(2)}${value.currencySymbol}',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.grey.shade600,
-                      fontWeight: FontWeight.w500,
-                    ),
+                  Icon(
+                    selected ? Icons.check_circle : Icons.circle_outlined,
+                    color: selected
+                        ? ThemeProvider.gold
+                        : ThemeProvider.greyColor,
                   ),
                 ],
               ),
             ),
-            Transform.scale(
-              scale: 1.2,
-              child: Checkbox(
-                value: value.isWalletChecked,
-                onChanged: value.balance <= 0 || value.offerName.isNotEmpty
-                    ? null
-                    : (bool? status) {
-                        value.updateWalletChecked(status!);
-                      },
-                activeColor: const Color(0xFF6C63FF),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(4),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildNotesCard(ProductPaymentController value) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.shade200,
-            blurRadius: 10,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: TextField(
-          controller: value.notesEditor,
-          maxLines: 4,
-          decoration: InputDecoration(
-            hintText: 'Add special instructions or notes...'.tr,
-            hintStyle: TextStyle(
-              color: Colors.grey.shade400,
-              fontSize: 14,
-            ),
-            border: InputBorder.none,
-            enabledBorder: InputBorder.none,
-            focusedBorder: InputBorder.none,
-          ),
-          style: const TextStyle(
-            fontSize: 14,
-            color: Color(0xFF2C3E50),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildBillDetailsCard(ProductPaymentController value) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.shade200,
-            blurRadius: 10,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Theme(
-        data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
-        child: ExpansionTile(
-          initiallyExpanded: false,
-          tilePadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-          childrenPadding:
-              const EdgeInsets.only(left: 20, right: 20, bottom: 20),
-          title: _buildBillRow(
-            'Total Amount'.tr,
-            value.currencySide == 'left'
-                ? '${value.currencySymbol}${value.grandTotal.toStringAsFixed(2)}'
-                : '${value.grandTotal.toStringAsFixed(2)}${value.currencySymbol}',
-            false,
-            isTotal: true,
-          ),
-          children: [
-            Container(
-              height: 1,
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [Colors.grey.shade200, Colors.grey.shade300],
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
-            _buildBillRow(
-              'Item Total'.tr,
-              value.currencySide == 'left'
-                  ? '${value.currencySymbol}${Get.find<ProductCartController>().totalPrice.toStringAsFixed(2)}'
-                  : '${Get.find<ProductCartController>().totalPrice.toStringAsFixed(2)}${value.currencySymbol}',
-              false,
-            ),
-            const SizedBox(height: 12),
-            if (value.discount > 0) ...[
-              _buildBillRow(
-                'item Discount'.tr,
-                value.currencySide == 'left'
-                    ? '-${value.currencySymbol}${value.discount.toStringAsFixed(2)}'
-                    : '-${value.discount.toStringAsFixed(2)}${value.currencySymbol}',
-                true,
-                isDiscount: true,
-              ),
-              const SizedBox(height: 12),
-            ],
-            if (value.isWalletChecked && value.walletDiscount > 0) ...[
-              _buildBillRow(
-                'Wallet Discount'.tr,
-                value.currencySide == 'left'
-                    ? '-${value.currencySymbol}${value.walletDiscount.toStringAsFixed(2)}'
-                    : '-${value.walletDiscount.toStringAsFixed(2)}${value.currencySymbol}',
-                true,
-                isDiscount: true,
-              ),
-              const SizedBox(height: 12),
-            ],
-            _buildBillRow(
-              'Distance Charge'.tr,
-              value.currencySide == 'left'
-                  ? '${value.currencySymbol}${value.deliveryPrice.toStringAsFixed(2)}'
-                  : '${value.deliveryPrice.toStringAsFixed(2)}${value.currencySymbol}',
-              false,
-            ),
-            const SizedBox(height: 12),
-            _buildBillRow(
-              'Tax (GST 18%)'.tr,
-              value.currencySide == 'left'
-                  ? '${value.currencySymbol}${value.taxAmount.toStringAsFixed(2)}'
-                  : '${value.taxAmount.toStringAsFixed(2)}${value.currencySymbol}',
-              false,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildBillRow(String label, String amount, bool isNegative,
-      {bool isDiscount = false, bool isTotal = false}) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: isTotal ? 16 : 14,
-            fontWeight: isTotal ? FontWeight.w600 : FontWeight.w500,
-            color: isDiscount
-                ? const Color(0xFFEF4444)
-                : isTotal
-                    ? const Color(0xFF6C63FF)
-                    : const Color(0xFF64748B),
-          ),
-        ),
-        Text(
-          amount,
-          style: TextStyle(
-            fontSize: isTotal ? 16 : 14,
-            fontWeight: isTotal ? FontWeight.w700 : FontWeight.w600,
-            color: isDiscount
-                ? const Color(0xFFEF4444)
-                : isTotal
-                    ? const Color(0xFF6C63FF)
-                    : const Color(0xFF2C3E50),
-          ),
-        ),
+          );
+        }),
       ],
     );
   }
 
-  Widget _buildPaymentMethodsSection(ProductPaymentController value) {
-    if (value.paymentAPICalled == false) {
-      return SizedBox(
-        height: 300,
-        child: SkeletonListView(itemCount: 5),
-      );
-    }
-
-    return Column(
-      children: List.generate(
-        value.paymentList.length,
-        (index) {
-          if (!value.checkPremium && index == 0) {
-            return const SizedBox.shrink();
-          }
-
-          final isSelected = value.paymentList[index].id == value.paymentId;
-
-          return Container(
-            margin: const EdgeInsets.only(bottom: 12),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
-              border: isSelected
-                  ? Border.all(color: ThemeProvider.pink, width: 2)
-                  : Border.all(color: Colors.grey.shade200),
-              boxShadow: [
-                BoxShadow(
-                  color: isSelected
-                      ? ThemeProvider.pink.withOpacity(0.1)
-                      : Colors.grey.shade100,
-                  blurRadius: 10,
-                  offset: const Offset(0, 2),
+  Widget _wallet(ProductPaymentController value) {
+    return EliteCard(
+      borderColor: value.isWalletChecked ? ThemeProvider.gold : null,
+      child: Row(
+        children: [
+          const Icon(Icons.account_balance_wallet_outlined,
+              color: ThemeProvider.gold),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Elite Rewards Points',
+                    style: ThemeProvider.sans(
+                        size: 14, weight: FontWeight.w600)),
+                Text(
+                  'Balance: ${elitePrice(value.currencySide, value.currencySymbol, value.balance, digits: 2)}',
+                  style: ThemeProvider.sans(
+                      size: 11, color: ThemeProvider.greyColor),
                 ),
               ],
             ),
-            child: Material(
-              color: Colors.transparent,
-              child: InkWell(
-                onTap: () {
-                  value.selectPaymentMethod(value.paymentList[index].id as int);
-                },
-                borderRadius: BorderRadius.circular(16),
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Row(
-                    children: [
-                      Container(
-                        width: 50,
-                        height: 50,
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(12),
-                          color: Colors.grey.shade50,
-                        ),
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(12),
-                          child: FadeInImage(
-                            image: NetworkImage(
-                                '${Environments.imageURL}${value.paymentList[index].cover}'),
-                            placeholder: const AssetImage(
-                                "assets/images/placeholder.jpeg"),
-                            imageErrorBuilder: (context, error, stackTrace) {
-                              return Image.asset(
-                                'assets/images/notfound.png',
-                                fit: BoxFit.cover,
-                              );
-                            },
-                            fit: BoxFit.cover,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: Text(
-                          value.paymentList[index].name.toString(),
-                          style: const TextStyle(
-                            fontSize: 15,
-                            fontWeight: FontWeight.w600,
-                            color: Color(0xFF2C3E50),
-                          ),
-                        ),
-                      ),
-                      Container(
-                        padding: const EdgeInsets.all(4),
-                        decoration: BoxDecoration(
-                          color: isSelected
-                              ? ThemeProvider.pink
-                              : Colors.grey.shade300,
-                          shape: BoxShape.circle,
-                        ),
-                        child: Icon(
-                          Icons.check,
-                          color: Colors.white,
-                          size: 16,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          );
-        },
-      ),
-    );
-  }
-
-  Widget _buildBottomSection(ProductPaymentController value) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.shade200,
-            blurRadius: 20,
-            offset: const Offset(0, -5),
+          ),
+          Switch(
+            value: value.isWalletChecked,
+            activeThumbColor: ThemeProvider.gold,
+            onChanged: value.balance <= 0 || value.offerName.isNotEmpty
+                ? null
+                : (v) => value.updateWalletChecked(v),
           ),
         ],
       ),
-      child: SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (value.apiCalled == false)
-              Padding(
-                padding: const EdgeInsets.all(16),
+    );
+  }
+
+  Widget _summary(ProductPaymentController value) {
+    final cart = Get.find<ProductCartController>();
+    return EliteCard(
+      borderColor: ThemeProvider.gold.withValues(alpha: 0.35),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Order Summary', style: ThemeProvider.serif(size: 22)),
+          const Divider(color: Color(0xFF2A2A2A)),
+          ...cart.savedInCart.map((p) => Padding(
+                padding: const EdgeInsets.only(bottom: 8),
                 child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const SizedBox(
-                      height: 20,
-                      width: 20,
-                      child: CircularProgressIndicator(
-                        color: Color(0xFF6C63FF),
-                        strokeWidth: 2,
-                      ),
+                    Expanded(
+                      child: Text(p.name ?? '',
+                          style: ThemeProvider.sans(size: 13)),
                     ),
-                    const SizedBox(width: 12),
                     Text(
-                      'Loading address...'.tr,
-                      style: TextStyle(
-                        fontWeight: FontWeight.w500,
-                        color: Colors.grey.shade600,
-                      ),
+                      elitePrice(value.currencySide, value.currencySymbol,
+                          (p.discount ?? 0) > 0
+                              ? (p.sellPrice ?? 0) * p.quantity
+                              : (p.originalPrice ?? 0) * p.quantity,
+                          digits: 2),
+                      style: ThemeProvider.sans(
+                          size: 13, weight: FontWeight.w600),
                     ),
                   ],
                 ),
-              )
-            else
-              _buildAddressSection(value),
-            if (value.haveFairDeliveryRadius == true) _buildPayButton(value),
+              )),
+          const Divider(color: Color(0xFF2A2A2A)),
+          _row(
+              'Subtotal',
+              elitePrice(value.currencySide, value.currencySymbol,
+                  cart.totalPrice,
+                  digits: 2)),
+          if (value.discount > 0)
+            _row(
+                'Coupon',
+                '-${elitePrice(value.currencySide, value.currencySymbol, value.discount, digits: 2)}'),
+          if (value.isWalletChecked && value.walletDiscount > 0)
+            _row(
+                'Wallet',
+                '-${elitePrice(value.currencySide, value.currencySymbol, value.walletDiscount, digits: 2)}'),
+          _row(
+              'Delivery',
+              elitePrice(value.currencySide, value.currencySymbol,
+                  value.deliveryPrice,
+                  digits: 2)),
+          _row(
+              'Tax',
+              elitePrice(value.currencySide, value.currencySymbol,
+                  value.taxAmount,
+                  digits: 2)),
+          const Divider(color: Color(0xFF2A2A2A)),
+          Text('TOTAL AMOUNT',
+              style: ThemeProvider.sans(
+                  size: 10, color: ThemeProvider.gold, letterSpacing: 1)),
+          Row(
+            children: [
+              Text(
+                elitePrice(value.currencySide, value.currencySymbol,
+                    value.grandTotal,
+                    digits: 2),
+                style: ThemeProvider.serif(
+                    size: 32, color: ThemeProvider.gold),
+              ),
+              const Spacer(),
+              Text('Tax Included',
+                  style: ThemeProvider.sans(
+                      size: 11, color: ThemeProvider.greyColor)),
+            ],
+          ),
+          const SizedBox(height: 14),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed: value.onPayment,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: ThemeProvider.gold,
+                foregroundColor: Colors.black,
+                minimumSize: const Size.fromHeight(48),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10)),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.lock_outline, size: 16),
+                  const SizedBox(width: 8),
+                  Text('Pay Now',
+                      style:
+                          ThemeProvider.serif(size: 18, color: Colors.black)),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _row(String label, String amount) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(
+        children: [
+          Text(label, style: ThemeProvider.sans(size: 13)),
+          const Spacer(),
+          Text(amount,
+              style: ThemeProvider.sans(size: 13, weight: FontWeight.w600)),
+        ],
+      ),
+    );
+  }
+
+  Widget _promo(ProductPaymentController value) {
+    return GestureDetector(
+      onTap: () {
+        if (value.isWalletChecked == false) {
+          value.onCoupon(
+            value.offerId,
+            value.offerName,
+            Get.find<ProductCartController>().totalPrice.toStringAsFixed(2),
+          );
+        }
+      },
+      child: EliteCard(
+        child: Row(
+          children: [
+            const Icon(Icons.local_offer_outlined, color: ThemeProvider.gold),
+            const SizedBox(width: 10),
+            Text(
+              value.offerName.isEmpty ? 'PROMO CODE' : value.offerName,
+              style: ThemeProvider.sans(size: 13, weight: FontWeight.w600),
+            ),
+            const Spacer(),
+            Text(
+              value.offerName.isEmpty ? 'Apply' : 'Change',
+              style: ThemeProvider.sans(
+                  size: 13,
+                  weight: FontWeight.w700,
+                  color: ThemeProvider.gold),
+            ),
           ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildAddressSection(ProductPaymentController value) {
-    return Container(
-      margin: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF8F9FA),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.grey.shade200),
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: () {
-            value.onSelectAddress();
-          },
-          borderRadius: BorderRadius.circular(16),
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF6C63FF).withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: const Icon(
-                    Icons.location_on,
-                    color: Color(0xFF6C63FF),
-                    size: 20,
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: value.haveAddress == true
-                      ? Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Delivery Address'.tr,
-                              style: const TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.w500,
-                                color: Color(0xFF64748B),
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              '${value.addressInfo.address} ${value.addressInfo.landmark}',
-                              style: const TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w600,
-                                color: Color(0xFF2C3E50),
-                              ),
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              'Distance: ${value.distance.toStringAsFixed(1)} KM',
-                              style: const TextStyle(
-                                fontSize: 12,
-                                color: Color(0xFF64748B),
-                              ),
-                            ),
-                          ],
-                        )
-                      : Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'No Address Selected'.tr,
-                              style: const TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w600,
-                                color: Color(0xFFEF4444),
-                              ),
-                            ),
-                            Text(
-                              'Please add your delivery address'.tr,
-                              style: const TextStyle(
-                                fontSize: 12,
-                                color: Color(0xFF64748B),
-                              ),
-                            ),
-                          ],
-                        ),
-                ),
-                Icon(
-                  Icons.edit_outlined,
-                  color: Colors.grey.shade400,
-                  size: 20,
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildPayButton(ProductPaymentController value) {
-    return Container(
-      margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: () {
-            value.onPayment();
-          },
-          borderRadius: BorderRadius.circular(16),
-          child: Container(
-            height: 56,
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [ThemeProvider.pink, ThemeProvider.pink],
-                begin: Alignment.centerLeft,
-                end: Alignment.centerRight,
-              ),
-              borderRadius: BorderRadius.circular(16),
-              boxShadow: [
-                BoxShadow(
-                  color: ThemeProvider.pink.withOpacity(0.3),
-                  blurRadius: 20,
-                  offset: const Offset(0, 8),
-                ),
-              ],
-            ),
-            child: Center(
-              child: Text(
-                value.currencySide == 'left'
-                    ? 'Pay ${value.currencySymbol}${value.grandTotal.toStringAsFixed(2)}'
-                    : 'Pay ${value.grandTotal.toStringAsFixed(2)}${value.currencySymbol}',
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.white,
-                  letterSpacing: 0.5,
-                ),
-              ),
-            ),
-          ),
         ),
       ),
     );

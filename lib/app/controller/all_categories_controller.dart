@@ -3,7 +3,7 @@ import 'package:get/get.dart';
 import 'package:salon_user/app/backend/api/handler.dart';
 import 'package:salon_user/app/backend/models/categories_model.dart';
 import 'package:salon_user/app/backend/parse/all_categories_parse.dart';
-import 'package:salon_user/app/controller/categories_list_controller.dart';
+import 'package:salon_user/app/controller/unified_search_controller.dart';
 import 'package:salon_user/app/helper/router.dart';
 
 class AllCategoriesController extends GetxController implements GetxService {
@@ -40,7 +40,7 @@ class AllCategoriesController extends GetxController implements GetxService {
   }
 
   void onCategoriesList(int id, String name) {
-    Get.delete<CategoriesListController>(force: true);
+    Get.delete<UnifiedSearchController>(force: true);
     Get.toNamed(AppRouter.getCategoriesListRoutes(), arguments: [id, name]);
   }
 }

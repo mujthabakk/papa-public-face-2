@@ -16,6 +16,7 @@ class _ComplaintScreenState extends State<ComplaintScreen> {
   Widget build(BuildContext context) {
     return GetBuilder<ComplaintsController>(builder: (value) {
       return Scaffold(
+        backgroundColor: ThemeProvider.backgroundColor,
         appBar: AppBar(
           backgroundColor: ThemeProvider.appColor,
           elevation: 0,
@@ -37,7 +38,7 @@ class _ComplaintScreenState extends State<ComplaintScreen> {
         ),
         body: value.apiCalled == false
             ? const Center(
-                child: CircularProgressIndicator(color: ThemeProvider.appColor),
+                child: CircularProgressIndicator(color: ThemeProvider.gold),
               )
             : AbsorbPointer(
                 absorbing: value.isLogin.value == false ? false : true,
