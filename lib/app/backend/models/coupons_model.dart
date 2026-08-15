@@ -38,24 +38,23 @@ class CouponsModel {
   });
 
   CouponsModel.fromJson(Map<String, dynamic> json) {
-    id = int.parse(json['id'].toString());
-    name = json['name'];
-    shortDescriptions = json['short_descriptions'];
-    code = json['code'];
-    type = int.parse(json['type'].toString());
-    // forWhome = int.parse(json['for'].toString()); // Note: 'for' is not in JSON, might need clarification
-    discount = double.parse(json['discount'].toString());
-    upto = double.parse(json['upto'].toString());
-    expire = json['expire'];
-    freelancerIds = json['freelancer_ids'];
-    maxUsage = int.parse(json['max_usage'].toString());
-    minCartValue = double.parse(json['min_cart_value'].toString());
-    validations = int.parse(json['validations'].toString());
-    // userLimitValidation = int.parse(json['user_limit_validation'].toString()); // Note: 'user_limit_validation' is not in JSON
-    extraField = json['extra_field'];
-    status = int.parse(json['status'].toString());
-    maxUsageExceeded = json['max_usage_exceeded']
-        as bool?; // Added parsing for max_usage_exceeded
+    id = int.tryParse(json['id']?.toString() ?? '') ?? 0;
+    name = json['name']?.toString();
+    shortDescriptions = json['short_descriptions']?.toString();
+    code = json['code']?.toString();
+    type = int.tryParse(json['type']?.toString() ?? '') ?? 1;
+    discount = double.tryParse(json['discount']?.toString() ?? '') ?? 0;
+    upto = double.tryParse(json['upto']?.toString() ?? '') ?? 0;
+    expire = json['expire']?.toString();
+    freelancerIds = json['freelancer_ids']?.toString();
+    maxUsage = int.tryParse(json['max_usage']?.toString() ?? '') ?? 0;
+    minCartValue = double.tryParse(json['min_cart_value']?.toString() ?? '') ?? 0;
+    validations = int.tryParse(json['validations']?.toString() ?? '') ?? 0;
+    userLimitValidation =
+        int.tryParse(json['user_limit_validation']?.toString() ?? '') ?? 0;
+    extraField = json['extra_field']?.toString();
+    status = int.tryParse(json['status']?.toString() ?? '') ?? 1;
+    maxUsageExceeded = json['max_usage_exceeded'] == true;
   }
 
   Map<String, dynamic> toJson() {

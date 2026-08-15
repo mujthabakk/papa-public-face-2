@@ -13,6 +13,7 @@ import 'package:salon_user/app/backend/models/specialist_model.dart';
 import 'package:salon_user/app/backend/parse/slot_parse.dart';
 import 'package:salon_user/app/controller/checkout_controller.dart';
 import 'package:salon_user/app/controller/payment_controller.dart';
+import 'package:salon_user/app/controller/services_controller.dart';
 import 'package:salon_user/app/helper/router.dart';
 import 'package:salon_user/app/util/theme.dart';
 import 'package:salon_user/app/util/toast.dart';
@@ -80,39 +81,66 @@ class SlotController extends GetxController implements GetxService {
       var date = Jiffy.now().format(pattern: 'yyyy-MM-dd');
       savedDate = date;
       update();
-      getSlotsForBookings(index, date);
+      _loadBookingData(index, date);
     } else {
       onBack();
     }
-    getSpecialist();
   }
 
-// Alternative approach using where() method for cleaner code
-  Future<void> getSpecialist() async {
-    var response = await parser.getSpecialist({"id": uid});
+  Future<void> _loadBookingData(int index, String date) async {
+    await Future.wait([
+      getSlotsForBookings(index, date),
+      getSpecialist(),
+    ]);
     apiCalled = true;
-
-    if (response.statusCode == 200) {
-      Map<String, dynamic> myMap = Map<String, dynamic>.from(response.body);
-      var salonSpecialist = myMap['data'];
-
-      // Convert all data to SpecialistModel objects
-      List<SpecialistModel> allSpecialists = salonSpecialist
-          .map<SpecialistModel>((data) => SpecialistModel.fromJson(data))
-          .toList();
-
-      // Filter out specialists with status 0
-      _specialistList =
-          allSpecialists.where((specialist) => specialist.status == 1).toList();
-
-      debugPrint('Total specialists: ${allSpecialists.length}');
-      debugPrint('Active specialists: ${_specialistList.length}');
-
-      update();
-    } else {
-      ApiChecker.checkApi(response);
-    }
     update();
+  }
+
+  Future<void> getSpecialist() async {
+    _specialistList = [];
+    if (uid.isEmpty) {
+      _useSalonSpecialistsFallback();
+      update();
+      return;
+    }
+
+    try {
+      var response = await parser.getSpecialist({"id": uid});
+      if (response.statusCode == 200) {
+        Map<String, dynamic> myMap = Map<String, dynamic>.from(response.body);
+        var salonSpecialist = myMap['data'] ?? myMap['specialist'];
+        if (salonSpecialist is List) {
+          for (final data in salonSpecialist) {
+            try {
+              final specialist = SpecialistModel.fromJson(
+                  Map<String, dynamic>.from(data));
+              if (specialist.status != 0) {
+                _specialistList.add(specialist);
+              }
+            } catch (e) {
+              debugPrint('Skip specialist parse: $e');
+            }
+          }
+        }
+      } else {
+        ApiChecker.checkApi(response);
+      }
+    } catch (e) {
+      debugPrint('getSpecialist error: $e');
+    }
+
+    if (_specialistList.isEmpty) {
+      _useSalonSpecialistsFallback();
+    }
+    debugPrint('Active specialists: ${_specialistList.length}');
+    update();
+  }
+
+  void _useSalonSpecialistsFallback() {
+    if (!Get.isRegistered<ServicesController>()) return;
+    final fromSalon = Get.find<ServicesController>().specialistList;
+    if (fromSalon.isEmpty) return;
+    _specialistList = fromSalon.where((s) => s.status != 0).toList();
   }
 
 // Updated method with proper time sorting
@@ -120,7 +148,6 @@ class SlotController extends GetxController implements GetxService {
     var response = await parser.getSlots(
       {"week_id": index, "date": date, "uid": uid, "from": "salon"},
     );
-    apiCalled = true;
 
     if (response.statusCode == 200) {
       Map<String, dynamic> myMap = Map<String, dynamic>.from(response.body);
@@ -281,7 +308,7 @@ class SlotController extends GetxController implements GetxService {
       showToast('Please select Slots'.tr);
       return;
     }
-    if (selectedSpecialist == '') {
+    if (selectedSpecialist == '' && specialistList.isNotEmpty) {
       showToast('Please select specialist'.tr);
       return;
     }

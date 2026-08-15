@@ -60,13 +60,7 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
                     const SizedBox(height: 8),
                     Expanded(
                       child: controller.productsList.isEmpty
-                          ? Center(
-                              child: Text(
-                                'No Categories'.tr,
-                                style: ThemeProvider.serif(
-                                    size: 16, color: ThemeProvider.gold),
-                              ),
-                            )
+                          ? const EliteApiUnavailable(minHeight: 180)
                           : ListView.builder(
                               padding: const EdgeInsets.only(bottom: 100),
                               itemCount: controller.productsList.length,

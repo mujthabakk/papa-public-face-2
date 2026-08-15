@@ -88,16 +88,7 @@ class _CouponScreenState extends State<CouponScreen> {
                     if (Get.isRegistered<WalletController>())
                       const SizedBox(height: 16),
                     if (value.couponList.isEmpty)
-                      Padding(
-                        padding: const EdgeInsets.only(top: 40),
-                        child: Center(
-                          child: Text(
-                            'No coupons available'.tr,
-                            style: ThemeProvider.sans(
-                                color: ThemeProvider.greyColor),
-                          ),
-                        ),
-                      )
+                      const EliteApiUnavailable(minHeight: 180)
                     else
                       ...value.couponList.map((c) => _couponCard(value, c)),
                   ],

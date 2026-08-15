@@ -18,7 +18,6 @@ class SlotScreen extends StatefulWidget {
 
 class _SlotScreenState extends State<SlotScreen> {
   int _weekOffset = 0;
-  bool _anyAvailable = false;
 
   List<DateTime> _days() {
     final start = DateTime.now().add(Duration(days: _weekOffset * 7));
@@ -26,12 +25,14 @@ class _SlotScreenState extends State<SlotScreen> {
   }
 
   bool _isMorning(String? t) {
-    try {
-      final dt = DateFormat('hh:mm a').parse(t ?? '12:00 PM');
-      return dt.hour < 12;
-    } catch (_) {
-      return true;
-    }
+    final raw = (t ?? '').trim().toUpperCase();
+    if (raw.isEmpty) return true;
+    final match = RegExp(r'(\d{1,2})').firstMatch(raw);
+    if (match == null) return true;
+    var hour = int.tryParse(match.group(1) ?? '') ?? 0;
+    if (raw.contains('PM') && hour < 12) hour += 12;
+    if (raw.contains('AM') && hour == 12) hour = 0;
+    return hour < 12;
   }
 
   @override
@@ -129,6 +130,12 @@ class _SlotScreenState extends State<SlotScreen> {
   }
 
   Widget _practitioners(SlotController value) {
+    if (value.specialistList.isEmpty) {
+      return const Padding(
+        padding: EdgeInsets.only(top: 18),
+        child: EliteApiUnavailable(),
+      );
+    }
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -140,7 +147,7 @@ class _SlotScreenState extends State<SlotScreen> {
         GridView.builder(
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
-          itemCount: value.specialistList.length + 1,
+          itemCount: value.specialistList.length,
           gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
             crossAxisCount: 2,
             mainAxisSpacing: 10,
@@ -148,43 +155,10 @@ class _SlotScreenState extends State<SlotScreen> {
             childAspectRatio: 0.95,
           ),
           itemBuilder: (_, i) {
-            if (i == value.specialistList.length) {
-              final selected = _anyAvailable;
-              return GestureDetector(
-                onTap: () {
-                  if (value.specialistList.isNotEmpty) {
-                    value.saveSpecialist(value.specialistList.first.id as int);
-                  }
-                  setState(() => _anyAvailable = true);
-                },
-                child: EliteCard(
-                  margin: EdgeInsets.zero,
-                  borderColor: selected ? ThemeProvider.gold : null,
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Icon(Icons.groups_outlined,
-                          color: ThemeProvider.gold, size: 36),
-                      const SizedBox(height: 8),
-                      Text('Any Available',
-                          style: ThemeProvider.serif(
-                              size: 14, color: ThemeProvider.gold)),
-                      Text('Best Efficiency',
-                          style: ThemeProvider.sans(
-                              size: 11, color: ThemeProvider.greyColor)),
-                    ],
-                  ),
-                ),
-              );
-            }
             final s = value.specialistList[i];
-            final selected =
-                !_anyAvailable && value.selectedSpecialist == s.id.toString();
+            final selected = value.selectedSpecialist == s.id.toString();
             return GestureDetector(
-              onTap: () {
-                setState(() => _anyAvailable = false);
-                value.saveSpecialist(s.id as int);
-              },
+              onTap: () => value.saveSpecialist(s.id as int),
               child: EliteCard(
                 margin: EdgeInsets.zero,
                 borderColor: selected ? ThemeProvider.gold : null,
@@ -199,14 +173,12 @@ class _SlotScreenState extends State<SlotScreen> {
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      '${s.firstName ?? ''} ${(s.lastName ?? '').isNotEmpty ? '${s.lastName![0]}.' : ''}',
+                      '${s.firstName ?? ''} ${s.lastName ?? ''}'.trim(),
+                      textAlign: TextAlign.center,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                       style: ThemeProvider.serif(
                           size: 14, color: ThemeProvider.gold),
-                    ),
-                    Text(
-                      'Specialist',
-                      style: ThemeProvider.sans(
-                          size: 11, color: ThemeProvider.greyColor),
                     ),
                   ],
                 ),
@@ -311,8 +283,7 @@ class _SlotScreenState extends State<SlotScreen> {
         ),
         const SizedBox(height: 16),
         if (!value.haveData)
-          Text('No slots available for this date',
-              style: ThemeProvider.sans(size: 13, color: Colors.white70))
+          const EliteApiUnavailable()
         else ...[
           _slotGroup('MORNING SLOTS', morning, value),
           const SizedBox(height: 12),
@@ -442,8 +413,8 @@ class _SlotScreenState extends State<SlotScreen> {
   Widget _summary(SlotController value) {
     final cart = Get.find<ServiceCartController>();
     final checkout = Get.find<CheckoutController>();
-    String specialistName = 'Any Available';
-    if (!_anyAvailable && value.selectedSpecialist.isNotEmpty) {
+    String specialistName = '';
+    if (value.selectedSpecialist.isNotEmpty) {
       final match = value.specialistList
           .where((s) => s.id.toString() == value.selectedSpecialist);
       if (match.isNotEmpty) {
@@ -471,7 +442,8 @@ class _SlotScreenState extends State<SlotScreen> {
           _row('SERVICE', first ?? '',
               elitePrice(checkout.currencySide, checkout.currencySymbol,
                   cart.totalPrice, digits: 2)),
-          _row('PRACTITIONER', specialistName, ''),
+          if (specialistName.isNotEmpty)
+            _row('PRACTITIONER', specialistName, ''),
           _row(
               'DATE & TIME',
               '$dateLabel${value.selectedSlotIndex.isNotEmpty ? ' at ${value.selectedSlotIndex.split('-').first}' : ''}',
@@ -497,11 +469,6 @@ class _SlotScreenState extends State<SlotScreen> {
                     size: 22, color: ThemeProvider.gold),
               ),
             ],
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Free cancellation up to 24 hours before your session.',
-            style: ThemeProvider.sans(size: 11, color: ThemeProvider.greyColor),
           ),
         ],
       ),

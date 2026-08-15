@@ -16,17 +16,8 @@ class TopProductScreen extends StatefulWidget {
 
 class _TopProductScreenState extends State<TopProductScreen> {
   final _search = TextEditingController();
-  int? _cate;
   final _liked = <int>{};
   bool _wishlistOnly = false;
-
-  static const _chips = [
-    (Icons.spa_outlined, 'Skin'),
-    (Icons.content_cut, 'Hair'),
-    (Icons.medication_outlined, 'Supplements'),
-    (Icons.water_drop_outlined, 'Fragrance'),
-    (Icons.brush_outlined, 'Body'),
-  ];
 
   @override
   void dispose() {
@@ -42,9 +33,8 @@ class _TopProductScreenState extends State<TopProductScreen> {
           final q = _search.text.trim().toLowerCase();
           final nameOk =
               q.isEmpty || (p.name ?? '').toLowerCase().contains(q);
-          final cateOk = _cate == null || p.cateId == _cate;
           final likeOk = !_wishlistOnly || _liked.contains(p.id);
-          return nameOk && cateOk && likeOk;
+          return nameOk && likeOk;
         }).toList();
         return Scaffold(
           backgroundColor: ThemeProvider.backgroundColor,
@@ -108,66 +98,15 @@ class _TopProductScreenState extends State<TopProductScreen> {
                                 ),
                               ],
                             ),
-                            const SizedBox(height: 14),
-                            SizedBox(
-                              height: 74,
-                              child: ListView.separated(
-                                scrollDirection: Axis.horizontal,
-                                itemCount: _chips.length,
-                                separatorBuilder: (_, __) =>
-                                    const SizedBox(width: 10),
-                                itemBuilder: (_, i) {
-                                  final ids = value.productsList
-                                      .map((p) => p.cateId)
-                                      .whereType<int>()
-                                      .toSet()
-                                      .toList();
-                                  final id =
-                                      i < ids.length ? ids[i] : (i + 1);
-                                  final on = _cate == id;
-                                  return GestureDetector(
-                                    onTap: () => setState(
-                                        () => _cate = on ? null : id),
-                                    child: Column(
-                                      children: [
-                                        Container(
-                                          width: 48,
-                                          height: 48,
-                                          decoration: BoxDecoration(
-                                            color: on
-                                                ? ThemeProvider.gold
-                                                : ThemeProvider.surface,
-                                            borderRadius:
-                                                BorderRadius.circular(12),
-                                          ),
-                                          child: Icon(
-                                            _chips[i].$1,
-                                            color: on
-                                                ? Colors.black
-                                                : Colors.white,
-                                            size: 22,
-                                          ),
-                                        ),
-                                        const SizedBox(height: 6),
-                                        Text(
-                                          _chips[i].$2,
-                                          style: ThemeProvider.sans(
-                                            size: 11,
-                                            color: on
-                                                ? ThemeProvider.gold
-                                                : ThemeProvider.greyColor,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  );
-                                },
-                              ),
-                            ),
                           ],
                         ),
                       ),
                     ),
+                    if (list.isEmpty)
+                      const SliverFillRemaining(
+                        child: EliteApiUnavailable(minHeight: 180),
+                      )
+                    else
                     SliverPadding(
                       padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
                       sliver: SliverGrid(

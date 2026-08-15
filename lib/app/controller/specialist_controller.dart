@@ -9,6 +9,9 @@ import 'package:salon_user/app/backend/models/individual_info_model.dart';
 import 'package:salon_user/app/backend/models/packages_model.dart';
 import 'package:salon_user/app/backend/models/owner_reviews_model.dart';
 import 'package:salon_user/app/backend/models/services_model.dart';
+import 'package:salon_user/app/backend/models/slot_time_model.dart';
+import 'package:salon_user/app/backend/models/slots_model.dart';
+import 'package:salon_user/app/backend/models/bookedslot_model.dart';
 import 'package:salon_user/app/backend/models/userinfo_model.dart';
 import 'package:salon_user/app/backend/parse/specialist_parse.dart';
 import 'package:salon_user/app/controller/chat_controller.dart';
@@ -25,6 +28,7 @@ import 'package:salon_user/app/util/theme.dart';
 import 'package:salon_user/app/util/toast.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:intl/intl.dart';
 
 class SpecialistController extends GetxController
     with GetTickerProviderStateMixin
@@ -70,6 +74,15 @@ class SpecialistController extends GetxController
 
   List<ServicesModel> _servicesList = <ServicesModel>[];
   List<ServicesModel> get servicesList => _servicesList;
+
+  List<SlotTimeModel> _slotTimes = <SlotTimeModel>[];
+  List<SlotTimeModel> get slotTimes => _slotTimes;
+  List<String> bookedSlots = [];
+  String savedDate = '';
+  String selectedSlotIndex = '';
+  DateTime selectedDay = DateTime.now();
+  bool slotsLoading = false;
+  int availabilityWeekOffset = 0;
 
   String selectedService = '';
   String selectedServiceName = '';
@@ -294,6 +307,7 @@ class SpecialistController extends GetxController
       debugPrint(packagesList.length.toString());
 
       update();
+      loadSlotsForDate(DateTime.now());
     } else {
       ApiChecker.checkApi(response);
     }
@@ -478,7 +492,97 @@ class SpecialistController extends GetxController
   }
 
   void onCheckout() {
+    if (selectedSlotIndex.isEmpty) {
+      showToast('Please select Slots'.tr);
+      return;
+    }
     Get.delete<IndividualCheckoutController>(force: true);
     Get.toNamed(AppRouter.getIndividualCheckout());
+  }
+
+  void onSelectDay(DateTime day) {
+    selectedDay = DateTime(day.year, day.month, day.day);
+    selectedSlotIndex = '';
+    loadSlotsForDate(selectedDay);
+  }
+
+  List<DateTime> availabilityDays() {
+    final today = DateTime.now();
+    final start = DateTime(today.year, today.month, today.day)
+        .add(Duration(days: availabilityWeekOffset * 7));
+    return List.generate(7, (i) => start.add(Duration(days: i)));
+  }
+
+  void shiftAvailabilityWeek(int delta) {
+    final next = availabilityWeekOffset + delta;
+    if (next < 0) return;
+    availabilityWeekOffset = next;
+    onSelectDay(availabilityDays().first);
+  }
+
+  void onSelectSlot(String slot) {
+    if (bookedSlots.contains(slot)) return;
+    selectedSlotIndex = slot;
+    update();
+  }
+
+  bool isSlotBooked(String slot) => bookedSlots.contains(slot);
+
+  Future<void> loadSlotsForDate(DateTime day) async {
+    slotsLoading = true;
+    selectedDay = DateTime(day.year, day.month, day.day);
+    savedDate = DateFormat('yyyy-MM-dd').format(selectedDay);
+    update();
+
+    final weekId = selectedDay.weekday % 7;
+    final response = await parser.getSlots({
+      "week_id": weekId,
+      "date": savedDate,
+      "uid": individualId,
+      "from": "individual",
+    });
+    slotsLoading = false;
+    _slotTimes = [];
+    bookedSlots = [];
+
+    if (response.statusCode == 200) {
+      final myMap = Map<String, dynamic>.from(response.body);
+      final body = myMap['data'];
+      final booked = myMap['bookedSlots'];
+      if (body != null) {
+        SlotModel datas = SlotModel.fromJson(body);
+        if (body['slots'] != null &&
+            body['slots'] != 'NA' &&
+            body['slots'] != '') {
+          final decoded = jsonDecode(body['slots']);
+          datas.slots = List<SlotTimeModel>.from(
+              decoded.map((slot) => SlotTimeModel.fromJson(slot)));
+        } else {
+          datas.slots = [];
+        }
+        final today = DateFormat('yyyy-MM-dd').format(DateTime.now());
+        if (savedDate == today && datas.slots != null) {
+          final nowLabel = DateFormat('hh:mm a').format(DateTime.now());
+          datas.slots = datas.slots!.where((slot) {
+            try {
+              final slotTime = DateFormat('hh:mm a').parse(slot.startTime ?? '');
+              final currentTime = DateFormat('hh:mm a').parse(nowLabel);
+              return slotTime.isAfter(currentTime);
+            } catch (_) {
+              return true;
+            }
+          }).toList();
+        }
+        _slotTimes = datas.slots ?? [];
+      }
+      if (booked != null) {
+        booked.forEach((element) {
+          bookedSlots.add(BookedSlotModel.fromJson(element).slot.toString());
+        });
+      }
+    } else {
+      ApiChecker.checkApi(response);
+    }
+    update();
   }
 }

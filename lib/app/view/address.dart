@@ -135,6 +135,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:salon_user/app/controller/address_controller.dart';
 import 'package:salon_user/app/util/theme.dart';
+import 'package:salon_user/app/view/widgets/elite_ui.dart';
 import 'package:skeletons/skeletons.dart';
 
 class AddressScreen extends StatefulWidget {
@@ -501,21 +502,12 @@ class _AddressScreenState extends State<AddressScreen> {
             ),
             const SizedBox(height: 24),
             Text(
-              'No Addresses Found'.tr,
+              'API is not available'.tr,
               style: const TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.w600,
-                color: textPrimary,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Add your first address to get started with deliveries',
-              style: const TextStyle(
-                fontSize: 14,
+                fontSize: 16,
+                fontWeight: FontWeight.w500,
                 color: textSecondary,
               ),
-              textAlign: TextAlign.center,
             ),
             const SizedBox(height: 32),
             ElevatedButton.icon(

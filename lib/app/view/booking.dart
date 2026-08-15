@@ -91,9 +91,7 @@ class _BookingScreenState extends State<BookingScreen> {
                             style: ThemeProvider.serif(size: 28)),
                         const SizedBox(height: 12),
                         if (c.appointmentList.isEmpty)
-                          Text('No upcoming sessions',
-                              style: ThemeProvider.sans(
-                                  size: 13, color: Colors.white70))
+                          const EliteApiUnavailable()
                         else
                           ...c.appointmentList.map((a) => _upcoming(c, a)),
                         const SizedBox(height: 18),
@@ -118,9 +116,7 @@ class _BookingScreenState extends State<BookingScreen> {
                         const SizedBox(height: 12),
                         EliteCard(
                           child: c.appointmentListOld.isEmpty
-                              ? Text('No history yet',
-                                  style: ThemeProvider.sans(
-                                      size: 13, color: Colors.white70))
+                              ? const EliteApiUnavailable()
                               : Column(
                                   children: c.appointmentListOld
                                       .map((a) => _history(c, a))

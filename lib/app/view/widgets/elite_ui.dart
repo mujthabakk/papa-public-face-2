@@ -623,3 +623,27 @@ class EliteQtyStepper extends StatelessWidget {
     );
   }
 }
+
+class EliteApiUnavailable extends StatelessWidget {
+  final double minHeight;
+
+  const EliteApiUnavailable({Key? key, this.minHeight = 72}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      constraints: BoxConstraints(minHeight: minHeight),
+      width: double.infinity,
+      alignment: Alignment.center,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
+      child: Text(
+        'API is not available'.tr,
+        textAlign: TextAlign.center,
+        style: ThemeProvider.sans(
+          size: 13,
+          color: ThemeProvider.greyColor,
+        ),
+      ),
+    );
+  }
+}

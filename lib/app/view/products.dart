@@ -71,7 +71,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
                     ),
                     if (list.isEmpty)
                       const SliverFillRemaining(
-                        child: Center(child: Text('No products')),
+                        child: EliteApiUnavailable(minHeight: 180),
                       )
                     else
                       SliverPadding(

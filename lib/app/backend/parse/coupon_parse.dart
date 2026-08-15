@@ -14,4 +14,8 @@ class CouponParser {
     return apiService.getPrivate(AppConstants.getCoupons,
         sharedPreferencesManager.getString('token') ?? '');
   }
+
+  Future<Response> getPublicHomeOffers() {
+    return apiService.getPublic(AppConstants.getPublicHomeOffers);
+  }
 }

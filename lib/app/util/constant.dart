@@ -60,6 +60,7 @@ class AppConstants {
   static const String createUser = 'api/v1/auth/create_user_account';
   static const String getSpecislistById = 'api/v1/specialist/getSpecialist';
   static const String getCoupons = 'api/v1/offers/getActive';
+  static const String getPublicHomeOffers = 'api/v1/offers/getPublicHome';
   static const String getPayments = 'api/v1/payments/getPayments';
   static const String createAppointments = 'api/v1/appoinments/create';
   static const String getUserProfile = 'api/v1/profile/getByID';

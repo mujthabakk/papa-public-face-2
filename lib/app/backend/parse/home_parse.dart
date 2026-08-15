@@ -15,6 +15,10 @@ class HomeParser {
     return response;
   }
 
+  Future<Response> getPublicHomeOffers() {
+    return apiService.getPublic(AppConstants.getPublicHomeOffers);
+  }
+
   String getAddressName() {
     return sharedPreferencesManager.getString('address') ?? 'Home';
   }

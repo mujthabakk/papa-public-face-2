@@ -1141,17 +1141,17 @@ class _IndividualCheckoutScreenState extends State<IndividualCheckoutScreen> {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       const Icon(
-                        Icons.schedule,
-                        color: Colors.white,
+                        Icons.credit_card,
+                        color: Colors.black,
                         size: 20,
                       ),
                       const SizedBox(width: 12),
                       Text(
-                        'Select Date & Time'.tr,
+                        'Proceed to Payment'.tr,
                         style: const TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w600,
-                          color: Colors.white,
+                          color: Colors.black,
                           letterSpacing: 0.5,
                         ),
                       ),

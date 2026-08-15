@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:intl/intl.dart';
+import 'package:salon_user/app/backend/models/slot_time_model.dart';
 import 'package:salon_user/app/controller/service_cart_controller.dart';
 import 'package:salon_user/app/controller/specialist_controller.dart';
 import 'package:salon_user/app/env.dart';
@@ -15,10 +17,6 @@ class SpecialistScreen extends StatefulWidget {
 }
 
 class _SpecialistScreenState extends State<SpecialistScreen> {
-  int _selectedDay = DateTime.now().weekday % 7;
-  int _selectedSlot = 0;
-  static const _slots = ['10:00 AM', '11:30 AM', '02:00 PM', '04:30 PM'];
-
   String _price(SpecialistController value, double? amount) {
     final p = (amount ?? 0).toStringAsFixed(0);
     return value.currencySide == 'left'
@@ -48,12 +46,21 @@ class _SpecialistScreenState extends State<SpecialistScreen> {
                     const SizedBox(height: 20),
                     _backgroundCard(value),
                     const SizedBox(height: 22),
-                    _services(value),
+                    if (value.servicesList.isNotEmpty)
+                      _services(value)
+                    else
+                      const EliteApiUnavailable(),
                     const SizedBox(height: 22),
-                    _availability(value),
+                    if (value.gallery.isNotEmpty)
+                      _gallery(value)
+                    else
+                      const EliteApiUnavailable(),
                   ],
                 ),
-          bottomNavigationBar: _bottomBar(value),
+          bottomNavigationBar: value.servicesList.isEmpty &&
+                  value.apiCalled == true
+              ? null
+              : _bottomBar(value),
         );
       },
     );
@@ -161,15 +168,6 @@ class _SpecialistScreenState extends State<SpecialistScreen> {
                     size: 12, color: ThemeProvider.greyColor),
               ),
             ),
-            const SizedBox(width: 14),
-            const Icon(Icons.verified_outlined,
-                color: ThemeProvider.gold, size: 16),
-            const SizedBox(width: 4),
-            Text(
-              'Elite Verified',
-              style:
-                  ThemeProvider.sans(size: 12, color: ThemeProvider.greyColor),
-            ),
           ],
         ),
       ],
@@ -179,7 +177,7 @@ class _SpecialistScreenState extends State<SpecialistScreen> {
   Widget _backgroundCard(SpecialistController value) {
     final about = value.individualDetails.about ?? '';
     if (about.isEmpty && value.categoriesList.isEmpty) {
-      return const SizedBox.shrink();
+      return const EliteApiUnavailable();
     }
     return Container(
       padding: const EdgeInsets.all(16),
@@ -343,150 +341,334 @@ class _SpecialistScreenState extends State<SpecialistScreen> {
     );
   }
 
-  Widget _availability(SpecialistController value) {
-    final now = DateTime.now();
-    final days = List.generate(7, (i) => now.add(Duration(days: i)));
-    const labels = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: ThemeProvider.surface,
-        borderRadius: BorderRadius.circular(16),
+  Widget _gallery(SpecialistController value) {
+    return SizedBox(
+      height: 72,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        itemCount: value.gallery.length,
+        separatorBuilder: (_, __) => const SizedBox(width: 8),
+        itemBuilder: (context, i) {
+          return EliteNetworkImage(
+            url: '${Environments.imageURL}${value.gallery[i]}',
+            width: 96,
+            height: 72,
+            radius: BorderRadius.circular(8),
+          );
+        },
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              const Icon(Icons.calendar_today,
-                  color: ThemeProvider.gold, size: 18),
-              const SizedBox(width: 8),
-              Text('Availability', style: ThemeProvider.serif(size: 18)),
-            ],
-          ),
-          const SizedBox(height: 14),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: List.generate(7, (i) {
-              final selected = _selectedDay == i;
-              final weekday = (days[i].weekday + 6) % 7;
-              return GestureDetector(
-                onTap: () => setState(() => _selectedDay = i),
-                child: Column(
-                  children: [
-                    Text(
-                      labels[weekday],
-                      style: ThemeProvider.sans(
-                        size: 11,
-                        color: weekday >= 5
-                            ? ThemeProvider.gold
-                            : ThemeProvider.greyColor,
+    );
+  }
+
+  bool _isMorningSlot(String? startTime) {
+    try {
+      return DateFormat('hh:mm a').parse(startTime ?? '').hour < 12;
+    } catch (_) {
+      return (startTime ?? '').toUpperCase().contains('AM');
+    }
+  }
+
+  String _slotHour(String? startTime) {
+    final raw = startTime ?? '';
+    return raw.replaceAll(RegExp(r'\s*(AM|PM)$', caseSensitive: false), '').trim();
+  }
+
+  String _slotPeriod(String? startTime) {
+    final raw = (startTime ?? '').toUpperCase();
+    return raw.contains('PM') ? 'PM' : 'AM';
+  }
+
+  void _openAvailabilitySheet() {
+    Get.bottomSheet(
+      Material(
+        color: Colors.transparent,
+        child: GetBuilder<SpecialistController>(
+        builder: (value) {
+          final days = value.availabilityDays();
+          final morning = value.slotTimes
+              .where((s) => _isMorningSlot(s.startTime))
+              .toList();
+          final afternoon = value.slotTimes
+              .where((s) => !_isMorningSlot(s.startTime))
+              .toList();
+          return Container(
+            padding: const EdgeInsets.fromLTRB(16, 10, 16, 16),
+            decoration: const BoxDecoration(
+              color: ThemeProvider.backgroundColor,
+              borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+            ),
+            child: SafeArea(
+              top: false,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: Colors.white24,
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                  Row(
+                    children: [
+                      Text(
+                        'Choose Availability'.tr,
+                        style: ThemeProvider.serif(size: 22),
+                      ),
+                      const Spacer(),
+                      IconButton(
+                        visualDensity: VisualDensity.compact,
+                        onPressed: value.availabilityWeekOffset == 0
+                            ? null
+                            : () => value.shiftAvailabilityWeek(-1),
+                        icon: Icon(
+                          Icons.chevron_left,
+                          color: value.availabilityWeekOffset == 0
+                              ? Colors.white24
+                              : Colors.white,
+                        ),
+                      ),
+                      IconButton(
+                        visualDensity: VisualDensity.compact,
+                        onPressed: () => value.shiftAvailabilityWeek(1),
+                        icon: const Icon(Icons.chevron_right,
+                            color: Colors.white),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  ConstrainedBox(
+                    constraints: BoxConstraints(maxHeight: Get.height * 0.48),
+                    child: SingleChildScrollView(
+                      child: Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(14),
+                        decoration: BoxDecoration(
+                          color: ThemeProvider.surface,
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            SizedBox(
+                              height: 78,
+                              child: ListView.separated(
+                                scrollDirection: Axis.horizontal,
+                                itemCount: days.length,
+                                separatorBuilder: (_, __) =>
+                                    const SizedBox(width: 8),
+                                itemBuilder: (context, i) {
+                                  final day = days[i];
+                                  final selected =
+                                      value.selectedDay.year == day.year &&
+                                          value.selectedDay.month ==
+                                              day.month &&
+                                          value.selectedDay.day == day.day;
+                                  return GestureDetector(
+                                    onTap: () => value.onSelectDay(day),
+                                    child: Container(
+                                      width: 58,
+                                      decoration: BoxDecoration(
+                                        color: ThemeProvider.backgroundColor,
+                                        borderRadius: BorderRadius.circular(12),
+                                        border: Border.all(
+                                          color: selected
+                                              ? ThemeProvider.gold
+                                              : const Color(0xFF2A2A2A),
+                                        ),
+                                      ),
+                                      child: Column(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.center,
+                                        children: [
+                                          Text(
+                                            DateFormat('MMM')
+                                                .format(day)
+                                                .toUpperCase(),
+                                            style: ThemeProvider.sans(
+                                              size: 9,
+                                              weight: FontWeight.w600,
+                                              color: selected
+                                                  ? ThemeProvider.gold
+                                                  : ThemeProvider.greyColor,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 2),
+                                          Text(
+                                            '${day.day}',
+                                            style: ThemeProvider.serif(
+                                              size: 20,
+                                              weight: FontWeight.w700,
+                                              color: Colors.white,
+                                            ),
+                                          ),
+                                          Text(
+                                            DateFormat('E')
+                                                .format(day)
+                                                .toUpperCase(),
+                                            style: ThemeProvider.sans(
+                                              size: 9,
+                                              color: selected
+                                                  ? ThemeProvider.gold
+                                                  : ThemeProvider.greyColor,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  );
+                                },
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+                            if (value.slotsLoading)
+                              const Padding(
+                                padding: EdgeInsets.symmetric(vertical: 24),
+                                child: Center(
+                                  child: CircularProgressIndicator(
+                                      color: ThemeProvider.gold),
+                                ),
+                              )
+                            else if (value.slotTimes.isEmpty)
+                              const EliteApiUnavailable()
+                            else ...[
+                              if (morning.isNotEmpty) ...[
+                                _slotSectionLabel('MORNING SLOTS'),
+                                const SizedBox(height: 10),
+                                _slotGrid(value, morning),
+                              ],
+                              if (afternoon.isNotEmpty) ...[
+                                const SizedBox(height: 16),
+                                _slotSectionLabel('AFTERNOON SLOTS'),
+                                const SizedBox(height: 10),
+                                _slotGrid(value, afternoon),
+                              ],
+                            ],
+                          ],
+                        ),
                       ),
                     ),
-                    const SizedBox(height: 6),
-                    Container(
-                      width: 36,
-                      height: 36,
-                      alignment: Alignment.center,
-                      decoration: BoxDecoration(
-                        color: selected ? ThemeProvider.gold : Colors.transparent,
-                        border: Border.all(
-                          color: selected
-                              ? ThemeProvider.gold
-                              : Colors.white24,
-                        ),
-                        borderRadius: BorderRadius.circular(6),
+                  ),
+                  const SizedBox(height: 12),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: () {
+                        if (value.selectedSlotIndex.isEmpty) {
+                          showToast('Please select Slots'.tr);
+                          return;
+                        }
+                        Get.back();
+                        value.onCheckout();
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: ThemeProvider.gold,
+                        foregroundColor: Colors.black,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        elevation: 0,
                       ),
                       child: Text(
-                        '${days[i].day}',
+                        'CONTINUE'.tr,
                         style: ThemeProvider.sans(
-                          size: 13,
+                          size: 14,
+                          weight: FontWeight.w700,
+                          color: Colors.black,
+                          letterSpacing: 1.2,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
+      ),
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+    );
+  }
+
+  Widget _slotSectionLabel(String label) {
+    return Text(
+      label.tr,
+      style: ThemeProvider.sans(
+        size: 10,
+        weight: FontWeight.w600,
+        color: ThemeProvider.goldDeep,
+        letterSpacing: 1.4,
+      ),
+    );
+  }
+
+  Widget _slotGrid(SpecialistController value, List<SlotTimeModel> slots) {
+    return GridView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      itemCount: slots.length,
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 3,
+        mainAxisSpacing: 8,
+        crossAxisSpacing: 8,
+        childAspectRatio: 1.15,
+      ),
+      itemBuilder: (context, i) {
+        final slot = slots[i];
+        final key = '${slot.startTime}-${slot.endTime}';
+        final booked = value.isSlotBooked(key);
+        final selected = value.selectedSlotIndex == key;
+        return GestureDetector(
+          onTap: booked ? null : () => value.onSelectSlot(key),
+          child: Container(
+            decoration: BoxDecoration(
+              color: selected ? ThemeProvider.gold : Colors.transparent,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: booked
+                    ? const Color(0xFF4A4A4A)
+                    : selected
+                        ? ThemeProvider.gold
+                        : ThemeProvider.gold.withValues(alpha: 0.55),
+              ),
+            ),
+            child: booked
+                ? Center(
+                    child: Text(
+                      'Booked'.tr,
+                      style: ThemeProvider.sans(
+                        size: 11,
+                        color: ThemeProvider.greyColor,
+                      ),
+                    ),
+                  )
+                : Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        _slotHour(slot.startTime),
+                        style: ThemeProvider.sans(
+                          size: 14,
                           weight: FontWeight.w600,
                           color: selected ? Colors.black : Colors.white,
                         ),
                       ),
-                    ),
-                  ],
-                ),
-              );
-            }),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            'SELECT SLOT',
-            style: ThemeProvider.sans(
-              size: 10,
-              color: ThemeProvider.greyColor,
-              letterSpacing: 1.2,
-            ),
-          ),
-          const SizedBox(height: 10),
-          GridView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            itemCount: _slots.length,
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 2,
-              mainAxisSpacing: 8,
-              crossAxisSpacing: 8,
-              childAspectRatio: 3.2,
-            ),
-            itemBuilder: (context, i) {
-              final selected = _selectedSlot == i;
-              return GestureDetector(
-                onTap: () => setState(() => _selectedSlot = i),
-                child: Container(
-                  alignment: Alignment.center,
-                  decoration: BoxDecoration(
-                    color: selected
-                        ? const Color(0xFF3D3410)
-                        : Colors.transparent,
-                    border: Border.all(
-                      color: selected ? ThemeProvider.gold : Colors.white24,
-                    ),
-                    borderRadius: BorderRadius.circular(8),
+                      const SizedBox(height: 2),
+                      Text(
+                        _slotPeriod(slot.startTime),
+                        style: ThemeProvider.sans(
+                          size: 10,
+                          weight: FontWeight.w500,
+                          color: selected ? Colors.black : ThemeProvider.gold,
+                        ),
+                      ),
+                    ],
                   ),
-                  child: Text(
-                    _slots[i],
-                    style: ThemeProvider.sans(
-                      size: 13,
-                      color: selected ? ThemeProvider.gold : Colors.white,
-                    ),
-                  ),
-                ),
-              );
-            },
           ),
-          if (value.gallery.isNotEmpty) ...[
-            const SizedBox(height: 16),
-            Text(
-              'STUDIO ENVIRONMENT',
-              style: ThemeProvider.sans(
-                size: 10,
-                color: ThemeProvider.greyColor,
-                letterSpacing: 1.2,
-              ),
-            ),
-            const SizedBox(height: 10),
-            SizedBox(
-              height: 72,
-              child: ListView.separated(
-                scrollDirection: Axis.horizontal,
-                itemCount: value.gallery.length,
-                separatorBuilder: (_, __) => const SizedBox(width: 8),
-                itemBuilder: (context, i) {
-                  return EliteNetworkImage(
-                    url: '${Environments.imageURL}${value.gallery[i]}',
-                    width: 96,
-                    height: 72,
-                    radius: BorderRadius.circular(8),
-                  );
-                },
-              ),
-            ),
-          ],
-        ],
-      ),
+        );
+      },
     );
   }
 
@@ -539,7 +721,7 @@ class _SpecialistScreenState extends State<SpecialistScreen> {
                     value.updateServiceStatusInCart(0, true);
                   }
                   if (Get.find<ServiceCartController>().totalItemsInCart > 0) {
-                    value.onCheckout();
+                    _openAvailabilitySheet();
                   } else {
                     showToast('Please select a service'.tr);
                   }

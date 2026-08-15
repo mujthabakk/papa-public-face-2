@@ -52,16 +52,7 @@ class _AllCategoriesScreenState extends State<AllCategoriesScreen> {
                   child: CircularProgressIndicator(color: ThemeProvider.gold),
                 )
               : value.categoriesList.isEmpty
-                  ? Center(
-                      child: Padding(
-                        padding: const EdgeInsets.only(top: 80),
-                        child: Text(
-                          'No Categories'.tr,
-                          style: ThemeProvider.serif(
-                              size: 16, color: ThemeProvider.gold),
-                        ),
-                      ),
-                    )
+                  ? const EliteApiUnavailable(minHeight: 180)
                   : ListView(
                   padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
                   children: [

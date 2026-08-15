@@ -3,9 +3,11 @@ import 'package:get/get.dart';
 import 'package:salon_user/app/backend/api/handler.dart';
 import 'package:salon_user/app/backend/models/banner_model.dart';
 import 'package:salon_user/app/backend/models/categories_model.dart';
+import 'package:salon_user/app/backend/models/coupons_model.dart';
 import 'package:salon_user/app/backend/models/individual_model.dart';
 import 'package:salon_user/app/backend/models/products_list_model.dart';
 import 'package:salon_user/app/backend/models/salon_model.dart';
+import 'package:salon_user/app/controller/coupon_controller.dart';
 import 'package:salon_user/app/backend/parse/home_parse.dart';
 import 'package:salon_user/app/controller/all_categories_controller.dart';
 import 'package:salon_user/app/controller/categories_controller.dart';
@@ -48,6 +50,9 @@ class HomeController extends GetxController implements GetxService {
   List<ProductsListModel> _productsList = <ProductsListModel>[];
   List<ProductsListModel> get productsList => _productsList;
 
+  List<CouponsModel> _offersList = <CouponsModel>[];
+  List<CouponsModel> get offersList => _offersList;
+
   bool apiCalled = false;
 
   bool haveData = false;
@@ -84,11 +89,13 @@ class HomeController extends GetxController implements GetxService {
         var individualData = myMap['individual'] ?? [];
         var bannerData = myMap['banners'] ?? [];
         var products = myMap['products'] ?? [];
+        var offers = myMap['offers'] ?? [];
         _salonList = [];
         _categoriesList = [];
         _individualList = [];
         _bannerList = [];
         _productsList = [];
+        _offersList = [];
 
         for (var data in salonData) {
           SalonModel salon = SalonModel.fromJson(data);
@@ -120,6 +127,11 @@ class HomeController extends GetxController implements GetxService {
         }
         _productsList.removeWhere((product) => product.status == 0);
         await Future.delayed(Duration.zero);
+
+        _setOffers(offers);
+        if (_offersList.isEmpty) {
+          await loadPublicOffers();
+        }
 
         checkCartData();
         if (_salonList.isEmpty && _individualList.isEmpty) {
@@ -188,6 +200,54 @@ class HomeController extends GetxController implements GetxService {
   void onTopProducts() {
     Get.delete<TopProductsControllrer>(force: true);
     Get.toNamed(AppRouter.getTopProductsRoutes());
+  }
+
+  void onAllOffersList() {
+    Get.delete<CouponController>(force: true);
+    Get.toNamed(AppRouter.getCouponRoutes());
+  }
+
+  void claimOffer(CouponsModel offer) {
+    if ((offer.code ?? '').isEmpty) {
+      showToast('API is not available'.tr);
+      return;
+    }
+    showToast(offer.code.toString());
+  }
+
+  void _setOffers(dynamic raw) {
+    _offersList = [];
+    if (raw is! List) return;
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    for (final data in raw) {
+      try {
+        final offer = CouponsModel.fromJson(Map<String, dynamic>.from(data));
+        if (offer.status != 1) continue;
+        if (offer.expire != null && offer.expire!.isNotEmpty) {
+          final expire = DateTime.tryParse(offer.expire!);
+          if (expire != null) {
+            final end = DateTime(expire.year, expire.month, expire.day);
+            if (end.isBefore(today)) continue;
+          }
+        }
+        _offersList.add(offer);
+      } catch (e) {
+        debugPrint('Skip offer parse: $e');
+      }
+    }
+  }
+
+  Future<void> loadPublicOffers() async {
+    try {
+      final response = await parser.getPublicHomeOffers();
+      if (response.statusCode == 200) {
+        final myMap = Map<String, dynamic>.from(response.body);
+        _setOffers(myMap['data']);
+      }
+    } catch (e) {
+      debugPrint('loadPublicOffers: $e');
+    }
   }
 
   // void onSearch() {

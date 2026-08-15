@@ -51,4 +51,9 @@ class SpecialistParser {
         ? true
         : false;
   }
+
+  Future<Response> getSlots(var body) {
+    return apiService.postPrivate(AppConstants.getSlotsForBookings, body,
+        sharedPreferencesManager.getString('token') ?? '');
+  }
 }

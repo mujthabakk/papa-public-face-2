@@ -47,13 +47,7 @@ class _AccountChatScreenState extends State<AccountChatScreen> {
                           CircularProgressIndicator(color: ThemeProvider.gold),
                     )
                   : value.chatList.isEmpty
-                      ? Center(
-                          child: Text(
-                            'No Messages Yet'.tr,
-                            style: ThemeProvider.sans(
-                                color: ThemeProvider.greyColor),
-                          ),
-                        )
+                      ? const EliteApiUnavailable(minHeight: 180)
                       : ListView.builder(
                           padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
                           itemCount: value.chatList.length,

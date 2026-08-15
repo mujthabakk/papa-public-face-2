@@ -19,14 +19,14 @@ class SpecialistModel {
       this.status});
 
   SpecialistModel.fromJson(Map<String, dynamic> json) {
-    id = int.parse(json['id'].toString());
-    salonUid = int.parse(json['salon_uid'].toString());
-    cateId = json['cate_id'];
+    id = int.tryParse(json['id']?.toString() ?? '') ?? 0;
+    salonUid = int.tryParse(json['salon_uid']?.toString() ?? '') ?? 0;
+    cateId = json['cate_id']?.toString();
     firstName = json['first_name'];
     lastName = json['last_name'];
     cover = json['cover'];
     extraField = json['extra_field'];
-    status = int.parse(json['status'].toString());
+    status = int.tryParse(json['status']?.toString() ?? '') ?? 1;
   }
 
   Map<String, dynamic> toJson() {

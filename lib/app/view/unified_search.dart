@@ -96,9 +96,7 @@ class _UnifiedSearchScreenState extends State<UnifiedSearchScreen> {
                     ],
                     if (value.salonList.isEmpty &&
                         value.individualList.isEmpty)
-                      Text('Search to discover sanctuaries and specialists',
-                          style: ThemeProvider.sans(
-                              size: 13, color: Colors.white70)),
+                      const EliteApiUnavailable(),
                   ],
                 ),
         ),

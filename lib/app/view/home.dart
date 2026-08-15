@@ -7,6 +7,7 @@ import 'package:salon_user/app/env.dart';
 import 'package:salon_user/app/util/theme.dart';
 import 'package:salon_user/app/view/sidemenu.dart';
 import 'package:salon_user/app/view/widgets/elite_ui.dart';
+import 'package:salon_user/app/view/widgets/spin_win_dialog.dart';
 import 'package:skeletons/skeletons.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -19,11 +20,18 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   final CarouselSliderController _controller = CarouselSliderController();
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
+  bool _spinShown = false;
 
   @override
   Widget build(BuildContext context) {
     return GetBuilder<HomeController>(
       builder: (value) {
+            if (value.apiCalled && !_spinShown && value.offersList.isNotEmpty) {
+              _spinShown = true;
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (mounted) showSpinWinDialog(value.offersList);
+              });
+            }
             return Scaffold(
               key: _scaffoldKey,
               backgroundColor: ThemeProvider.backgroundColor,
@@ -46,43 +54,52 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
                         const SizedBox(height: 12),
                         Expanded(
-                          child: _hasAny(value)
-                              ? ListView(
+                          child: ListView(
                                   padding: const EdgeInsets.only(bottom: 90),
                                   children: [
-                                    _hero(value),
-                                    if (value.categoriesList.isNotEmpty) ...[
-                                      EliteSectionHeader(
-                                        title: 'Top Category'.tr,
-                                        onAction: value.onAllCategories,
-                                      ),
-                                      _categories(value),
-                                    ],
-                                    if (value.individualList.isNotEmpty) ...[
-                                      EliteSectionHeader(
-                                        title: 'Top Freelancers'.tr,
-                                        onAction: value.onAllSpecialist,
-                                      ),
-                                      _freelancers(value),
-                                    ],
-                                    if (value.productsList.isNotEmpty) ...[
-                                      EliteSectionHeader(
-                                        title: 'Exclusive Offers'.tr,
-                                        action: 'VIEW ALL',
-                                        onAction: value.onTopProducts,
-                                      ),
-                                      _offers(value),
-                                    ],
-                                    if (value.salonList.isNotEmpty) ...[
-                                      EliteSectionHeader(
-                                        title: 'Featured Centers'.tr,
-                                        onAction: value.onAllOffers,
-                                      ),
-                                      ..._centers(value),
-                                    ],
+                                    value.bannerList.isNotEmpty
+                                        ? _hero(value)
+                                        : const EliteApiUnavailable(),
+                                    EliteSectionHeader(
+                                      title: 'Top Category'.tr,
+                                      onAction: value.onAllCategories,
+                                    ),
+                                    value.categoriesList.isNotEmpty
+                                        ? _categories(value)
+                                        : const EliteApiUnavailable(),
+                                    EliteSectionHeader(
+                                      title: 'Top Freelancers'.tr,
+                                      onAction: value.onAllSpecialist,
+                                    ),
+                                    value.individualList.isNotEmpty
+                                        ? _freelancers(value)
+                                        : const EliteApiUnavailable(),
+                                    EliteSectionHeader(
+                                      title: 'Exclusive Offers'.tr,
+                                      action: 'VIEW ALL',
+                                      onAction: value.onAllOffersList,
+                                    ),
+                                    value.offersList.isNotEmpty
+                                        ? _offers(value)
+                                        : const EliteApiUnavailable(),
+                                    EliteSectionHeader(
+                                      title: 'Top Products'.tr,
+                                      action: 'VIEW ALL',
+                                      onAction: value.onTopProducts,
+                                    ),
+                                    value.productsList.isNotEmpty
+                                        ? _products(value)
+                                        : const EliteApiUnavailable(),
+                                    EliteSectionHeader(
+                                      title: 'Featured Centers'.tr,
+                                      action: 'VIEW ALL',
+                                      onAction: value.onAllOffers,
+                                    ),
+                                    value.salonList.isNotEmpty
+                                        ? _centers(value)
+                                        : const EliteApiUnavailable(),
                                   ],
-                                )
-                              : _empty(),
+                                ),
                         ),
                       ],
                     ),
@@ -133,14 +150,6 @@ class _HomeScreenState extends State<HomeScreen> {
             );
       },
     );
-  }
-
-  bool _hasAny(HomeController value) {
-    return value.bannerList.isNotEmpty ||
-        value.categoriesList.isNotEmpty ||
-        value.individualList.isNotEmpty ||
-        value.productsList.isNotEmpty ||
-        value.salonList.isNotEmpty;
   }
 
   Widget _hero(HomeController value) {
@@ -309,18 +318,22 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _offers(HomeController value) {
-    if (value.productsList.isEmpty) return const SizedBox.shrink();
+    if (value.offersList.isEmpty) return const SizedBox.shrink();
     return SizedBox(
       height: 150,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 16),
-        itemCount: value.productsList.length,
+        itemCount: value.offersList.length,
         separatorBuilder: (_, __) => const SizedBox(width: 12),
         itemBuilder: (context, index) {
-          final product = value.productsList[index];
+          final offer = value.offersList[index];
+          final isPercent = offer.type == 1;
+          final discountLabel = isPercent
+              ? '${(offer.discount ?? 0).toStringAsFixed(0)}% OFF'
+              : '${value.currencySymbol}${(offer.discount ?? 0).toStringAsFixed(0)} OFF';
           return GestureDetector(
-            onTap: () => value.onProduct(product.id as int),
+            onTap: () => value.claimOffer(offer),
             child: Container(
               width: 280,
               padding: const EdgeInsets.all(16),
@@ -334,33 +347,39 @@ class _HomeScreenState extends State<HomeScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  if ((product.discount ?? 0) > 0)
-                    Text(
-                      '${product.discount!.toStringAsFixed(0)}% OFF',
-                      style: ThemeProvider.sans(
-                        size: 22,
-                        weight: FontWeight.w800,
-                        color: ThemeProvider.gold,
-                      ),
-                    ),
-                  if ((product.discount ?? 0) > 0) const SizedBox(height: 4),
                   Text(
-                    product.name ?? '',
+                    discountLabel,
+                    style: ThemeProvider.sans(
+                      size: 22,
+                      weight: FontWeight.w800,
+                      color: ThemeProvider.gold,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    offer.name ?? '',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: ThemeProvider.serif(size: 18),
                   ),
-                  const Spacer(),
-                  GestureDetector(
-                    onTap: () => value.addToCart(index),
-                    child: Text(
-                      'CLAIM NOW  →',
+                  if ((offer.shortDescriptions ?? '').isNotEmpty)
+                    Text(
+                      offer.shortDescriptions!,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                       style: ThemeProvider.sans(
                         size: 12,
-                        weight: FontWeight.w700,
-                        color: ThemeProvider.gold,
-                        letterSpacing: 0.8,
+                        color: Colors.white70,
                       ),
+                    ),
+                  const Spacer(),
+                  Text(
+                    'CLAIM NOW  →',
+                    style: ThemeProvider.sans(
+                      size: 12,
+                      weight: FontWeight.w700,
+                      color: ThemeProvider.gold,
+                      letterSpacing: 0.8,
                     ),
                   ),
                 ],
@@ -372,117 +391,256 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  List<Widget> _centers(HomeController value) {
-    return value.salonList.map((item) {
-      return Padding(
-        padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-        child: GestureDetector(
-          onTap: () => value.onServices(item.uid as int),
-          child: Container(
-            decoration: BoxDecoration(
-              color: ThemeProvider.surface,
-              borderRadius: BorderRadius.circular(16),
-            ),
-            clipBehavior: Clip.antiAlias,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Stack(
-                  children: [
-                    EliteNetworkImage(
-                      url: '${Environments.imageURL}${item.cover}',
-                      height: 170,
-                      width: double.infinity,
-                    ),
-                    Positioned(
-                      top: 12,
-                      right: 12,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 8, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: Colors.black54,
-                          borderRadius: BorderRadius.circular(20),
+  Widget _products(HomeController value) {
+    return SizedBox(
+      height: 268,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        itemCount: value.productsList.length,
+        separatorBuilder: (_, __) => const SizedBox(width: 12),
+        itemBuilder: (context, index) {
+          final p = value.productsList[index];
+          return GestureDetector(
+            onTap: () => value.onProduct(p.id as int),
+            child: Container(
+              width: 168,
+              decoration: BoxDecoration(
+                color: ThemeProvider.surface,
+                borderRadius: BorderRadius.circular(14),
+              ),
+              clipBehavior: Clip.antiAlias,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Stack(
+                    children: [
+                      EliteNetworkImage(
+                        url: '${Environments.imageURL}${p.cover}',
+                        height: 120,
+                        width: 168,
+                      ),
+                      if ((p.discount ?? 0) > 0)
+                        Positioned(
+                          top: 8,
+                          left: 8,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 8, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: ThemeProvider.gold,
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Text(
+                              '${p.discount!.toStringAsFixed(0)}% OFF',
+                              style: ThemeProvider.sans(
+                                size: 10,
+                                weight: FontWeight.w700,
+                                color: Colors.black,
+                              ),
+                            ),
+                          ),
                         ),
-                        child: Row(
+                    ],
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(10, 8, 10, 8),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          p.name ?? '',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: ThemeProvider.serif(size: 14),
+                        ),
+                        const SizedBox(height: 4),
+                        Row(
                           children: [
                             const Icon(Icons.star,
-                                color: ThemeProvider.gold, size: 14),
+                                size: 12, color: ThemeProvider.gold),
                             const SizedBox(width: 4),
                             Text(
-                              (item.rating ?? 0).toStringAsFixed(1),
+                              '${(p.rating ?? 0).toStringAsFixed(1)} (${p.totalRating ?? 0})',
                               style: ThemeProvider.sans(
-                                  size: 12, weight: FontWeight.w600),
+                                size: 11,
+                                color: ThemeProvider.greyColor,
+                              ),
                             ),
                           ],
                         ),
-                      ),
+                        const SizedBox(height: 6),
+                        if ((p.originalPrice ?? 0) > (p.sellPrice ?? 0))
+                          Text(
+                            elitePrice(value.currencySide, value.currencySymbol,
+                                p.originalPrice, digits: 0),
+                            style: ThemeProvider.sans(
+                              size: 11,
+                              color: ThemeProvider.greyColor,
+                            ).copyWith(
+                              decoration: TextDecoration.lineThrough,
+                            ),
+                          ),
+                        Text(
+                          elitePrice(value.currencySide, value.currencySymbol,
+                              p.sellPrice ?? p.originalPrice, digits: 0),
+                          style: ThemeProvider.serif(
+                            size: 16,
+                            color: ThemeProvider.gold,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        SizedBox(
+                          width: double.infinity,
+                          height: 32,
+                          child: ElevatedButton(
+                            onPressed: () => value.addToCart(index),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: ThemeProvider.gold,
+                              foregroundColor: Colors.black,
+                              elevation: 0,
+                              padding: EdgeInsets.zero,
+                            ),
+                            child: Text(
+                              'ADD',
+                              style: ThemeProvider.sans(
+                                size: 11,
+                                weight: FontWeight.w700,
+                                color: Colors.black,
+                                letterSpacing: 0.8,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
-                  ],
-                ),
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(14, 12, 14, 14),
-                  child: Row(
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _centers(HomeController value) {
+    return SizedBox(
+      height: 248,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        itemCount: value.salonList.length,
+        separatorBuilder: (_, __) => const SizedBox(width: 12),
+        itemBuilder: (context, index) {
+          final item = value.salonList[index];
+          return GestureDetector(
+            onTap: () => value.onServices(item.uid as int),
+            child: Container(
+              width: 260,
+              decoration: BoxDecoration(
+                color: ThemeProvider.surface,
+                borderRadius: BorderRadius.circular(16),
+              ),
+              clipBehavior: Clip.antiAlias,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Stack(
                     children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              item.name ?? '',
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: ThemeProvider.serif(size: 18),
-                            ),
-                            const SizedBox(height: 4),
-                            Row(
-                              children: [
-                                const Icon(Icons.location_on_outlined,
-                                    color: ThemeProvider.gold, size: 14),
-                                const SizedBox(width: 4),
-                                Expanded(
-                                  child: Text(
-                                    item.address ?? '',
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: ThemeProvider.sans(
-                                      size: 12,
-                                      color: ThemeProvider.greyColor,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
+                      EliteNetworkImage(
+                        url: '${Environments.imageURL}${item.cover}',
+                        height: 140,
+                        width: 260,
                       ),
-                      EliteGoldButton(
-                        label: 'BOOK NOW',
-                        onTap: () => value.onServices(item.uid as int),
+                      Positioned(
+                        top: 10,
+                        right: 10,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: Colors.black54,
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Row(
+                            children: [
+                              const Icon(Icons.star,
+                                  color: ThemeProvider.gold, size: 14),
+                              const SizedBox(width: 4),
+                              Text(
+                                (item.rating ?? 0).toStringAsFixed(1),
+                                style: ThemeProvider.sans(
+                                    size: 12, weight: FontWeight.w600),
+                              ),
+                            ],
+                          ),
+                        ),
                       ),
                     ],
                   ),
-                ),
-              ],
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          item.name ?? '',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: ThemeProvider.serif(size: 16),
+                        ),
+                        const SizedBox(height: 4),
+                        Row(
+                          children: [
+                            const Icon(Icons.location_on_outlined,
+                                color: ThemeProvider.gold, size: 14),
+                            const SizedBox(width: 4),
+                            Expanded(
+                              child: Text(
+                                item.address ?? '',
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: ThemeProvider.sans(
+                                  size: 11,
+                                  color: ThemeProvider.greyColor,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        SizedBox(
+                          width: double.infinity,
+                          height: 34,
+                          child: ElevatedButton(
+                            onPressed: () =>
+                                value.onServices(item.uid as int),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: ThemeProvider.gold,
+                              foregroundColor: Colors.black,
+                              elevation: 0,
+                              padding: EdgeInsets.zero,
+                            ),
+                            child: Text(
+                              'BOOK NOW',
+                              style: ThemeProvider.sans(
+                                size: 11,
+                                weight: FontWeight.w700,
+                                color: Colors.black,
+                                letterSpacing: 0.8,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ),
-        ),
-      );
-    }).toList();
-  }
-
-  Widget _empty() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Image.asset('assets/images/no-data.png', height: 80, width: 80),
-          const SizedBox(height: 20),
-          Text(
-            'No Data Found Near You!'.tr,
-            style: ThemeProvider.serif(size: 16, color: ThemeProvider.gold),
-          ),
-        ],
+          );
+        },
       ),
     );
   }

@@ -48,13 +48,19 @@ class CouponController extends GetxController implements GetxService {
   }
 
   Future<void> getCoupons() async {
-    Response response = await parser.getCouponCodes();
+    Response response = action == 'browse'
+        ? await parser.getPublicHomeOffers()
+        : await parser.getCouponCodes();
     apiCalled = true;
 
     if (response.statusCode == 200) {
       Map<String, dynamic> myMap = Map<String, dynamic>.from(response.body);
       var body = myMap['data'];
       _couponList = [];
+      if (body is! List) {
+        update();
+        return;
+      }
 
       // Get the current device date without time (only YYYY-MM-DD)
       DateTime currentDate = DateTime.now();

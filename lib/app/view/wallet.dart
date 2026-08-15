@@ -86,18 +86,7 @@ class _WalletScreenState extends State<WalletScreen> {
                     ),
                     const SizedBox(height: 12),
                     if (value.walletList.isEmpty)
-                      EliteCard(
-                        child: Center(
-                          child: Padding(
-                            padding: const EdgeInsets.all(16),
-                            child: Text(
-                              'No Transactions Yet'.tr,
-                              style: ThemeProvider.sans(
-                                  color: ThemeProvider.greyColor),
-                            ),
-                          ),
-                        ),
-                      )
+                      const EliteApiUnavailable()
                     else
                       ...value.walletList.map((tx) {
                         final credit =

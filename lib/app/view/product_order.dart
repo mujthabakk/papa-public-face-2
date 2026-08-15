@@ -113,10 +113,7 @@ class _ProductOrderScreenState extends State<ProductOrderScreen> {
       builder: (b) {
         final list = [...b.appointmentList, ...b.appointmentListOld];
         if (list.isEmpty) {
-          return Center(
-            child: Text('No service history',
-                style: ThemeProvider.sans(size: 13, color: Colors.white70)),
-          );
+          return const EliteApiUnavailable(minHeight: 180);
         }
         return ListView.builder(
           padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
@@ -270,10 +267,7 @@ class _ProductOrderScreenState extends State<ProductOrderScreen> {
   Widget _products(ProductOrderController c) {
     final list = [...c.productSalonList, ...c.productSalonListOld];
     if (list.isEmpty) {
-      return Center(
-        child: Text('No product orders',
-            style: ThemeProvider.sans(size: 13, color: Colors.white70)),
-      );
+      return const EliteApiUnavailable(minHeight: 180);
     }
     return ListView.builder(
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),

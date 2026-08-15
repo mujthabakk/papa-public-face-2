@@ -309,18 +309,6 @@ class _NearScreenState extends State<NearScreen> {
   }
 
   Widget _empty() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Image.asset('assets/images/no-data.png', height: 100, width: 100),
-          const SizedBox(height: 20),
-          Text(
-            'No Data Found Near You!'.tr,
-            style: ThemeProvider.serif(size: 16, color: ThemeProvider.gold),
-          ),
-        ],
-      ),
-    );
+    return const EliteApiUnavailable(minHeight: 180);
   }
 }

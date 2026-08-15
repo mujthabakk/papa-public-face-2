@@ -104,7 +104,7 @@ class _ServicesScreenState extends State<ServicesScreen> {
         onPressed: () => Get.back(),
       ),
       title: Text(
-        value.salonDetails.name ?? 'Sanctuary',
+        value.salonDetails.name ?? '',
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
         style: ThemeProvider.serif(size: 18, color: ThemeProvider.gold),
@@ -231,70 +231,39 @@ class _ServicesScreenState extends State<ServicesScreen> {
                       size: 20, color: ThemeProvider.gold),
                 ),
                 const SizedBox(height: 10),
-                Text(
-                  value.salonDetails.about ?? '',
-                  style: ThemeProvider.sans(
-                    size: 13,
-                    color: Colors.white70,
-                  ).copyWith(height: 1.55),
-                ),
+                (value.salonDetails.about ?? '').isEmpty ||
+                        value.salonDetails.about == 'NA'
+                    ? const EliteApiUnavailable()
+                    : Text(
+                        value.salonDetails.about ?? '',
+                        style: ThemeProvider.sans(
+                          size: 13,
+                          color: Colors.white70,
+                        ).copyWith(height: 1.55),
+                      ),
               ],
             ),
           ),
-          _featureGrid(),
           if (value.categoriesList.isNotEmpty ||
               value.servicesList.isNotEmpty)
-            ..._serviceSections(value),
-          if (value.packagesList.isNotEmpty) _packages(value),
+            ..._serviceSections(value)
+          else
+            const EliteApiUnavailable(),
+          if (value.packagesList.isNotEmpty)
+            _packages(value)
+          else
+            const EliteApiUnavailable(),
           _location(value),
-          if (value.gallery.isNotEmpty) _gallery(value),
-          if (value.specialistList.isNotEmpty) _specialists(value),
+          if (value.gallery.isNotEmpty)
+            _gallery(value)
+          else
+            const EliteApiUnavailable(),
+          if (value.specialistList.isNotEmpty)
+            _specialists(value)
+          else
+            const EliteApiUnavailable(),
           _reviews(value),
         ],
-      ),
-    );
-  }
-
-  Widget _featureGrid() {
-    const items = [
-      (Icons.spa_outlined, 'Holistic'),
-      (Icons.science_outlined, 'Bio-Tech'),
-      (Icons.self_improvement, 'Zen Focus'),
-      (Icons.verified_outlined, 'Certified'),
-    ];
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 18),
-      child: GridView.count(
-        crossAxisCount: 2,
-        shrinkWrap: true,
-        physics: const NeverScrollableScrollPhysics(),
-        mainAxisSpacing: 10,
-        crossAxisSpacing: 10,
-        childAspectRatio: 2.4,
-        children: items
-            .map(
-              (e) => Container(
-                decoration: BoxDecoration(
-                  color: ThemeProvider.surface,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(e.$1, color: ThemeProvider.gold, size: 20),
-                    const SizedBox(height: 6),
-                    Text(
-                      e.$2,
-                      style: ThemeProvider.sans(
-                        size: 12,
-                        color: ThemeProvider.gold,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            )
-            .toList(),
       ),
     );
   }
@@ -704,8 +673,7 @@ class _ServicesScreenState extends State<ServicesScreen> {
           trailing: '${value.ownerReviewsList.length}',
         ),
         if (value.ownerReviewsList.isEmpty)
-          Text('No reviews yet',
-              style: ThemeProvider.sans(size: 13, color: Colors.white70))
+          const EliteApiUnavailable()
         else
           ...value.ownerReviewsList.take(6).map((r) {
             final name =

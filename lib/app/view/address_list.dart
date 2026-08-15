@@ -28,12 +28,7 @@ class _AddressListScreenState extends State<AddressListScreen> {
                   child: CircularProgressIndicator(color: ThemeProvider.gold),
                 )
               : value.addressList.isEmpty
-                  ? Center(
-                      child: Text(
-                        'No Data Found!'.tr,
-                        style: ThemeProvider.sans(color: ThemeProvider.greyColor),
-                      ),
-                    )
+                  ? const EliteApiUnavailable(minHeight: 180)
                   : ListView.builder(
                       padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
                       itemCount: value.addressList.length,

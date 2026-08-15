@@ -8,7 +8,9 @@ import 'package:salon_user/app/view/categories.dart';
 import 'package:salon_user/app/view/home.dart';
 import 'package:salon_user/app/view/near.dart';
 import 'package:salon_user/app/view/qr_screen.dart';
+import 'package:salon_user/app/controller/home_controller.dart';
 import 'package:salon_user/app/view/widgets/elite_ui.dart';
+import 'package:salon_user/app/view/widgets/spin_win_dialog.dart';
 
 class TabScreen extends StatefulWidget {
   const TabScreen({Key? key}) : super(key: key);
@@ -33,7 +35,41 @@ class _TabScreenState extends State<TabScreen> {
         length: 6,
         child: Scaffold(
           backgroundColor: ThemeProvider.backgroundColor,
-          floatingActionButton: value.tabId == 2 ? null : const EliteCartFab(),
+          floatingActionButton: value.tabId == 2
+              ? null
+              : Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (value.tabId == 0)
+                      GestureDetector(
+                        onTap: () {
+                          showSpinWinDialog(
+                            Get.isRegistered<HomeController>()
+                                ? Get.find<HomeController>().offersList
+                                : const [],
+                          );
+                        },
+                        child: Container(
+                          width: 52,
+                          height: 52,
+                          margin: const EdgeInsets.only(bottom: 10),
+                          decoration: BoxDecoration(
+                            color: ThemeProvider.gold,
+                            borderRadius: BorderRadius.circular(12),
+                            boxShadow: const [
+                              BoxShadow(
+                                color: ThemeProvider.appColorShadow,
+                                blurRadius: 12,
+                              ),
+                            ],
+                          ),
+                          child: const Icon(Icons.casino_outlined,
+                              color: Colors.black, size: 24),
+                        ),
+                      ),
+                    const EliteCartFab(),
+                  ],
+                ),
           floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
           bottomNavigationBar: EliteBottomNav(
             tabId: value.tabId,

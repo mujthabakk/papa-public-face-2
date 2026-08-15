@@ -4,7 +4,6 @@ import 'package:salon_user/app/controller/individual_categories_controller.dart'
 import 'package:salon_user/app/controller/service_cart_controller.dart';
 import 'package:salon_user/app/env.dart';
 import 'package:salon_user/app/util/theme.dart';
-import 'package:skeletons/skeletons.dart';
 
 class IndividualCategoriesScreen extends StatefulWidget {
   const IndividualCategoriesScreen({Key? key}) : super(key: key);
@@ -36,7 +35,16 @@ class _IndividualCategoriesScreenState
             ),
           ),
           body: value.apiCalled == false
-              ? SkeletonListView()
+              ? const Center(
+                  child: CircularProgressIndicator(color: ThemeProvider.gold),
+                )
+              : value.servicesList.isEmpty
+                  ? const Center(
+                      child: Text(
+                        'API is not available',
+                        style: TextStyle(color: ThemeProvider.greyColor),
+                      ),
+                    )
               : SingleChildScrollView(
                   child: Padding(
                     padding: const EdgeInsets.all(10.0),

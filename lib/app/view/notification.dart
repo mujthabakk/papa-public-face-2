@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import 'package:salon_user/app/backend/models/common_notification_model.dart';
 import 'package:salon_user/app/controller/common_notification_controller.dart';
 import 'package:salon_user/app/util/theme.dart';
+import 'package:salon_user/app/view/widgets/elite_ui.dart';
 
 class NotificationScreen extends StatefulWidget {
   const NotificationScreen({Key? key}) : super(key: key);
@@ -78,13 +79,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
                             color: ThemeProvider.gold),
                       )
                     : items.isEmpty
-                        ? Center(
-                            child: Text(
-                              'No notifications yet'.tr,
-                              style: ThemeProvider.sans(
-                                  color: ThemeProvider.greyColor),
-                            ),
-                          )
+                        ? const EliteApiUnavailable(minHeight: 180)
                         : ListView.builder(
                             padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
                             itemCount: items.length,
