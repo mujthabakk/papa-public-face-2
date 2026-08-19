@@ -1,5 +1,6 @@
 import 'package:flutter/cupertino.dart';
 import 'package:get/get.dart';
+import 'package:salon_user/app/backend/api/api_response.dart';
 import 'package:salon_user/app/backend/api/handler.dart';
 import 'package:salon_user/app/backend/models/top_freelancer_model.dart';
 import 'package:salon_user/app/backend/parse/top_specialist_parse.dart';
@@ -36,17 +37,18 @@ class TopSpecialistController extends GetxController implements GetxService {
     Response response = await parser.getTopFreelancer(param);
     apiCalled = true;
 
-    if (response.statusCode == 200) {
-      Map<String, dynamic> myMap = Map<String, dynamic>.from(response.body);
-      var topFreelancerData = myMap['data'];
-
+    if (ApiBody.isSuccess(response) ||
+        ApiBody.asList(response.body).isNotEmpty) {
       _topFreelancerList = [];
-
-      topFreelancerData.forEach((data) {
-        TopFreelancerModel datas = TopFreelancerModel.fromJson(data);
-        _topFreelancerList.add(datas);
-      });
-      debugPrint(topFreelancerList.length.toString());
+      for (final data in ApiBody.asList(response.body)) {
+        try {
+          if (data is! Map) continue;
+          _topFreelancerList.add(
+              TopFreelancerModel.fromJson(Map<String, dynamic>.from(data)));
+        } catch (e) {
+          debugPrint('Skip freelancer: $e');
+        }
+      }
     } else {
       ApiChecker.checkApi(response);
     }

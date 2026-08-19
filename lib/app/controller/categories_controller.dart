@@ -1,5 +1,6 @@
 import 'package:flutter/cupertino.dart';
 import 'package:get/get.dart';
+import 'package:salon_user/app/backend/api/api_response.dart';
 import 'package:salon_user/app/backend/api/handler.dart';
 import 'package:salon_user/app/backend/models/products_model.dart';
 import 'package:salon_user/app/backend/parse/categories_parse.dart';
@@ -38,16 +39,18 @@ class CategoriesController extends GetxController implements GetxService {
   Future<void> getAllCategories() async {
     var response = await parser.getAllCategories();
     apiCalled = true;
-    if (response.statusCode == 200) {
-      Map<String, dynamic> myMap = Map<String, dynamic>.from(response.body);
-
-      var body = myMap['data'];
+    if (ApiBody.isSuccess(response) ||
+        ApiBody.asList(response.body).isNotEmpty) {
       _productsList = [];
-      body.forEach((data) {
-        ProductsModel cateData = ProductsModel.fromJson(data);
-        _productsList.add(cateData);
-      });
-      debugPrint(productsList.length.toString());
+      for (final data in ApiBody.asList(response.body)) {
+        try {
+          if (data is! Map) continue;
+          _productsList
+              .add(ProductsModel.fromJson(Map<String, dynamic>.from(data)));
+        } catch (e) {
+          debugPrint('Skip shop category: $e');
+        }
+      }
     } else {
       ApiChecker.checkApi(response);
     }

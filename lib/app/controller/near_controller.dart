@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:flutter/cupertino.dart';
 import 'package:get/get.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
-import 'package:salon_user/app/backend/api/handler.dart';
+import 'package:salon_user/app/backend/api/api_response.dart';
 import 'package:salon_user/app/backend/models/individual_model.dart';
 import 'package:salon_user/app/backend/models/salon_model.dart';
 import 'package:salon_user/app/backend/parse/near_parse.dart';
@@ -43,68 +43,105 @@ class NearController extends GetxController implements GetxService {
 
   Future<void> getHomeData() async {
     var param = {"lat": parser.getLat(), "lng": parser.getLng()};
+    _salonList = [];
+    _individualList = [];
+    markers.clear();
+
     Response response = await parser.getHomeData(param);
-    apiCalled = true;
-
-    if (response.statusCode == 200) {
-      Map<String, dynamic> myMap = Map<String, dynamic>.from(response.body);
-      var salonData = myMap['salon'];
-      var individualData = myMap['individual'];
-      _salonList = [];
-      _individualList = [];
-      salonData.forEach((data) {
-        SalonModel salon = SalonModel.fromJson(data);
-        _salonList.add(salon);
-      });
-      debugPrint(salonList.length.toString());
-
-      individualData.forEach((data) {
-        IndividualModel individual = IndividualModel.fromJson(data);
-        _individualList.add(individual);
-      });
-      var destPosition = LatLng(parser.getLat(), parser.getLng());
-      initialCameraPosition = CameraPosition(
-          zoom: cameraZoom,
-          tilt: cameraTilt,
-          bearing: cameraBearing,
-          target: destPosition);
-      debugPrint(individualList.length.toString());
-
-      for (var element in _salonList) {
-        markers.add(Marker(
-          markerId: MarkerId('${element.id}salon'),
-          position: LatLng(element.salonLat as double,
-              element.salonLng as double), //position of marker
-          infoWindow: InfoWindow(
-            title: element.name,
-            snippet: element.address,
-          ),
-          icon: BitmapDescriptor.defaultMarker, //Icon for Marker
-        ));
+    final map = ApiBody.asMap(response.body);
+    if (map != null) {
+      _parseSalons(map['salon'] ?? map['salons']);
+      _parseIndividuals(map['individual'] ?? map['individuals']);
+      if (_salonList.isEmpty && map['data'] is Map) {
+        final nested = Map<String, dynamic>.from(map['data']);
+        _parseSalons(nested['salon'] ?? nested['salons']);
+        _parseIndividuals(nested['individual'] ?? nested['individuals']);
       }
-
-      for (var element in _individualList) {
-        markers.add(Marker(
-          markerId: MarkerId('${element.uid}freelancer'),
-          position: LatLng(element.lat as double,
-              element.lng as double), //position of marker
-          infoWindow: InfoWindow(
-            title:
-                '${element.userInfo!.firstName} ${element.userInfo!.lastName}',
-          ),
-          icon: BitmapDescriptor.defaultMarker, //Icon for Marker
-        ));
-      }
-
-      if (salonList.isEmpty && individualList.isEmpty) {
-        haveData = false;
-      } else {
-        haveData = true;
-      }
-    } else {
-      ApiChecker.checkApi(response);
     }
+
+    if (_salonList.isEmpty) {
+      try {
+        final top = await parser.getTopSalon(param);
+        _parseSalons(ApiBody.asList(top.body));
+      } catch (e) {
+        debugPrint('near top salon: $e');
+      }
+    }
+    if (_individualList.isEmpty) {
+      try {
+        final top = await parser.getTopFreelancer(param);
+        _parseIndividuals(ApiBody.asList(top.body));
+      } catch (e) {
+        debugPrint('near top freelancer: $e');
+      }
+    }
+
+    var destPosition = LatLng(parser.getLat(), parser.getLng());
+    initialCameraPosition = CameraPosition(
+        zoom: cameraZoom,
+        tilt: cameraTilt,
+        bearing: cameraBearing,
+        target: destPosition);
+
+    for (var element in _salonList) {
+      final lat = element.salonLat ?? 0;
+      final lng = element.salonLng ?? 0;
+      if (lat == 0 && lng == 0) continue;
+      markers.add(Marker(
+        markerId: MarkerId('${element.id}salon'),
+        position: LatLng(lat, lng),
+        infoWindow: InfoWindow(
+          title: element.name,
+          snippet: element.address,
+        ),
+        icon: BitmapDescriptor.defaultMarker,
+      ));
+    }
+
+    for (var element in _individualList) {
+      final lat = element.lat ?? 0;
+      final lng = element.lng ?? 0;
+      if (lat == 0 && lng == 0) continue;
+      markers.add(Marker(
+        markerId: MarkerId('${element.uid}freelancer'),
+        position: LatLng(lat, lng),
+        infoWindow: InfoWindow(
+          title:
+              '${element.userInfo?.firstName ?? ''} ${element.userInfo?.lastName ?? ''}'
+                  .trim(),
+        ),
+        icon: BitmapDescriptor.defaultMarker,
+      ));
+    }
+
+    haveData = salonList.isNotEmpty || individualList.isNotEmpty;
+    apiCalled = true;
     update();
+  }
+
+  void _parseSalons(dynamic raw) {
+    if (raw is! List) return;
+    for (final data in raw) {
+      try {
+        if (data is! Map) continue;
+        _salonList.add(SalonModel.fromJson(Map<String, dynamic>.from(data)));
+      } catch (e) {
+        debugPrint('Skip near salon: $e');
+      }
+    }
+  }
+
+  void _parseIndividuals(dynamic raw) {
+    if (raw is! List) return;
+    for (final data in raw) {
+      try {
+        if (data is! Map) continue;
+        _individualList
+            .add(IndividualModel.fromJson(Map<String, dynamic>.from(data)));
+      } catch (e) {
+        debugPrint('Skip near freelancer: $e');
+      }
+    }
   }
 
   void onFilter() {

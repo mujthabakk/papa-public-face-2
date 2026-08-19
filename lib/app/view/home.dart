@@ -1,4 +1,3 @@
-import 'package:carousel_slider/carousel_slider.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:salon_user/app/controller/home_controller.dart';
@@ -18,7 +17,6 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  final CarouselSliderController _controller = CarouselSliderController();
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   bool _spinShown = false;
 
@@ -57,22 +55,13 @@ class _HomeScreenState extends State<HomeScreen> {
                           child: ListView(
                                   padding: const EdgeInsets.only(bottom: 90),
                                   children: [
-                                    value.bannerList.isNotEmpty
-                                        ? _hero(value)
-                                        : const EliteApiUnavailable(),
                                     EliteSectionHeader(
                                       title: 'Top Category'.tr,
                                       onAction: value.onAllCategories,
                                     ),
-                                    value.categoriesList.isNotEmpty
-                                        ? _categories(value)
-                                        : const EliteApiUnavailable(),
-                                    EliteSectionHeader(
-                                      title: 'Top Freelancers'.tr,
-                                      onAction: value.onAllSpecialist,
-                                    ),
-                                    value.individualList.isNotEmpty
-                                        ? _freelancers(value)
+                                    (value.timedOffers.isNotEmpty ||
+                                            value.categoriesList.isNotEmpty)
+                                        ? _categoryRow(value)
                                         : const EliteApiUnavailable(),
                                     EliteSectionHeader(
                                       title: 'Exclusive Offers'.tr,
@@ -83,20 +72,27 @@ class _HomeScreenState extends State<HomeScreen> {
                                         ? _offers(value)
                                         : const EliteApiUnavailable(),
                                     EliteSectionHeader(
-                                      title: 'Top Products'.tr,
-                                      action: 'VIEW ALL',
-                                      onAction: value.onTopProducts,
-                                    ),
-                                    value.productsList.isNotEmpty
-                                        ? _products(value)
-                                        : const EliteApiUnavailable(),
-                                    EliteSectionHeader(
                                       title: 'Featured Centers'.tr,
                                       action: 'VIEW ALL',
                                       onAction: value.onAllOffers,
                                     ),
                                     value.salonList.isNotEmpty
                                         ? _centers(value)
+                                        : const EliteApiUnavailable(),
+                                    EliteSectionHeader(
+                                      title: 'Top Freelancers'.tr,
+                                      onAction: value.onAllSpecialist,
+                                    ),
+                                    value.individualList.isNotEmpty
+                                        ? _freelancers(value)
+                                        : const EliteApiUnavailable(),
+                                    EliteSectionHeader(
+                                      title: 'Top Products'.tr,
+                                      action: 'VIEW ALL',
+                                      onAction: value.onTopProducts,
+                                    ),
+                                    value.productsList.isNotEmpty
+                                        ? _products(value)
                                         : const EliteApiUnavailable(),
                                   ],
                                 ),
@@ -152,121 +148,82 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _hero(HomeController value) {
-    if (value.bannerList.isEmpty) return const SizedBox.shrink();
-    return Padding(
-      padding: const EdgeInsets.only(top: 12),
-      child: CarouselSlider(
-        carouselController: _controller,
-        options: CarouselOptions(
-          height: 210,
-          viewportFraction: 1,
-          autoPlay: true,
-          autoPlayInterval: const Duration(seconds: 4),
-        ),
-        items: value.bannerList.map((banner) {
-          return GestureDetector(
-            onTap: () => value.onBanner(
-                banner.value.toString(), banner.type.toString()),
-            child: Stack(
-              fit: StackFit.expand,
-              children: [
-                EliteNetworkImage(
-                  url: '${Environments.imageURL}${banner.cover}',
-                ),
-                Container(
-                  decoration: const BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                      colors: [Colors.transparent, Colors.black87],
-                    ),
-                  ),
-                ),
-                if ((banner.title ?? '').toString().isNotEmpty ||
-                    (banner.extraField ?? '').toString().isNotEmpty)
-                  Positioned(
-                    left: 20,
-                    bottom: 20,
-                    right: 20,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        if ((banner.title ?? '').toString().isNotEmpty)
-                          Text(
-                            banner.title.toString(),
-                            style: ThemeProvider.serif(
-                                size: 26, weight: FontWeight.w700),
-                          ),
-                        if ((banner.extraField ?? '').toString().isNotEmpty) ...[
-                          const SizedBox(height: 4),
-                          Text(
-                            banner.extraField.toString(),
-                            style: ThemeProvider.sans(
-                                size: 12, color: Colors.white70),
-                          ),
-                        ],
-                      ],
-                    ),
-                  ),
-              ],
-            ),
-          );
-        }).toList(),
-      ),
-    );
-  }
-
-  Widget _categories(HomeController value) {
+  Widget _categoryRow(HomeController value) {
+    final timed = value.timedOffers;
+    final cats = value.categoriesList;
+    final total = timed.length + cats.length;
     return SizedBox(
       height: 118,
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 12),
-        itemCount: value.categoriesList.length,
+        itemCount: total,
         itemBuilder: (context, index) {
-          final item = value.categoriesList[index];
-          return GestureDetector(
+          if (index < timed.length) {
+            final item = timed[index];
+            return _categoryIcon(
+              name: item.name ?? '',
+              cover: item.image ?? '',
+              onTap: () => value.onTimedOffer(item),
+            );
+          }
+          final item = cats[index - timed.length];
+          return _categoryIcon(
+            name: item.name ?? '',
+            cover: item.cover ?? '',
             onTap: () =>
                 value.onCategoriesList(item.id as int, item.name.toString()),
-            child: Container(
-              width: 88,
-              margin: const EdgeInsets.symmetric(horizontal: 6),
-              child: Column(
-                children: [
-                  Container(
-                    height: 78,
-                    width: 78,
-                    decoration: BoxDecoration(
-                      color: ThemeProvider.surface,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: ThemeProvider.gold, width: 0.6),
-                    ),
-                    child: Padding(
-                      padding: const EdgeInsets.all(14),
-                      child: EliteNetworkImage(
-                        url: '${Environments.imageURL}${item.cover}',
-                        radius: BorderRadius.circular(4),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    (item.name ?? '').toUpperCase(),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    textAlign: TextAlign.center,
-                    style: ThemeProvider.sans(
-                      size: 9,
-                      weight: FontWeight.w600,
-                      letterSpacing: 0.6,
-                    ),
-                  ),
-                ],
-              ),
-            ),
           );
         },
+      ),
+    );
+  }
+
+  Widget _categoryIcon({
+    required String name,
+    required String cover,
+    required VoidCallback onTap,
+  }) {
+    final url = cover.startsWith('http://') || cover.startsWith('https://')
+        ? cover
+        : '${Environments.imageURL}$cover';
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 88,
+        margin: const EdgeInsets.symmetric(horizontal: 6),
+        child: Column(
+          children: [
+            Container(
+              height: 78,
+              width: 78,
+              decoration: BoxDecoration(
+                color: ThemeProvider.surface,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: ThemeProvider.gold, width: 0.6),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(8),
+                child: EliteNetworkImage(
+                  url: url,
+                  radius: BorderRadius.circular(8),
+                ),
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              name.toUpperCase(),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              textAlign: TextAlign.center,
+              style: ThemeProvider.sans(
+                size: 9,
+                weight: FontWeight.w600,
+                letterSpacing: 0.6,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -374,7 +331,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                   const Spacer(),
                   Text(
-                    'CLAIM NOW  →',
+                    offer.canBook ? 'BOOK NOW  →' : 'COPY CODE  →',
                     style: ThemeProvider.sans(
                       size: 12,
                       weight: FontWeight.w700,

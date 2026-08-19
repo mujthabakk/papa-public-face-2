@@ -17,6 +17,7 @@ import 'package:salon_user/app/backend/binding/common_notitifcation_binding.dart
 import 'package:salon_user/app/backend/binding/complaints_binding.dart';
 import 'package:salon_user/app/backend/binding/contact_us_binding.dart';
 import 'package:salon_user/app/backend/binding/coupon_binding.dart';
+import 'package:salon_user/app/backend/binding/timed_offer_binding.dart';
 import 'package:salon_user/app/backend/binding/edit_profile_binding.dart';
 import 'package:salon_user/app/backend/binding/filter_binding.dart';
 import 'package:salon_user/app/backend/binding/find_location_binding.dart';
@@ -76,6 +77,7 @@ import 'package:salon_user/app/view/choose_location.dart';
 import 'package:salon_user/app/view/complaints.dart';
 import 'package:salon_user/app/view/contact_us.dart';
 import 'package:salon_user/app/view/coupon.dart';
+import 'package:salon_user/app/view/timed_offer.dart';
 import 'package:salon_user/app/view/edit_profile.dart';
 import 'package:salon_user/app/view/error.dart';
 import 'package:salon_user/app/view/filter.dart';
@@ -169,6 +171,7 @@ class AppRouter {
   static const String selectedServicesRoutes = '/selected_services';
   static const String packagesDetailsRoutes = '/packages_details';
   static const String couponRoutes = '/coupon';
+  static const String timedOfferRoutes = '/timed_offer';
   static const String slotRoutes = '/slot';
   static const String rescheduleslotRoutes = '/reschedule_slot';
 
@@ -241,6 +244,7 @@ class AppRouter {
   static String getSelectedServicesRoutes() => selectedServicesRoutes;
   static String getPackagesDetailsRoutes() => packagesDetailsRoutes;
   static String getCouponRoutes() => couponRoutes;
+  static String getTimedOfferRoutes() => timedOfferRoutes;
   static String getSlotRoutes() => slotRoutes;
   static String getRescheduleSlotRoutes() => rescheduleslotRoutes;
   static String getPaymentRoutes() => paymentRoutes;
@@ -451,6 +455,11 @@ class AppRouter {
         name: couponRoutes,
         page: () => const CouponScreen(),
         binding: CouponBinding(),
+        fullscreenDialog: true),
+    GetPage(
+        name: timedOfferRoutes,
+        page: () => const TimedOfferScreen(),
+        binding: TimedOfferBinding(),
         fullscreenDialog: true),
     GetPage(
         name: slotRoutes,

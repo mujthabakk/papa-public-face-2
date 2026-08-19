@@ -6,6 +6,7 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:salon_user/app/backend/api/handler.dart';
 import 'package:salon_user/app/backend/models/categories_model.dart';
 import 'package:salon_user/app/backend/models/individual_info_model.dart';
+import 'package:salon_user/app/backend/models/coupons_model.dart';
 import 'package:salon_user/app/backend/models/packages_model.dart';
 import 'package:salon_user/app/backend/models/owner_reviews_model.dart';
 import 'package:salon_user/app/backend/models/services_model.dart';
@@ -91,6 +92,7 @@ class SpecialistController extends GetxController
   bool reviewsCalled = false;
 
   int individualId = 0;
+  List<int> offerServiceIds = [];
   final Set<Marker> markers = {};
   String getDistance = '';
   SpecialistController({required this.parser});
@@ -114,7 +116,10 @@ class SpecialistController extends GetxController
     int checkPremium = 0;
 
     List<dynamic>? arguments = Get.arguments;
-    individualId = Get.arguments[0];
+    individualId = int.tryParse('${Get.arguments[0]}') ?? 0;
+    if (arguments != null && arguments.length > 2) {
+      offerServiceIds = parseIdList(arguments[2]);
+    }
 
     checkPremium =
         (arguments != null && arguments.length > 1 && arguments[1] is int)
@@ -294,9 +299,13 @@ class SpecialistController extends GetxController
         }
         _servicesList.add(services);
       });
-      _servicesList.removeWhere((services) => services.status == 0);
+      _servicesList.removeWhere((service) =>
+          service.status == 0 &&
+          !offerServiceIds.contains(service.id) &&
+          !offerServiceIds.contains(service.serviceId));
 
       debugPrint('Service list' + _servicesList.length.toString());
+      _applyOfferServiceSelection();
 
       salonPackages.forEach((data) {
         PackagesModel packages = PackagesModel.fromJson(data);
@@ -312,6 +321,29 @@ class SpecialistController extends GetxController
       ApiChecker.checkApi(response);
     }
     update();
+  }
+
+  void _applyOfferServiceSelection() {
+    if (offerServiceIds.isEmpty) return;
+    final cart = Get.find<ServiceCartController>();
+    final hasItems = cart.savedInCart.services!.isNotEmpty ||
+        cart.savedInCart.packages!.isNotEmpty;
+    if (hasItems) {
+      final currentId = cart.savedInCart.services!.isNotEmpty
+          ? cart.getServiceFreelancerId()
+          : cart.getPackageFreelancerId();
+      if (currentId != individualId) {
+        cart.clearCart();
+      }
+    }
+    for (var i = 0; i < _servicesList.length; i++) {
+      final service = _servicesList[i];
+      final match = offerServiceIds.contains(service.id) ||
+          offerServiceIds.contains(service.serviceId);
+      if (match && service.isChecked != true) {
+        updateServiceStatusInCart(i, true);
+      }
+    }
   }
 
   void updateServiceStatusInCart(int index, bool status) {

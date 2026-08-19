@@ -9,13 +9,16 @@ class IndividualModel {
   IndividualModel({this.id, this.uid, this.distance, this.userInfo});
 
   IndividualModel.fromJson(Map<String, dynamic> json) {
-    id = int.parse(json['id'].toString());
-    uid = int.parse(json['uid'].toString());
-    distance = double.parse(json['distance'].toString());
-    lat = double.parse(json['lat'].toString());
-    lng = double.parse(json['lng'].toString());
-    userInfo =
-        json['userInfo'] != null ? UserInfo.fromJson(json['userInfo']) : null;
+    id = int.tryParse(json['id']?.toString() ?? '') ?? 0;
+    uid = int.tryParse(json['uid']?.toString() ?? '') ?? 0;
+    distance = double.tryParse(json['distance']?.toString() ?? '') ?? 0;
+    lat = double.tryParse(json['lat']?.toString() ?? '') ?? 0;
+    lng = double.tryParse(json['lng']?.toString() ?? '') ?? 0;
+    if (json['userInfo'] is Map) {
+      userInfo = UserInfo.fromJson(Map<String, dynamic>.from(json['userInfo']));
+    } else if (json['first_name'] != null || json['cover'] != null) {
+      userInfo = UserInfo.fromJson(json);
+    }
   }
 
   Map<String, dynamic> toJson() {

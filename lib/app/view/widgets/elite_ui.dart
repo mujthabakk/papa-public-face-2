@@ -248,6 +248,7 @@ class EliteGoldButton extends StatelessWidget {
   final String label;
   final VoidCallback onTap;
   final bool outlined;
+  final bool enabled;
   final IconData? icon;
 
   const EliteGoldButton({
@@ -255,6 +256,7 @@ class EliteGoldButton extends StatelessWidget {
     required this.label,
     required this.onTap,
     this.outlined = false,
+    this.enabled = true,
     this.icon,
   }) : super(key: key);
 
@@ -262,7 +264,7 @@ class EliteGoldButton extends StatelessWidget {
   Widget build(BuildContext context) {
     if (outlined) {
       return OutlinedButton(
-        onPressed: onTap,
+        onPressed: enabled ? onTap : null,
         style: OutlinedButton.styleFrom(
           foregroundColor: ThemeProvider.gold,
           minimumSize: const Size(double.infinity, 42),
@@ -306,15 +308,19 @@ class EliteGoldButton extends StatelessWidget {
       style: ThemeProvider.sans(
         size: 11,
         weight: FontWeight.w700,
-        color: ThemeProvider.blackColor,
+        color: enabled ? ThemeProvider.blackColor : ThemeProvider.greyColor,
         letterSpacing: 0.6,
       ),
     );
     return ElevatedButton(
-      onPressed: onTap,
+      onPressed: enabled ? onTap : null,
       style: ElevatedButton.styleFrom(
-        backgroundColor: ThemeProvider.gold,
-        foregroundColor: ThemeProvider.blackColor,
+        backgroundColor:
+            enabled ? ThemeProvider.gold : const Color(0xFF3A3A3A),
+        foregroundColor:
+            enabled ? ThemeProvider.blackColor : ThemeProvider.greyColor,
+        disabledBackgroundColor: const Color(0xFF3A3A3A),
+        disabledForegroundColor: ThemeProvider.greyColor,
         elevation: 0,
         minimumSize: const Size(0, 42),
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),

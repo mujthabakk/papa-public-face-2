@@ -1,5 +1,6 @@
 import 'package:flutter/cupertino.dart';
 import 'package:get/get.dart';
+import 'package:salon_user/app/backend/api/api_response.dart';
 import 'package:salon_user/app/backend/api/handler.dart';
 import 'package:salon_user/app/backend/models/top_salon_model.dart';
 import 'package:salon_user/app/backend/parse/top_offers_parse.dart';
@@ -30,17 +31,18 @@ class TopOffersController extends GetxController implements GetxService {
     Response response = await parser.getTopSalon(param);
     apiCalled = true;
 
-    if (response.statusCode == 200) {
-      Map<String, dynamic> myMap = Map<String, dynamic>.from(response.body);
-      var topSalonData = myMap['data'];
-
+    if (ApiBody.isSuccess(response) ||
+        ApiBody.asList(response.body).isNotEmpty) {
       _topSalonList = [];
-
-      topSalonData.forEach((data) {
-        TopSalonModel datas = TopSalonModel.fromJson(data);
-        _topSalonList.add(datas);
-      });
-      debugPrint(topSalonList.length.toString());
+      for (final data in ApiBody.asList(response.body)) {
+        try {
+          if (data is! Map) continue;
+          _topSalonList
+              .add(TopSalonModel.fromJson(Map<String, dynamic>.from(data)));
+        } catch (e) {
+          debugPrint('Skip top salon: $e');
+        }
+      }
     } else {
       ApiChecker.checkApi(response);
     }

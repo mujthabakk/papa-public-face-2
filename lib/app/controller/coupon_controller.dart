@@ -1,12 +1,15 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:salon_user/app/backend/api/api_response.dart';
 import 'package:salon_user/app/backend/api/handler.dart';
 import 'package:salon_user/app/backend/models/coupons_model.dart';
 import 'package:salon_user/app/backend/parse/coupon_parse.dart';
 import 'package:salon_user/app/controller/individual_payment_controller.dart';
 import 'package:salon_user/app/controller/payment_controller.dart';
 import 'package:salon_user/app/controller/product_payment_controller.dart';
+import 'package:salon_user/app/controller/services_controller.dart';
+import 'package:salon_user/app/controller/specialist_controller.dart';
+import 'package:salon_user/app/helper/router.dart';
 import 'package:intl/intl.dart';
 
 class CouponController extends GetxController implements GetxService {
@@ -49,82 +52,167 @@ class CouponController extends GetxController implements GetxService {
 
   Future<void> getCoupons() async {
     Response response = action == 'browse'
-        ? await parser.getPublicHomeOffers()
+        ? await parser.getAllOffers()
         : await parser.getCouponCodes();
     apiCalled = true;
+    _couponList = [];
 
-    if (response.statusCode == 200) {
-      Map<String, dynamic> myMap = Map<String, dynamic>.from(response.body);
-      var body = myMap['data'];
-      _couponList = [];
-      if (body is! List) {
-        update();
-        return;
-      }
+    if (response.statusCode == 200 || ApiBody.asList(response.body).isNotEmpty) {
+      final body = ApiBody.asList(response.body);
+      final now = DateTime.now();
+      final currentDate = DateTime(now.year, now.month, now.day);
 
-      // Get the current device date without time (only YYYY-MM-DD)
-      DateTime currentDate = DateTime.now();
-      currentDate =
-          DateTime(currentDate.year, currentDate.month, currentDate.day);
+      for (final element in body) {
+        try {
+          final data = CouponsModel.tryParse(element);
+          if (data == null) continue;
 
-      body.forEach((element) {
-        CouponsModel data = CouponsModel.fromJson(element);
+          final isActive = (data.status ?? 1) == 1;
+          final isNotMaxUsageExceeded = data.maxUsageExceeded != true;
+          final isNotExpired = _isNotExpired(data.expire, currentDate);
 
-        // Check if the coupon has a valid expiry date
-        if (data.expire != null && data.expire!.isNotEmpty) {
-          try {
-            DateTime expiryDate = DateFormat("yyyy-MM-dd").parse(data.expire!);
-
-            // Ensure expiry date is also compared without time
-            expiryDate =
-                DateTime(expiryDate.year, expiryDate.month, expiryDate.day);
-
-            // Check multiple conditions:
-            // 1. Not expired (expiry date is after or same as current date)
-            // 2. Freelancer ID matches
-            // 3. Max usage not exceeded
-            // 4. Coupon is active (status check)
-            bool isNotExpired = expiryDate.isAfter(currentDate) ||
-                expiryDate.isAtSameMomentAs(currentDate);
-
-            bool isValidForFreelancer = uid.isEmpty ||
-                action == 'browse' ||
-                (data.freelancerIds != null &&
-                    (data.freelancerIds == "ALL" ||
-                        data.freelancerIds!
-                            .split(',')
-                            .contains(uid.toString())));
-
-            bool isNotMaxUsageExceeded = data.maxUsageExceeded != true;
-
-            bool isActive = data.status == 1; // Assuming 1 means active
-
-            if (isNotExpired &&
-                isValidForFreelancer &&
-                isNotMaxUsageExceeded &&
-                isActive) {
+          if (action == 'browse') {
+            if (isActive && isNotExpired) {
               _couponList.add(data);
             }
-          } catch (e) {
-            print("Error parsing date: ${data.expire}");
+            continue;
           }
-        }
-      });
 
-      // Sort coupons by preference (optional)
+          if (data.expire == null || data.expire!.isEmpty) continue;
+
+          final isValidForFreelancer = uid.isEmpty ||
+              (data.freelancerIds != null &&
+                  (data.freelancerIds == 'ALL' ||
+                      data.freelancerIds!
+                          .split(',')
+                          .map((e) => e.trim())
+                          .contains(uid.toString())));
+
+          if (isNotExpired &&
+              isValidForFreelancer &&
+              isNotMaxUsageExceeded &&
+              isActive) {
+            _couponList.add(data);
+          }
+        } catch (e) {
+          debugPrint('Skip offer parse: $e');
+        }
+      }
+
       _couponList.sort((a, b) {
-        // Sort by discount value (highest first)
         if (a.discount != null && b.discount != null) {
           return b.discount!.compareTo(a.discount!);
         }
         return 0;
       });
-
-      update();
     } else {
       ApiChecker.checkApi(response);
     }
     update();
+  }
+
+  bool _isNotExpired(String? expire, DateTime currentDate) {
+    if (expire == null || expire.isEmpty) return true;
+    try {
+      final expiryDate = DateFormat('yyyy-MM-dd').parse(expire);
+      final end = DateTime(expiryDate.year, expiryDate.month, expiryDate.day);
+      return !end.isBefore(currentDate);
+    } catch (_) {
+      return true;
+    }
+  }
+
+  void openPartner(OfferPartnerModel partner, {List<int> serviceIds = const []}) {
+    final id = partner.id ?? 0;
+    if (id <= 0) return;
+    if ((partner.type ?? '').toLowerCase() == 'individual') {
+      Get.delete<SpecialistController>(force: true);
+      Get.toNamed(AppRouter.getSpecialistRoutes(),
+          arguments: [id, 0, serviceIds]);
+      return;
+    }
+    Get.delete<ServicesController>(force: true);
+    Get.toNamed(AppRouter.getServicesRoutes(), arguments: [id, 0, serviceIds]);
+  }
+
+  List<OfferPartnerModel> _bookablePartners(CouponsModel coupon) {
+    if (coupon.partners.isNotEmpty) return coupon.partners;
+    if ((coupon.partner?.id ?? 0) > 0) return [coupon.partner!];
+    final ids = coupon.partnerIds ?? '';
+    if (ids.isEmpty || ids.toUpperCase() == 'ALL') return [];
+    return ids
+        .split(',')
+        .map((raw) => int.tryParse(raw.trim()) ?? 0)
+        .where((id) => id > 0)
+        .map((id) => OfferPartnerModel(id: id, type: 'salon'))
+        .toList();
+  }
+
+  void bookOffer(CouponsModel coupon) {
+    if (!coupon.canBook) return;
+    final partners = _bookablePartners(coupon);
+    final serviceIds = coupon.bookableServiceIds;
+    if (partners.isEmpty) return;
+    if (partners.length == 1) {
+      openPartner(partners.first, serviceIds: serviceIds);
+      return;
+    }
+    Get.bottomSheet(
+      Container(
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+        decoration: const BoxDecoration(
+          color: Color(0xFF1A1A1A),
+          borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+        ),
+        child: SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Book Now',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                  color: Color(0xFFF2D338),
+                ),
+              ),
+              const SizedBox(height: 6),
+              const Text(
+                'Choose a partner',
+                style: TextStyle(color: Colors.white70, fontSize: 13),
+              ),
+              const SizedBox(height: 12),
+              ...partners.map(
+                (partner) => ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  title: Text(
+                    partner.displayName.isEmpty
+                        ? 'Partner'
+                        : partner.displayName,
+                    style: const TextStyle(color: Colors.white),
+                  ),
+                  subtitle: Text(
+                    (partner.type ?? 'salon').toUpperCase(),
+                    style: const TextStyle(
+                      color: Colors.white54,
+                      fontSize: 11,
+                      letterSpacing: 0.6,
+                    ),
+                  ),
+                  trailing: const Icon(Icons.chevron_right,
+                      color: Color(0xFFF2D338)),
+                  onTap: () {
+                    Get.back();
+                    openPartner(partner, serviceIds: serviceIds);
+                  },
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   void saveCoupon(int id) {

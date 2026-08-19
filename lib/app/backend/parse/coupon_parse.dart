@@ -18,4 +18,8 @@ class CouponParser {
   Future<Response> getPublicHomeOffers() {
     return apiService.getPublic(AppConstants.getPublicHomeOffers);
   }
+
+  Future<Response> getAllOffers() {
+    return apiService.getPublic(AppConstants.getAllOffers);
+  }
 }

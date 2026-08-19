@@ -22,20 +22,22 @@ class TopSalonModel {
       this.distance});
 
   TopSalonModel.fromJson(Map<String, dynamic> json) {
-    id = int.parse(json['id'].toString());
-    uid = int.parse(json['uid'].toString());
-    name = json['name'];
-    rating = double.parse(json['rating'].toString());
-    totalRating = int.parse(json['total_rating'].toString());
-    address = json['address'];
-    cover = json['cover'];
-    if (json['categories'] != null) {
+    id = int.tryParse(json['id']?.toString() ?? '') ?? 0;
+    uid = int.tryParse(json['uid']?.toString() ?? '') ?? 0;
+    name = json['name']?.toString();
+    rating = double.tryParse(json['rating']?.toString() ?? '') ?? 0;
+    totalRating = int.tryParse(json['total_rating']?.toString() ?? '') ?? 0;
+    address = json['address']?.toString();
+    cover = json['cover']?.toString();
+    if (json['categories'] is List) {
       categories = <Categories>[];
-      json['categories'].forEach((v) {
-        categories!.add(Categories.fromJson(v));
-      });
+      for (final v in json['categories']) {
+        if (v is Map) {
+          categories!.add(Categories.fromJson(Map<String, dynamic>.from(v)));
+        }
+      }
     }
-    distance = double.parse(json['distance'].toString());
+    distance = double.tryParse(json['distance']?.toString() ?? '') ?? 0;
   }
 
   Map<String, dynamic> toJson() {
@@ -63,9 +65,9 @@ class Categories {
   Categories({this.id, this.name, this.cover});
 
   Categories.fromJson(Map<String, dynamic> json) {
-    id = int.parse(json['id'].toString());
-    name = json['name'];
-    cover = json['cover'];
+    id = int.tryParse(json['id']?.toString() ?? '') ?? 0;
+    name = json['name']?.toString();
+    cover = json['cover']?.toString();
   }
 
   Map<String, dynamic> toJson() {

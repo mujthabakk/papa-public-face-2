@@ -16,6 +16,14 @@ class NearParser {
     return response;
   }
 
+  Future<Response> getTopSalon(var body) {
+    return apiService.postPublic(AppConstants.getTopSalon, body);
+  }
+
+  Future<Response> getTopFreelancer(var body) {
+    return apiService.postPublic(AppConstants.getTopFreelancer, body);
+  }
+
   double getLat() {
     return sharedPreferencesManager.getDouble('lat') ?? 0.0;
   }

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:salon_user/app/backend/api/api_response.dart';
 import 'package:salon_user/app/backend/api/handler.dart';
 import 'package:salon_user/app/backend/models/products_list_model.dart';
 import 'package:salon_user/app/backend/parse/top_products_parse.dart';
@@ -36,21 +37,22 @@ class TopProductsControllrer extends GetxController implements GetxService {
     Response response = await parser.getTopProducts();
     apiCalled = true;
 
-    if (response.statusCode == 200) {
-      Map<String, dynamic> myMap = Map<String, dynamic>.from(response.body);
-      var products = myMap['products'];
+    if (ApiBody.isSuccess(response) ||
+        ApiBody.asList(response.body, keys: const ['products', 'data', 'items'])
+            .isNotEmpty) {
       _productsList = [];
-
-      products.forEach((data) {
-        ProductsListModel products = ProductsListModel.fromJson(data);
-        _productsList.add(products);
-      });
+      for (final data in ApiBody.asList(response.body,
+          keys: const ['products', 'data', 'items'])) {
+        try {
+          if (data is! Map) continue;
+          _productsList
+              .add(ProductsListModel.fromJson(Map<String, dynamic>.from(data)));
+        } catch (e) {
+          debugPrint('Skip product: $e');
+        }
+      }
       _productsList.removeWhere((product) => product.status == 0);
-
-      debugPrint(productsList.length.toString());
       checkCartData();
-
-      update();
     } else {
       ApiChecker.checkApi(response);
     }

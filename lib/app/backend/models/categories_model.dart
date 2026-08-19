@@ -16,16 +16,12 @@ class CategoriesModel {
       this.status});
 
   CategoriesModel.fromJson(Map<String, dynamic> json) {
-    id = int.parse(json['id'].toString());
-    name = json['name'];
-    cover = json['cover'];
-    extraField = json['extra_field'];
-    if (json.containsKey('services')) {
-      services = int.parse(json['services'].toString());
-    } else {
-      services = 0;
-    }
-    status = int.parse(json['status'].toString());
+    id = int.tryParse(json['id']?.toString() ?? '') ?? 0;
+    name = json['name']?.toString();
+    cover = json['cover']?.toString();
+    extraField = json['extra_field']?.toString();
+    services = int.tryParse(json['services']?.toString() ?? '') ?? 0;
+    status = int.tryParse(json['status']?.toString() ?? '') ?? 1;
   }
 
   Map<String, dynamic> toJson() {

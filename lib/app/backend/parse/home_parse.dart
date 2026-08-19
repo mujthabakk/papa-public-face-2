@@ -15,8 +15,47 @@ class HomeParser {
     return response;
   }
 
+  Future<Response> getAllCategories() {
+    return apiService.getPublic(AppConstants.getAllCategories);
+  }
+
+  Future<Response> getAllOffers() {
+    return apiService.getPublic(AppConstants.getAllOffers);
+  }
+
   Future<Response> getPublicHomeOffers() {
     return apiService.getPublic(AppConstants.getPublicHomeOffers);
+  }
+
+  Future<Response> getTopSalon(var body) {
+    return apiService.postPublic(AppConstants.getTopSalon, body);
+  }
+
+  Future<Response> getTopFreelancer(var body) {
+    return apiService.postPublic(AppConstants.getTopFreelancer, body);
+  }
+
+  Future<Response> getTopProducts(var body) {
+    return apiService.postPublic(AppConstants.getTopProducts, body);
+  }
+
+  Future<Response> getTimedOffersHome() {
+    return apiService.getPublic(AppConstants.getTimedOffersHome);
+  }
+
+  Future<Response> getTimedOffersAll({int? id, String? code}) {
+    final params = <String, String>{};
+    if (id != null && id > 0) params['id'] = '$id';
+    if (code != null && code.isNotEmpty) params['code'] = code;
+    if (params.isEmpty) {
+      return apiService.getPublic(AppConstants.getTimedOffersAll);
+    }
+    final query = params.entries.map((e) => '${e.key}=${e.value}').join('&');
+    return apiService.getPublic('${AppConstants.getTimedOffersAll}?$query');
+  }
+
+  Future<Response> postTimedOffersAll(Map<String, dynamic> body) {
+    return apiService.postPublic(AppConstants.getTimedOffersAll, body);
   }
 
   String getAddressName() {
