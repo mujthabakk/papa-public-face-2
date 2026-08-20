@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:salon_user/app/backend/api/api_response.dart';
 import 'package:salon_user/app/backend/api/handler.dart';
 import 'package:salon_user/app/backend/models/banner_model.dart';
 import 'package:salon_user/app/backend/models/categories_model.dart';
@@ -53,12 +54,13 @@ class UnifiedSearchController extends GetxController implements GetxService {
   bool isLoading = false;
   bool isEmptySearchSalon = false;
   bool isEmptySearchFreelancer = false;
+  bool hasSearched = false;
   bool rateSelected = false;
 
   var selectedGender = Gender.male.obs;
   var currentRangeValues = const RangeValues(0, 200).obs;
   var currentRangeValuesPrice = const RangeValues(0, 70000).obs;
-  var tabID = 1.obs;
+  var tabID = 0.obs;
   var starValue = 4.0.obs;
   var selectedSortOption = 'Ascending'.obs;
   var isSelected = List<bool>.generate(50, (index) => false).obs;
@@ -177,6 +179,7 @@ class UnifiedSearchController extends GetxController implements GetxService {
 
   void updateTabID(int id) {
     tabID.value = id;
+    update();
   }
 
   void onBack() {
@@ -235,18 +238,22 @@ class UnifiedSearchController extends GetxController implements GetxService {
   }
 
   Future<List<String>> fetchAutoCompleteServices(String keyword) async {
-    final response = await http
-        .get(Uri.parse('${AppConstants.fetchAutoCompleteServices}$keyword'));
-
-    if (response.statusCode == 200) {
-      List<String> options = (jsonDecode(response.body) as List)
-          .map((item) => item.toString())
-          .where((item) => item.toLowerCase().startsWith(keyword.toLowerCase()))
-          .toList();
-      return options;
-    } else {
-      throw Exception('Failed to load options');
+    try {
+      final response = await http
+          .get(Uri.parse('${AppConstants.fetchAutoCompleteServices}$keyword'));
+      if (response.statusCode == 200) {
+        final decoded = jsonDecode(response.body);
+        if (decoded is! List) return [];
+        return decoded
+            .map((item) => item.toString())
+            .where((item) =>
+                item.toLowerCase().startsWith(keyword.toLowerCase()))
+            .toList();
+      }
+    } catch (e) {
+      debugPrint('Autocomplete failed: $e');
     }
+    return [];
   }
 
   searchProducts(
@@ -282,6 +289,7 @@ class UnifiedSearchController extends GetxController implements GetxService {
 
   void getSearchResult(String query) async {
     lastSearch = query;
+    hasSearched = true;
     String rating = starValue.value.toString();
     isEmptySearchFreelancer = false;
     isEmptySearchSalon = false;
@@ -327,47 +335,50 @@ class UnifiedSearchController extends GetxController implements GetxService {
     print('lng ${parser.getLng()}');
 
     Response response = await parser.getSearchResult(param);
-    if (response.statusCode == 200) {
-      isLoading = false;
-      Map<String, dynamic> myMap = Map<String, dynamic>.from(response.body);
-      var salonData = myMap['partners'];
-      var individualData = myMap['freelancers'];
-      _salonList = [];
-      _individualList = [];
-
-      salonData.forEach((data) {
-        SalonModel salon = SalonModel.fromJson(data);
-        _salonList.add(salon);
-      });
+    isLoading = false;
+    _salonList = [];
+    _individualList = [];
+    if (ApiBody.isSuccess(response) || ApiBody.asMap(response.body) != null) {
+      final map = ApiBody.asMap(response.body) ?? {};
+      for (final data in ApiBody.asItemList(map['partners'] ?? map['salon'],
+          keys: const ['partners', 'salon', 'salons', 'data'])) {
+        try {
+          final item = ApiBody.asObject(data);
+          if (item == null) continue;
+          _salonList.add(SalonModel.fromJson(item));
+        } catch (e) {
+          debugPrint('Skip search salon: $e');
+        }
+      }
+      for (final data in ApiBody.asItemList(
+          map['freelancers'] ?? map['individual'],
+          keys: const ['freelancers', 'individual', 'individuals', 'data'])) {
+        try {
+          final item = ApiBody.asObject(data);
+          if (item == null) continue;
+          _individualList.add(SearchIndividualModel.fromJson(item));
+        } catch (e) {
+          debugPrint('Skip search freelancer: $e');
+        }
+      }
 
       // Remove inactive salons (only for general mode)
       if (isGeneralMode) {
         _salonList.removeWhere((salon) => salon.status == 0);
       }
 
-      individualData.forEach((data) {
-        SearchIndividualModel individual = SearchIndividualModel.fromJson(data);
-        _individualList.add(individual);
-      });
-
       // Remove inactive freelancers (only for general mode)
       if (isGeneralMode) {
         _individualList.removeWhere((individual) => individual.status == 0);
       }
 
-      if (_salonList.isEmpty) {
-        isEmptySearchSalon = true;
-      }
-      if (_individualList.isEmpty) {
-        isEmptySearchFreelancer = true;
-      }
-
+      isEmptySearchSalon = _salonList.isEmpty;
+      isEmptySearchFreelancer = _individualList.isEmpty;
       isEmpty = false.obs;
-      debugPrint(salonList.length.toString());
-      debugPrint(individualList.length.toString());
     } else {
-      isLoading = false;
       isEmpty = false.obs;
+      isEmptySearchSalon = true;
+      isEmptySearchFreelancer = true;
       ApiChecker.checkApi(response);
     }
     update();
@@ -412,37 +423,39 @@ class UnifiedSearchController extends GetxController implements GetxService {
     print('lng ${parser.getLng()}');
 
     Response response = await parser.getSearchResult(param);
-    if (response.statusCode == 200) {
-      isLoading = false;
-      Map<String, dynamic> myMap = Map<String, dynamic>.from(response.body);
-      var salonData = myMap['partners'];
-      var individualData = myMap['freelancers'];
-      _salonList = [];
-      _individualList = [];
-
-      salonData.forEach((data) {
-        SalonModel salon = SalonModel.fromJson(data);
-        _salonList.add(salon);
-      });
-
-      individualData.forEach((data) {
-        SearchIndividualModel individual = SearchIndividualModel.fromJson(data);
-        _individualList.add(individual);
-      });
-
-      if (_salonList.isEmpty) {
-        isEmptySearchSalon = true;
+    isLoading = false;
+    _salonList = [];
+    _individualList = [];
+    if (ApiBody.isSuccess(response) || ApiBody.asMap(response.body) != null) {
+      final map = ApiBody.asMap(response.body) ?? {};
+      for (final data in ApiBody.asItemList(map['partners'] ?? map['salon'],
+          keys: const ['partners', 'salon', 'salons', 'data'])) {
+        try {
+          final item = ApiBody.asObject(data);
+          if (item == null) continue;
+          _salonList.add(SalonModel.fromJson(item));
+        } catch (e) {
+          debugPrint('Skip search salon: $e');
+        }
       }
-      if (_individualList.isEmpty) {
-        isEmptySearchFreelancer = true;
+      for (final data in ApiBody.asItemList(
+          map['freelancers'] ?? map['individual'],
+          keys: const ['freelancers', 'individual', 'individuals', 'data'])) {
+        try {
+          final item = ApiBody.asObject(data);
+          if (item == null) continue;
+          _individualList.add(SearchIndividualModel.fromJson(item));
+        } catch (e) {
+          debugPrint('Skip search freelancer: $e');
+        }
       }
-
+      isEmptySearchSalon = _salonList.isEmpty;
+      isEmptySearchFreelancer = _individualList.isEmpty;
       isEmpty = false.obs;
-      debugPrint(salonList.length.toString());
-      debugPrint(individualList.length.toString());
     } else {
-      isLoading = false;
       isEmpty = false.obs;
+      isEmptySearchSalon = true;
+      isEmptySearchFreelancer = true;
       ApiChecker.checkApi(response);
     }
     update();
@@ -450,18 +463,21 @@ class UnifiedSearchController extends GetxController implements GetxService {
 
   Future<void> getAllCategories() async {
     var response = await parser.getAllCategories();
-    if (response.statusCode == 200) {
-      Map<String, dynamic> myMap = Map<String, dynamic>.from(response.body);
-      var body = myMap['data'];
-      _categoriesList = [];
-      body.forEach((data) {
-        CategoriesModel cateData = CategoriesModel.fromJson(data);
-        _categoriesList.add(cateData);
-      });
+    _categoriesList = [];
+    if (ApiBody.isSuccess(response) || ApiBody.asMap(response.body) != null) {
+      final map = ApiBody.asMap(response.body) ?? {};
+      for (final data in ApiBody.asItemList(map['data'],
+          keys: const ['data', 'categories'])) {
+        try {
+          final item = ApiBody.asObject(data);
+          if (item == null) continue;
+          _categoriesList.add(CategoriesModel.fromJson(item));
+        } catch (e) {
+          debugPrint('Skip search category: $e');
+        }
+      }
       isSelectedCat =
           List<bool>.generate(categoriesList.length, (index) => false).obs;
-
-      debugPrint(categoriesList.length.toString());
     } else {
       ApiChecker.checkApi(response);
     }
@@ -469,224 +485,124 @@ class UnifiedSearchController extends GetxController implements GetxService {
   }
 
   void genderDialog(BuildContext context) {
-    showModalBottomSheet(
-      isScrollControlled: true,
-      context: context,
-      builder: (BuildContext context) {
-        return SizedBox(
-          height: MediaQuery.of(context).size.height * 0.68,
-          child: Container(
-            color: Color.fromARGB(255, 51, 51, 51),
-            padding: EdgeInsets.all(16),
-            child: Column(
-              mainAxisSize: MainAxisSize.max,
-              children: [
-                SizedBox(height: 20),
-                const Text(
-                  'Select Your Type',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 20,
+    Get.dialog(
+      Dialog(
+        backgroundColor: const Color.fromARGB(255, 51, 51, 51),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 24, 16, 16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text(
+                'Select Your Type',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.amber,
+                ),
+              ),
+              const SizedBox(height: 12),
+              const Text(
+                'Choose a type for more\nrefined search result',
+                textAlign: TextAlign.center,
+                style: TextStyle(
                     fontWeight: FontWeight.bold,
-                    color: Colors.amber,
-                  ),
-                ),
-                SizedBox(height: 25),
-                const Text(
-                  'Choose a type for more \nrefined search result',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: Color.fromARGB(255, 194, 160, 61)),
-                ),
-                SizedBox(height: 25),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceAround,
-                  children: [
-                    Column(
-                      children: [
-                        GestureDetector(
-                          onTap: () {
-                            isMaleSelected(true);
-                            if (isCategoryMode || searchValue != "") {
-                              searchProducts(context, searchValue);
-                            }
-                            Get.back();
-                          },
-                          child: Container(
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              border: Border.all(
-                                color: Color.fromARGB(255, 199, 198, 192),
-                                width: 2,
-                              ),
-                            ),
-                            child: ClipOval(
-                              child: Image.asset("assets/images/male.png",
-                                  width: 100, height: 100),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        const Text(
-                          "Male",
-                          style: TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.amber),
-                        ),
-                      ],
-                    ),
-                    Column(
-                      children: [
-                        GestureDetector(
-                          onTap: () {
-                            isFemaleSelected(true);
-                            if (isCategoryMode || searchValue != "") {
-                              searchProducts(context, searchValue);
-                            }
-                            Get.back();
-                          },
-                          child: Container(
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              border: Border.all(
-                                color: Color.fromARGB(255, 199, 198, 192),
-                                width: 2,
-                              ),
-                            ),
-                            child: ClipOval(
-                              child: Image.asset("assets/images/female.png",
-                                  width: 100, height: 100),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        const Text(
-                          "Female",
-                          style: TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.amber),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-                SizedBox(height: 15),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceAround,
-                  children: [
-                    Column(
-                      children: [
-                        GestureDetector(
-                          onTap: () {
-                            isKidSelected(true);
-                            if (isCategoryMode || searchValue != "") {
-                              searchProducts(context, searchValue);
-                            }
-                            Get.back();
-                          },
-                          child: Container(
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              border: Border.all(
-                                color: Color.fromARGB(255, 199, 198, 192),
-                                width: 2,
-                              ),
-                            ),
-                            child: ClipOval(
-                              child: Image.asset("assets/images/kid.png",
-                                  width: 100, height: 100),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        const Text(
-                          "Kid",
-                          style: TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.amber),
-                        ),
-                      ],
-                    ),
-                    Column(
-                      children: [
-                        GestureDetector(
-                          onTap: () {
-                            isFamilySelected(true);
-                            if (isCategoryMode || searchValue != "") {
-                              searchProducts(context, searchValue);
-                            }
-                            Get.back();
-                          },
-                          child: Container(
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              border: Border.all(
-                                color: Color.fromARGB(255, 199, 198, 192),
-                                width: 2,
-                              ),
-                            ),
-                            child: ClipOval(
-                              child: Image.asset("assets/images/family.jpeg",
-                                  width: 100, height: 100),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        const Text(
-                          "Family",
-                          style: TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.amber),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 30),
-                Container(
-                  decoration: const BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: Color.fromARGB(255, 73, 73, 72),
-                  ),
-                  child: IconButton(
-                    onPressed: () {
-                      Navigator.pop(context);
-                    },
-                    icon: const Icon(
-                      Icons.close,
-                      color: Colors.amber,
-                    ),
-                  ),
-                )
-              ],
+                    color: Color.fromARGB(255, 194, 160, 61)),
+              ),
+              const SizedBox(height: 20),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: [
+                  _typeOption(context, 'Male', 'assets/images/male.png',
+                      Icons.male, () => isMaleSelected(true)),
+                  _typeOption(context, 'Female', 'assets/images/female.png',
+                      Icons.female, () => isFemaleSelected(true)),
+                ],
+              ),
+              const SizedBox(height: 16),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: [
+                  _typeOption(context, 'Kid', 'assets/images/kid.png',
+                      Icons.child_care, () => isKidSelected(true)),
+                  _typeOption(context, 'Family', 'assets/images/family.jpeg',
+                      Icons.family_restroom, () => isFamilySelected(true)),
+                ],
+              ),
+              const SizedBox(height: 16),
+              IconButton(
+                onPressed: () => Get.back(),
+                icon: const Icon(Icons.close, color: Colors.amber),
+              ),
+            ],
+          ),
+        ),
+      ),
+      barrierColor: const Color(0xB8000000),
+    );
+  }
+
+  Widget _typeOption(
+    BuildContext context,
+    String label,
+    String asset,
+    IconData fallback,
+    VoidCallback onSelect,
+  ) {
+    return GestureDetector(
+      onTap: () {
+        onSelect();
+        Get.back();
+        if (isCategoryMode || searchValue.isNotEmpty) {
+          searchProducts(context, searchValue);
+        }
+      },
+      child: Column(
+        children: [
+          Container(
+            width: 88,
+            height: 88,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              border: Border.all(color: const Color(0xFFC7C6C0), width: 2),
+            ),
+            clipBehavior: Clip.antiAlias,
+            child: Image.asset(
+              asset,
+              fit: BoxFit.cover,
+              errorBuilder: (_, __, ___) => Icon(fallback,
+                  size: 42, color: Colors.amber),
             ),
           ),
-        );
-      },
+          const SizedBox(height: 8),
+          Text(
+            label,
+            style: const TextStyle(
+                fontSize: 13, fontWeight: FontWeight.bold, color: Colors.amber),
+          ),
+        ],
+      ),
     );
   }
 
   Future<void> getBannerData() async {
     var param = {"lat": parser.getLat(), "lng": parser.getLng()};
     Response response = await parser.getBannerData(param);
-
-    if (response.statusCode == 200) {
-      Map<String, dynamic> myMap = Map<String, dynamic>.from(response.body);
-      var bannerData = myMap['banners'];
-      _bannerList = [];
-
-      bannerData.forEach((data) {
-        BannerModel banner = BannerModel.fromJson(data);
-        _bannerList.add(banner);
-      });
-      debugPrint(bannerList.length.toString());
-
-      update();
+    _bannerList = [];
+    if (ApiBody.isSuccess(response) || ApiBody.asMap(response.body) != null) {
+      final map = ApiBody.asMap(response.body) ?? {};
+      for (final data in ApiBody.asItemList(map['banners'],
+          keys: const ['banners', 'data'])) {
+        try {
+          final item = ApiBody.asObject(data);
+          if (item == null) continue;
+          _bannerList.add(BannerModel.fromJson(item));
+        } catch (e) {
+          debugPrint('Skip search banner: $e');
+        }
+      }
     } else {
       ApiChecker.checkApi(response);
     }
@@ -695,19 +611,20 @@ class UnifiedSearchController extends GetxController implements GetxService {
 
   Future<void> getFacilitiesData() async {
     Response response = await parser.getFacilitiesData();
-    if (response.statusCode == 200) {
-      Map<String, dynamic> myMap = Map<String, dynamic>.from(response.body);
-      var bannerData = myMap['data'];
-      chipLabels = [];
-
-      bannerData.forEach((data) {
-        FacilitiesModel chip = FacilitiesModel.fromJson(data);
-        chipLabels.add(chip);
-      });
+    chipLabels = [];
+    if (ApiBody.isSuccess(response) || ApiBody.asMap(response.body) != null) {
+      final map = ApiBody.asMap(response.body) ?? {};
+      for (final data in ApiBody.asItemList(map['data'],
+          keys: const ['data', 'facilities'])) {
+        try {
+          final item = ApiBody.asObject(data);
+          if (item == null) continue;
+          chipLabels.add(FacilitiesModel.fromJson(item));
+        } catch (e) {
+          debugPrint('Skip facility: $e');
+        }
+      }
       isSelected = List<bool>.generate(chipLabels.length, (index) => false).obs;
-      debugPrint(chipLabels.length.toString());
-
-      update();
     } else {
       ApiChecker.checkApi(response);
     }
@@ -777,6 +694,8 @@ class UnifiedSearchController extends GetxController implements GetxService {
 
   void clearData() {
     searchController.clear();
+    searchValue = '';
+    hasSearched = false;
     _salonList = [];
     _individualList = [];
     isEmpty = true.obs;

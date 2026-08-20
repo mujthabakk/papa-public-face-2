@@ -1,3 +1,5 @@
+import 'package:salon_user/app/backend/api/api_response.dart';
+
 class BannerModel {
   int? id;
   int? cityId;
@@ -23,16 +25,16 @@ class BannerModel {
       this.status});
 
   BannerModel.fromJson(Map<String, dynamic> json) {
-    id = int.parse(json['id'].toString());
-    //cityId = int.parse(json['city_id'].toString());
-    cover = json['cover'];
-    type = int.parse(json['type'].toString());
-    value = json['value'];
-    title = json['title'];
-    from = json['from'];
-    to = json['to'];
-    extraField = json['extra_field'];
-    status = int.parse(json['status'].toString());
+    id = ApiBody.asInt(json['id']);
+    cityId = ApiBody.asInt(json['city_id']);
+    cover = ApiBody.text(json['cover'] ?? json['image']);
+    type = ApiBody.asInt(json['type']);
+    value = ApiBody.text(json['value']);
+    title = ApiBody.text(json['title']);
+    from = ApiBody.text(json['from']);
+    to = ApiBody.text(json['to']);
+    extraField = ApiBody.text(json['extra_field']);
+    status = ApiBody.asInt(json['status'], fallback: 1);
   }
 
   Map<String, dynamic> toJson() {

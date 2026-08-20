@@ -78,7 +78,7 @@ class SalonModel {
     //         .map((e) => int.tryParse(e) ?? 0)
     //         .toList()
     //     : <int>[]; // Empty list if no categories
-    reviewCount = json['review_count'] ?? 0;
+    reviewCount = int.tryParse(json['review_count']?.toString() ?? '') ?? 0;
   }
 
   // Serializing to JSON

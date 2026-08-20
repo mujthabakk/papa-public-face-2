@@ -166,15 +166,40 @@ class HomeController extends GetxController implements GetxService {
   }
 
   void _parseBanners(dynamic raw) {
-    if (raw is! List) return;
-    for (final data in raw) {
+    final items = ApiBody.asItemList(raw, keys: const [
+      'banners',
+      'data',
+      'items',
+      'result',
+      'list',
+    ]);
+    final now = DateTime.now();
+    for (final data in items) {
       try {
-        if (data is! Map) continue;
-        _bannerList.add(BannerModel.fromJson(Map<String, dynamic>.from(data)));
+        final map = ApiBody.asObject(data);
+        if (map == null) continue;
+        final banner = BannerModel.fromJson(map);
+        if ((banner.status ?? 1) == 0) continue;
+        if ((banner.cover ?? '').isEmpty) continue;
+        if (!_isBannerLive(banner, now)) continue;
+        _bannerList.add(banner);
       } catch (e) {
         debugPrint('Skip banner: $e');
       }
     }
+  }
+
+  bool _isBannerLive(BannerModel banner, DateTime now) {
+    final from = DateTime.tryParse(banner.from ?? '');
+    final to = DateTime.tryParse(banner.to ?? '');
+    if (from != null && now.isBefore(DateTime(from.year, from.month, from.day))) {
+      return false;
+    }
+    if (to != null) {
+      final end = DateTime(to.year, to.month, to.day, 23, 59, 59);
+      if (now.isAfter(end)) return false;
+    }
+    return true;
   }
 
   void _parseProducts(dynamic raw) {
@@ -199,6 +224,7 @@ class HomeController extends GetxController implements GetxService {
     if (_salonList.isEmpty) jobs.add(_loadTopSalons(latLng));
     if (_individualList.isEmpty) jobs.add(_loadTopFreelancers(latLng));
     if (_productsList.isEmpty) jobs.add(_loadTopProducts(latLng));
+    if (_bannerList.isEmpty) jobs.add(_loadBanners(latLng));
     if (jobs.isNotEmpty) await Future.wait(jobs);
   }
 
@@ -226,6 +252,15 @@ class HomeController extends GetxController implements GetxService {
       _parseIndividuals(ApiBody.asList(response.body));
     } catch (e) {
       debugPrint('loadTopFreelancers: $e');
+    }
+  }
+
+  Future<void> _loadBanners(Map<String, dynamic> param) async {
+    try {
+      final response = await parser.getBannerData(param);
+      _parseBanners(response.body);
+    } catch (e) {
+      debugPrint('loadBanners: $e');
     }
   }
 

@@ -91,52 +91,32 @@ class SearchIndividualModel {
     this.reviewCount, // Default to 0 if not provided
   });
 
-  // Parsing JSON data with null checks and default values
   SearchIndividualModel.fromJson(Map<String, dynamic> json) {
-    serviceId = json['service_id'] ?? 0; // Default to 0 if null
-    serviceName = json['service_name'] ?? 'Unknown Service';
-    id = json['id'] ?? 0;
-    uid = json['uid'] ?? 0;
-    name = json['name'] ?? 'Unknown Name';
-    isPremium = json['is_premium'] ?? false;
-    status = json['status'] ?? 1;
-
-    rating = json['rating'] != null
-        ? double.tryParse(json['rating'].toString()) ?? 0.0
-        : 0.0;
-    totalRating = json['total_rating'] ?? 0;
-    address = json['address'] ?? 'Unknown Address';
-    cover = json['cover'] ?? ''; // Empty string if no image
-    salonLat = json['salon_lat'] != null
-        ? double.tryParse(json['salon_lat'].toString()) ?? 0.0
-        : 0.0;
-    salonLng = json['salon_lng'] != null
-        ? double.tryParse(json['salon_lng'].toString()) ?? 0.0
-        : 0.0;
-    distance = json['distance'] != null
-        ? double.tryParse(json['distance'].toString()) ?? 0.0
-        : 0.0;
-    gender = json['gender'] ?? 0;
-    duration = json['duration'] != null
-        ? int.tryParse(json['duration'].toString()) ?? 0
-        : 0;
-    price = json['price'] != null
-        ? double.tryParse(json['price'].toString()) ?? 0.0
-        : 0.0;
-    off = json['off'] != null
-        ? double.tryParse(json['off'].toString()) ?? 0.0
-        : 0.0;
-    discount = json['discount'] != null
-        ? double.tryParse(json['discount'].toString()) ?? 0.0
-        : 0.0;
-    // categories = json['categories'] != null
-    //     ? (json['categories'] as String)
-    //         .replaceAll(RegExp(r'[\[\]]'), '') // Remove brackets
-    //         .split(',')
-    //         .map((e) => int.tryParse(e) ?? 0)
-    //         .toList()
-    //     : <int>[]; // Empty list if no categories
-    reviewCount = json['review_count'] ?? 0;
+    serviceId = int.tryParse(json['service_id']?.toString() ?? '') ?? 0;
+    serviceName = json['service_name']?.toString() ?? 'Unknown Service';
+    id = int.tryParse(json['id']?.toString() ?? '') ?? 0;
+    uid = int.tryParse(json['uid']?.toString() ?? '') ?? 0;
+    name = json['name']?.toString() ?? 'Unknown Name';
+    isPremium = json['is_premium'] == true ||
+        json['is_premium']?.toString() == '1';
+    status = int.tryParse(json['status']?.toString() ?? '') ?? 1;
+    rating = double.tryParse(json['rating']?.toString() ?? '') ?? 0.0;
+    totalRating = int.tryParse(json['total_rating']?.toString() ?? '') ?? 0;
+    address = json['address']?.toString() ?? 'Unknown Address';
+    cover = json['cover']?.toString() ?? '';
+    salonLat = double.tryParse(
+            (json['salon_lat'] ?? json['lat'])?.toString() ?? '') ??
+        0.0;
+    salonLng = double.tryParse(
+            (json['salon_lng'] ?? json['lng'])?.toString() ?? '') ??
+        0.0;
+    distance = double.tryParse(json['distance']?.toString() ?? '') ?? 0.0;
+    gender = int.tryParse(json['gender']?.toString() ?? '') ?? 0;
+    duration = int.tryParse(json['duration']?.toString() ?? '') ?? 0;
+    price = double.tryParse(json['price']?.toString() ?? '') ?? 0.0;
+    off = double.tryParse(json['off']?.toString() ?? '') ?? 0.0;
+    discount = double.tryParse(json['discount']?.toString() ?? '') ?? 0.0;
+    reviewCount = int.tryParse(json['review_count']?.toString() ?? '') ?? 0;
   }
 
   // Serializing to JSON

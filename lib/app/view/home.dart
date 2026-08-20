@@ -1,3 +1,4 @@
+import 'package:carousel_slider/carousel_slider.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:salon_user/app/controller/home_controller.dart';
@@ -45,16 +46,20 @@ class _HomeScreenState extends State<HomeScreen> {
                                 _scaffoldKey.currentState?.openDrawer(),
                           ),
                         ),
-                        EliteSearchBar(
-                          hint: 'Search services...'.tr,
-                          onTap: value.onSearch,
-                          onFilter: value.onFilter,
-                        ),
-                        const SizedBox(height: 12),
                         Expanded(
                           child: ListView(
                                   padding: const EdgeInsets.only(bottom: 90),
                                   children: [
+                                    const SizedBox(height: 8),
+                                    EliteSearchBar(
+                                      hint: 'Search services...'.tr,
+                                      onTap: value.onSearch,
+                                      onFilter: value.onFilter,
+                                    ),
+                                    const SizedBox(height: 12),
+                                    value.bannerList.isNotEmpty
+                                        ? _banners(value)
+                                        : const SizedBox.shrink(),
                                     EliteSectionHeader(
                                       title: 'Top Category'.tr,
                                       onAction: value.onAllCategories,
@@ -145,6 +150,44 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             );
       },
+    );
+  }
+
+  Widget _banners(HomeController value) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
+      child: CarouselSlider.builder(
+        itemCount: value.bannerList.length,
+        itemBuilder: (context, index, realIndex) {
+          final item = value.bannerList[index];
+          final cover = item.cover ?? '';
+          final url = cover.startsWith('http://') || cover.startsWith('https://')
+              ? cover
+              : '${Environments.imageURL}$cover';
+          return GestureDetector(
+            onTap: () => value.onBanner(
+              item.value ?? '',
+              '${item.type ?? 0}',
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(14),
+              child: EliteNetworkImage(
+                url: url,
+                width: double.infinity,
+                height: 160,
+                fit: BoxFit.cover,
+              ),
+            ),
+          );
+        },
+        options: CarouselOptions(
+          height: 160,
+          viewportFraction: 1,
+          autoPlay: value.bannerList.length > 1,
+          autoPlayInterval: const Duration(seconds: 4),
+          enlargeCenterPage: false,
+        ),
+      ),
     );
   }
 

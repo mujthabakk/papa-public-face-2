@@ -35,6 +35,10 @@ class HomeParser {
     return apiService.postPublic(AppConstants.getTopFreelancer, body);
   }
 
+  Future<Response> getBannerData(var body) {
+    return apiService.postPublic(AppConstants.getBannerData, body);
+  }
+
   Future<Response> getTopProducts(var body) {
     return apiService.postPublic(AppConstants.getTopProducts, body);
   }
