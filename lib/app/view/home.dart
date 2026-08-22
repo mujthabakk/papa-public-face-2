@@ -25,10 +25,10 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     return GetBuilder<HomeController>(
       builder: (value) {
-            if (value.apiCalled && !_spinShown && value.offersList.isNotEmpty) {
+            if (value.apiCalled && !_spinShown) {
               _spinShown = true;
               WidgetsBinding.instance.addPostFrameCallback((_) {
-                if (mounted) showSpinWinDialog(value.offersList);
+                if (mounted) checkAndShowSpinWinDialog();
               });
             }
             return Scaffold(

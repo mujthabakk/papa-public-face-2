@@ -147,6 +147,12 @@ class AppConstants {
   static const String logout = 'api/v1/profile/logout';
   static const String getDelete = 'api/v1/user/delete-account';
 
+  static const String spinnerGetStatus = 'api/v1/spinner/getStatus';
+  static const String spinnerSpin = 'api/v1/spinner/spin';
+  static const String spinnerRedeem = 'api/v1/spinner/redeem';
+  static const String spinnerHistory = 'api/v1/spinner/history';
+  static const String spinnerGetSettings = 'api/v1/spinner/getSettings';
+
   // API Routes
 
   static List<LanguageModel> languages = [

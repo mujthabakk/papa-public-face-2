@@ -55,6 +55,7 @@ import 'package:salon_user/app/backend/parse/services_parse.dart';
 import 'package:salon_user/app/backend/parse/sidemenu_parse.dart';
 import 'package:salon_user/app/backend/parse/slot_parse.dart';
 import 'package:salon_user/app/backend/parse/sortby_parse.dart';
+import 'package:salon_user/app/backend/parse/spinner_parse.dart';
 import 'package:salon_user/app/backend/parse/specialist_parse.dart';
 import 'package:salon_user/app/backend/parse/splash_parse.dart';
 import 'package:salon_user/app/backend/parse/tabs_parse.dart';
@@ -197,6 +198,11 @@ class MainBinding extends Bindings {
 
     Get.lazyPut(
         () => WalletParser(
+            apiService: Get.find(), sharedPreferencesManager: Get.find()),
+        fenix: true);
+
+    Get.lazyPut(
+        () => SpinnerParser(
             apiService: Get.find(), sharedPreferencesManager: Get.find()),
         fenix: true);
 

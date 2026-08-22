@@ -8,7 +8,6 @@ import 'package:salon_user/app/view/categories.dart';
 import 'package:salon_user/app/view/home.dart';
 import 'package:salon_user/app/view/near.dart';
 import 'package:salon_user/app/view/qr_screen.dart';
-import 'package:salon_user/app/controller/home_controller.dart';
 import 'package:salon_user/app/view/widgets/elite_ui.dart';
 import 'package:salon_user/app/view/widgets/spin_win_dialog.dart';
 
@@ -42,13 +41,7 @@ class _TabScreenState extends State<TabScreen> {
                   children: [
                     if (value.tabId == 0)
                       GestureDetector(
-                        onTap: () {
-                          showSpinWinDialog(
-                            Get.isRegistered<HomeController>()
-                                ? Get.find<HomeController>().offersList
-                                : const [],
-                          );
-                        },
+                        onTap: openSpinWinOrLogin,
                         child: Container(
                           width: 52,
                           height: 52,
