@@ -20,7 +20,7 @@ class SortByScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: ThemeProvider.backgroundColor,
       appBar: AppBar(
-        title: Text('Sort By',
+        title: Text('Sort By'.tr,
             style: ThemeProvider.serif(size: 20, color: ThemeProvider.gold)),
         backgroundColor: ThemeProvider.backgroundColor,
         iconTheme: const IconThemeData(color: ThemeProvider.gold),

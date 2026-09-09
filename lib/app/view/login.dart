@@ -45,8 +45,7 @@ class _LoginScreenState extends State<LoginScreen> {
             child: Column(
               children: [
                 const SizedBox(height: 40),
-                Text(
-                  'PAPA BEAR',
+                Text('PAPA BEAR'.tr,
                   style: ThemeProvider.serif(
                     size: 32,
                     color: ThemeProvider.gold,
@@ -54,8 +53,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                 ),
                 const SizedBox(height: 8),
-                Text(
-                  'Sign in to your elite account',
+                Text('Sign in to your elite account'.tr,
                   style: ThemeProvider.sans(
                       size: 13, color: ThemeProvider.greyColor),
                 ),
@@ -89,7 +87,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                   ),
                   const SizedBox(height: 24),
-                  EliteGoldButton(label: 'LOG IN', onTap: value.onLogin),
+                  EliteGoldButton(label: 'LOG IN'.tr, onTap: value.onLogin),
                 ] else if (value.loginVersion == 1) ...[
                   _phoneRow(value),
                   const SizedBox(height: 14),
@@ -115,12 +113,12 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                   const SizedBox(height: 24),
                   EliteGoldButton(
-                      label: 'LOG IN', onTap: value.loginWithPhonePassword),
+                      label: 'LOG IN'.tr, onTap: value.loginWithPhonePassword),
                 ] else ...[
                   _phoneRow(value),
                   const SizedBox(height: 24),
                   EliteGoldButton(
-                      label: 'SEND OTP', onTap: value.loginWithPhoneOTP),
+                      label: 'SEND OTP'.tr, onTap: value.loginWithPhoneOTP),
                 ],
                 Align(
                   alignment: Alignment.centerRight,

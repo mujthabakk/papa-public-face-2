@@ -136,7 +136,7 @@ class _TopProductScreenState extends State<TopProductScreen> {
                   padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
                   child: SafeArea(
                     child: EliteGoldButton(
-                      label: 'VIEW CART',
+                      label: 'VIEW CART'.tr,
                       onTap: value.onCart,
                     ),
                   ),

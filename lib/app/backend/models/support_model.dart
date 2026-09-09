@@ -7,9 +7,9 @@ class SupportModel {
   SupportModel({this.id, this.firstName, this.lastName});
 
   SupportModel.fromJson(Map<String, dynamic> json) {
-    id = int.parse(json['id'].toString());
-    firstName = json['first_name'];
-    lastName = json['last_name'];
+    id = int.tryParse(json['id']?.toString() ?? '') ?? 0;
+    firstName = json['first_name']?.toString() ?? 'Support';
+    lastName = json['last_name']?.toString() ?? '';
   }
 
   Map<String, dynamic> toJson() {

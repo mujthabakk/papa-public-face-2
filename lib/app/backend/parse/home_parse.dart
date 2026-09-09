@@ -43,6 +43,10 @@ class HomeParser {
     return apiService.postPublic(AppConstants.getTopProducts, body);
   }
 
+  Future<Response> getTopPartners(var body) {
+    return apiService.postPublic(AppConstants.getTopPartners, body);
+  }
+
   Future<Response> getTimedOffersHome() {
     return apiService.getPublic(AppConstants.getTimedOffersHome);
   }

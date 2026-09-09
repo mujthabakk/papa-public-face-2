@@ -97,8 +97,7 @@ class _FilterScreenState extends State<FilterScreenCat> {
                                     Icons.clear,
                                     size: 12,
                                   ),
-                                  label: const Text(
-                                    'Clear Filters',
+                                  label: Text('Clear Filters'.tr,
                                     style: TextStyle(fontSize: 11),
                                   )),
                             ),
@@ -218,8 +217,7 @@ class _FilterScreenState extends State<FilterScreenCat> {
                               Expanded(
                                 child: ListTile(
                                   contentPadding: EdgeInsets.zero,
-                                  title: const Text(
-                                    'Family',
+                                  title: Text('Family'.tr,
                                     style: TextStyle(fontSize: 13),
                                   ),
                                   horizontalTitleGap: 2,

@@ -23,6 +23,23 @@ class SpinnerParser {
         token.isNotEmpty;
   }
 
+  static const String _spinPopupDateKey = 'spin_popup_last_date';
+
+  String _todayKey() {
+    final now = DateTime.now();
+    return '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
+  }
+
+  /// Auto Spin & Win popup: once per calendar day per device.
+  bool shouldAutoShowSpinPopup() {
+    final last = sharedPreferencesManager.getString(_spinPopupDateKey) ?? '';
+    return last != _todayKey();
+  }
+
+  void markSpinPopupShownToday() {
+    sharedPreferencesManager.putString(_spinPopupDateKey, _todayKey());
+  }
+
   int? getUidInt() {
     final uid = sharedPreferencesManager.getString('uid');
     if (uid == null || uid.isEmpty) return null;

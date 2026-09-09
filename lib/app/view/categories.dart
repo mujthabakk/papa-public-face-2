@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:salon_user/app/controller/categories_controller.dart';
+import 'package:salon_user/app/controller/common_notification_controller.dart';
+import 'package:salon_user/app/controller/languages_controller.dart';
 import 'package:salon_user/app/controller/product_cart_controller.dart';
 import 'package:salon_user/app/controller/unified_search_controller.dart';
 import 'package:salon_user/app/env.dart';
@@ -26,9 +28,11 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return GetBuilder<CategoriesController>(
-      builder: (controller) {
-        return Scaffold(
+    return GetBuilder<LanguagesController>(
+      builder: (_) {
+        return GetBuilder<CategoriesController>(
+          builder: (controller) {
+            return Scaffold(
           key: _scaffoldKey,
           backgroundColor: ThemeProvider.backgroundColor,
           drawer: const SideMenuScreen(),
@@ -41,8 +45,14 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
                   children: [
                     SafeArea(
                       bottom: false,
-                      child: EliteAppBar(
-                        onMenu: () => _scaffoldKey.currentState?.openDrawer(),
+                      child: GetBuilder<CommonNotificationController>(
+                        builder: (notify) => EliteAppBar(
+                          onMenu: () =>
+                              _scaffoldKey.currentState?.openDrawer(),
+                          onNotification: () =>
+                              Get.toNamed(AppRouter.getNotificatinRoutes()),
+                          notificationCount: notify.unreadCount,
+                        ),
                       ),
                     ),
                     Padding(
@@ -159,6 +169,8 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
                       ),
                     )
                   : const SizedBox.shrink(),
+        );
+          },
         );
       },
     );

@@ -7,6 +7,7 @@ import 'package:salon_user/app/controller/account_controller.dart';
 import 'package:salon_user/app/controller/booking_controller.dart';
 import 'package:salon_user/app/controller/categories_controller.dart';
 import 'package:salon_user/app/controller/home_controller.dart';
+import 'package:salon_user/app/controller/languages_controller.dart';
 import 'package:salon_user/app/controller/near_controller.dart';
 import 'package:salon_user/app/controller/tabs_controller.dart';
 import 'package:salon_user/app/helper/router.dart';
@@ -111,7 +112,12 @@ class LoginController extends GetxController implements GetxService {
           "id": myMap['user']['id'].toString(),
           'fcm_token': parser.getFcmToken(),
         };
-        await parser.updateProfile(updateParam, myMap['token']);
+        final profileRes =
+            await parser.updateProfile(updateParam, myMap['token']);
+        await _applyPreferredLanguage(
+          user: Map<String, dynamic>.from(myMap['user'] as Map),
+          profileResponse: profileRes,
+        );
         onNavigate();
       } else {
         showToast('Access denied'.tr);
@@ -138,7 +144,27 @@ class LoginController extends GetxController implements GetxService {
     }
   }
 
+  
+  /// Switch app language from profile preferred_language (en/ar/hi...).
+  Future<void> _applyPreferredLanguage({
+    required Map<String, dynamic> user,
+    Response? profileResponse,
+  }) async {
+    if (!Get.isRegistered<LanguagesController>()) return;
+    final locale = Get.find<LanguagesController>();
+    Map<String, dynamic> source = user;
+    final body = profileResponse?.body;
+    if (body is Map && body['data'] is Map) {
+      source = {
+        ...user,
+        ...Map<String, dynamic>.from(body['data'] as Map),
+      };
+    }
+    await locale.applyPreferredFromUser(source, reloadUi: true);
+  }
+
   void onNavigate() {
+
     Get.delete<TabsController>(force: true);
     Get.delete<HomeController>(force: true);
     Get.delete<NearController>(force: true);
@@ -206,7 +232,12 @@ class LoginController extends GetxController implements GetxService {
           "id": myMap['user']['id'].toString(),
           'fcm_token': parser.getFcmToken(),
         };
-        await parser.updateProfile(updateParam, myMap['token']);
+        final profileRes =
+            await parser.updateProfile(updateParam, myMap['token']);
+        await _applyPreferredLanguage(
+          user: Map<String, dynamic>.from(myMap['user'] as Map),
+          profileResponse: profileRes,
+        );
         onNavigate();
       } else {
         showToast('Access denied'.tr);
@@ -553,7 +584,12 @@ class LoginController extends GetxController implements GetxService {
           "id": myMap['user']['id'].toString(),
           'fcm_token': parser.getFcmToken(),
         };
-        await parser.updateProfile(updateParam, myMap['token']);
+        final profileRes =
+            await parser.updateProfile(updateParam, myMap['token']);
+        await _applyPreferredLanguage(
+          user: Map<String, dynamic>.from(myMap['user'] as Map),
+          profileResponse: profileRes,
+        );
         onNavigate();
       } else {
         showToast('Access denied'.tr);

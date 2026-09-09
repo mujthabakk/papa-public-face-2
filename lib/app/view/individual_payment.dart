@@ -973,14 +973,13 @@ class _IndividualPaymentScreenState extends State<IndividualPaymentScreen> {
                   : '${value.deliveryPrice.toStringAsFixed(2)}${value.currencySymbol}',
               false,
             ),
-            const SizedBox(height: 12),
-            _buildBillRow(
-              'Tax (GST ${Get.find<ServiceCartController>().orderTax}%)'.tr,
-              value.currencySide == 'left'
-                  ? '${value.currencySymbol}${Get.find<ServiceCartController>().taxAmount.toStringAsFixed(2)}'
-                  : '${Get.find<ServiceCartController>().taxAmount.toStringAsFixed(2)}${value.currencySymbol}',
-              false,
-            ),
+            if (value.taxAmount > 0) ...[
+              const SizedBox(height: 12),
+              Text(
+                'Taxable: ${value.currencySide == 'left' ? '${value.currencySymbol}${value.taxableValue.toStringAsFixed(2)}' : '${value.taxableValue.toStringAsFixed(2)}${value.currencySymbol}'} | GST: ${value.currencySide == 'left' ? '${value.currencySymbol}${value.taxAmount.toStringAsFixed(2)}' : '${value.taxAmount.toStringAsFixed(2)}${value.currencySymbol}'}',
+                style: const TextStyle(fontSize: 12, color: textSecondary),
+              ),
+            ],
           ],
         ),
       ),
@@ -1032,10 +1031,6 @@ class _IndividualPaymentScreenState extends State<IndividualPaymentScreen> {
       children: List.generate(
         value.paymentList.length,
         (index) {
-          if (!value.checkPremium && index == 0) {
-            return const SizedBox.shrink();
-          }
-
           final isSelected = value.paymentList[index].id == value.paymentId;
 
           return Container(

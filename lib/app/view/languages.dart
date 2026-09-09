@@ -23,13 +23,10 @@ class _LanguagesScreenState extends State<LanguagesScreen> {
         final account = Get.isRegistered<AccountController>()
             ? Get.find<AccountController>()
             : null;
-        final selected = AppConstants.languages.firstWhere(
-          (e) => e.languageCode == lang.languageCode,
-          orElse: () => AppConstants.languages.first,
-        );
+        final selected = lang.selectedLanguage;
         return Scaffold(
           backgroundColor: ThemeProvider.backgroundColor,
-          appBar: const EliteAppBar(showBack: true, title: 'PAPA BEAR'),
+          appBar: EliteAppBar(showBack: true, title: 'PAPA BEAR'.tr),
           body: ListView(
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
             children: [
@@ -79,16 +76,17 @@ class _LanguagesScreenState extends State<LanguagesScreen> {
                 child: Column(
                   children: [
                     _row(
-                      Icons.public,
-                      'Language',
-                      trailingText: selected.languageName,
-                      onTap: () => _pickLanguage(lang),
+                      Icons.translate,
+                      'Language'.tr,
+                      trailingText: selected.displayName,
+                      onTap: () => lang.showLocaleSettings(initialTab: 0),
                     ),
                     const Divider(height: 1, color: Color(0xFF2C2C2C)),
                     _row(
                       Icons.public,
-                      'Country/Region',
-                      trailingText: selected.countryCode,
+                      'Country/Region'.tr,
+                      trailingText: lang.selectedCountryLabel,
+                      onTap: () => lang.showLocaleSettings(initialTab: 1),
                     ),
                   ],
                 ),
@@ -140,8 +138,7 @@ class _LanguagesScreenState extends State<LanguagesScreen> {
                       borderRadius: BorderRadius.circular(10),
                     ),
                   ),
-                  child: Text(
-                    'TERMINATE SESSION',
+                  child: Text('TERMINATE SESSION'.tr,
                     style: ThemeProvider.sans(
                       size: 12,
                       weight: FontWeight.w700,
@@ -208,51 +205,19 @@ class _LanguagesScreenState extends State<LanguagesScreen> {
     );
   }
 
-  void _pickLanguage(LanguagesController lang) {
-    Get.bottomSheet(
-      Container(
-        padding: const EdgeInsets.all(20),
-        decoration: const BoxDecoration(
-          color: ThemeProvider.surface,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text('Language', style: ThemeProvider.serif(size: 18)),
-            const SizedBox(height: 8),
-            ...AppConstants.languages.map(
-              (l) => RadioListTile<String>(
-                value: l.languageCode,
-                groupValue: lang.languageCode,
-                activeColor: ThemeProvider.gold,
-                title: Text(l.languageName, style: ThemeProvider.sans()),
-                onChanged: (code) {
-                  if (code != null) lang.saveLanguages(code);
-                  Get.back();
-                },
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
   void _logout(AccountController value) {
     Get.dialog(
       AlertDialog(
         backgroundColor: ThemeProvider.surface,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Text('Logout', style: ThemeProvider.serif(size: 20)),
-        content: Text(
-          'Are you sure you want to logout from your account?',
+        title: Text('Logout'.tr, style: ThemeProvider.serif(size: 20)),
+        content: Text('Are you sure you want to logout from your account?'.tr,
           style: ThemeProvider.sans(size: 14, color: Colors.white70),
         ),
         actions: [
           TextButton(
             onPressed: () => Get.back(),
-            child: Text('Cancel',
+            child: Text('Cancel'.tr,
                 style: ThemeProvider.sans(color: ThemeProvider.greyColor)),
           ),
           ElevatedButton(
@@ -264,7 +229,7 @@ class _LanguagesScreenState extends State<LanguagesScreen> {
               backgroundColor: ThemeProvider.logoutRose,
               foregroundColor: Colors.black,
             ),
-            child: const Text('TERMINATE SESSION'),
+            child: Text('TERMINATE SESSION'.tr),
           ),
         ],
       ),

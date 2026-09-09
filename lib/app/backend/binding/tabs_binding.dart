@@ -4,6 +4,7 @@ import 'package:salon_user/app/controller/booking_controller.dart';
 import 'package:salon_user/app/controller/categories_controller.dart';
 import 'package:salon_user/app/controller/home_controller.dart';
 import 'package:salon_user/app/controller/near_controller.dart';
+import 'package:salon_user/app/controller/payment_socket_controller.dart';
 import 'package:salon_user/app/controller/tabs_controller.dart';
 
 class TabsBinding extends Bindings {
@@ -15,5 +16,13 @@ class TabsBinding extends Bindings {
     Get.lazyPut(() => NearController(parser: Get.find()));
     Get.lazyPut(() => BookingController(parser: Get.find()));
     Get.lazyPut(() => AccountController(parser: Get.find()));
+    if (!Get.isRegistered<PaymentSocketController>()) {
+      Get.put(
+        PaymentSocketController(parser: Get.find()),
+        permanent: true,
+      );
+    } else {
+      Get.find<PaymentSocketController>().startListening();
+    }
   }
 }

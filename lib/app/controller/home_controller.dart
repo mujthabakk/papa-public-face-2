@@ -10,6 +10,7 @@ import 'package:salon_user/app/backend/models/individual_model.dart';
 import 'package:salon_user/app/backend/models/products_list_model.dart';
 import 'package:salon_user/app/backend/models/salon_model.dart';
 import 'package:salon_user/app/backend/models/timed_offer_model.dart';
+import 'package:salon_user/app/backend/models/top_partner_model.dart';
 import 'package:salon_user/app/controller/coupon_controller.dart';
 import 'package:salon_user/app/backend/parse/home_parse.dart';
 import 'package:salon_user/app/controller/all_categories_controller.dart';
@@ -60,6 +61,9 @@ class HomeController extends GetxController implements GetxService {
   List<TimedOfferIcon> _timedOffers = <TimedOfferIcon>[];
   List<TimedOfferIcon> get timedOffers => _timedOffers;
 
+  List<TopPartnerModel> _topPartners = <TopPartnerModel>[];
+  List<TopPartnerModel> get topPartners => _topPartners;
+
   bool apiCalled = false;
 
   bool haveData = false;
@@ -91,6 +95,7 @@ class HomeController extends GetxController implements GetxService {
     _productsList = [];
     _offersList = [];
     _timedOffers = [];
+    _topPartners = [];
 
     final timedFuture = parser.getTimedOffersHome();
     Response response = await parser.getHomeData(param);
@@ -104,6 +109,8 @@ class HomeController extends GetxController implements GetxService {
           _categoriesList.isEmpty &&
           _individualList.isEmpty) {
         _applyHomeMap(map);
+      } else {
+        _parseTopPartners(map['top_partners'] ?? map['topPartners']);
       }
     } else if (!ApiBody.isSuccess(response)) {
       debugPrint('getHomeData status ${response.statusCode}');
@@ -125,6 +132,30 @@ class HomeController extends GetxController implements GetxService {
     _parseProducts(myMap['products']);
     _setOffers(myMap['offers'] ?? myMap['data']);
     _parseTimedOffers(myMap['timed_offers'] ?? myMap['timedOffers']);
+    _parseTopPartners(myMap['top_partners'] ?? myMap['topPartners']);
+  }
+
+  void _parseTopPartners(dynamic raw) {
+    if (_topPartners.isNotEmpty) return;
+    final items = ApiBody.asItemList(raw, keys: const [
+      'top_partners',
+      'topPartners',
+      'data',
+      'items',
+      'result',
+      'list',
+    ]);
+    for (final data in items) {
+      try {
+        final map = ApiBody.asObject(data);
+        if (map == null) continue;
+        final partner = TopPartnerModel.fromJson(map);
+        if ((partner.uid ?? 0) <= 0 && (partner.name ?? '').isEmpty) continue;
+        _topPartners.add(partner);
+      } catch (e) {
+        debugPrint('Skip top partner: $e');
+      }
+    }
   }
 
   void _parseSalons(dynamic raw) {
@@ -225,7 +256,18 @@ class HomeController extends GetxController implements GetxService {
     if (_individualList.isEmpty) jobs.add(_loadTopFreelancers(latLng));
     if (_productsList.isEmpty) jobs.add(_loadTopProducts(latLng));
     if (_bannerList.isEmpty) jobs.add(_loadBanners(latLng));
+    if (_topPartners.isEmpty) jobs.add(_loadTopPartners(latLng));
     if (jobs.isNotEmpty) await Future.wait(jobs);
+  }
+
+  Future<void> _loadTopPartners(Map<String, dynamic> param) async {
+    try {
+      final response = await parser.getTopPartners(param);
+      final map = ApiBody.asMap(response.body);
+      _parseTopPartners(map?['data'] ?? map?['top_partners'] ?? response.body);
+    } catch (e) {
+      debugPrint('loadTopPartners: $e');
+    }
   }
 
   Future<void> _loadCategories() async {
@@ -341,6 +383,12 @@ class HomeController extends GetxController implements GetxService {
     Get.toNamed(AppRouter.getServicesRoutes(), arguments: [uid]);
   }
 
+  void onTopPartner(TopPartnerModel partner) {
+    final uid = partner.uid ?? 0;
+    if (uid <= 0) return;
+    onServices(uid);
+  }
+
   void onSpecialist(int uid) {
     Get.delete<SpecialistController>(force: true);
     Get.toNamed(AppRouter.getSpecialistRoutes(), arguments: [uid]);
@@ -389,6 +437,15 @@ class HomeController extends GetxController implements GetxService {
   void onAllOffersList() {
     Get.delete<CouponController>(force: true);
     Get.toNamed(AppRouter.getCouponRoutes());
+  }
+
+  /// Open Exclusive Offers (VIEW ALL) and focus this offer's full details.
+  void openExclusiveOffer(CouponsModel offer) {
+    Get.delete<CouponController>(force: true);
+    Get.toNamed(
+      AppRouter.getCouponRoutes(),
+      arguments: {'offerId': offer.id},
+    );
   }
 
   void claimOffer(CouponsModel offer) {

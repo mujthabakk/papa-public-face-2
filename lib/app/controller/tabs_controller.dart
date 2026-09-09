@@ -1,6 +1,7 @@
 import 'package:get/get.dart';
 import 'package:flutter/material.dart';
 import 'package:salon_user/app/backend/parse/tabs_parse.dart';
+import 'package:salon_user/app/controller/payment_socket_controller.dart';
 import 'package:salon_user/app/controller/product_cart_controller.dart';
 
 class TabsController extends GetxController
@@ -16,6 +17,10 @@ class TabsController extends GetxController
   void onInit() {
     super.onInit();
     tabController = TabController(length: 6, vsync: this, initialIndex: tabId);
+    // Dashboard socket: popup when COD / online payment completes.
+    if (Get.isRegistered<PaymentSocketController>()) {
+      Get.find<PaymentSocketController>().startListening();
+    }
   }
 
   void updateCartValue() {

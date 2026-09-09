@@ -590,28 +590,28 @@
 //               controller: value.addressTextEditor,
 //               label: 'Address'.tr,
 //               icon: Icons.location_on_outlined,
-//               hint: 'Enter your complete address',
+//               hint: 'Enter your complete address'.tr,
 //             ),
 //             const SizedBox(height: 16),
 //             _buildTextField(
 //               controller: value.houseTextEditor,
 //               label: 'House / Flat No.'.tr,
 //               icon: Icons.home_outlined,
-//               hint: 'Building, house no., flat no.',
+//               hint: 'Building, house no., flat no.'.tr,
 //             ),
 //             const SizedBox(height: 16),
 //             _buildTextField(
 //               controller: value.landmarkTextEditor,
 //               label: 'Landmark'.tr,
 //               icon: Icons.place_outlined,
-//               hint: 'Nearby landmark (optional)',
+//               hint: 'Nearby landmark (optional)'.tr,
 //             ),
 //             const SizedBox(height: 16),
 //             _buildTextField(
 //               controller: value.pincodeTextEditor,
 //               label: 'Pincode'.tr,
 //               icon: Icons.pin_drop_outlined,
-//               hint: 'Enter your pincode',
+//               hint: 'Enter your pincode'.tr,
 //               keyboardType: TextInputType.number,
 //             ),
 //           ],
@@ -1259,8 +1259,7 @@ class _NewAddressScreenState extends State<NewAddressScreen> {
                   ),
                 ),
                 const SizedBox(width: 12),
-                const Text(
-                  'Address Details',
+                Text('Address Details'.tr,
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.w600,
@@ -1274,28 +1273,28 @@ class _NewAddressScreenState extends State<NewAddressScreen> {
               controller: value.addressTextEditor,
               label: 'Address'.tr,
               icon: Icons.location_on_outlined,
-              hint: 'Enter your complete address',
+              hint: 'Enter your complete address'.tr,
             ),
             const SizedBox(height: 16),
             _buildTextField(
               controller: value.houseTextEditor,
               label: 'House / Flat No.'.tr,
               icon: Icons.home_outlined,
-              hint: 'Building, house no., flat no.',
+              hint: 'Building, house no., flat no.'.tr,
             ),
             const SizedBox(height: 16),
             _buildTextField(
               controller: value.landmarkTextEditor,
               label: 'Landmark'.tr,
               icon: Icons.place_outlined,
-              hint: 'Nearby landmark (optional)',
+              hint: 'Nearby landmark (optional)'.tr,
             ),
             const SizedBox(height: 16),
             _buildTextField(
               controller: value.pincodeTextEditor,
               label: 'Pincode'.tr,
               icon: Icons.pin_drop_outlined,
-              hint: 'Enter your pincode',
+              hint: 'Enter your pincode'.tr,
               keyboardType: TextInputType.number,
             ),
           ],
@@ -1387,8 +1386,7 @@ class _NewAddressScreenState extends State<NewAddressScreen> {
                   ),
                 ),
                 const SizedBox(width: 12),
-                const Text(
-                  'Select Location',
+                Text('Select Location'.tr,
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.w600,
@@ -1564,14 +1562,13 @@ class _NewAddressScreenState extends State<NewAddressScreen> {
           if (value.myLat.value == 0.0 && value.myLng.value == 0.0) {
             return Container(
               color: surfaceBackground,
-              child: const Center(
+              child: Center(
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    CircularProgressIndicator(color: primary),
-                    SizedBox(height: 16),
-                    Text(
-                      'Loading map...',
+                    const CircularProgressIndicator(color: primary),
+                    const SizedBox(height: 16),
+                    Text('Loading map...'.tr,
                       style: TextStyle(color: textSecondary),
                     ),
                   ],
@@ -1639,8 +1636,7 @@ class _NewAddressScreenState extends State<NewAddressScreen> {
                         ),
                         const SizedBox(width: 8),
                         Expanded(
-                          child: Text(
-                            'Tap on the map to select your exact location',
+                          child: Text('Tap on the map to select your exact location'.tr,
                             style: const TextStyle(
                               fontSize: 12,
                               color: textSecondary,
@@ -1693,8 +1689,7 @@ class _NewAddressScreenState extends State<NewAddressScreen> {
                   ),
                 ),
                 const SizedBox(width: 12),
-                const Text(
-                  'Save Address As',
+                Text('Save Address As'.tr,
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.w600,

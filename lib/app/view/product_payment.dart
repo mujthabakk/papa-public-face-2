@@ -37,7 +37,7 @@ class _ProductPaymentScreenState extends State<ProductPaymentScreen> {
           backgroundColor: ThemeProvider.backgroundColor,
           appBar: EliteAppBar(
             showBack: true,
-            title: 'Checkout',
+            title: 'Checkout'.tr,
             onMore: () {},
           ),
           body: value.paymentAPICalled == false
@@ -125,7 +125,7 @@ class _ProductPaymentScreenState extends State<ProductPaymentScreen> {
                   ),
                   GestureDetector(
                     onTap: value.onSelectAddress,
-                    child: Text('Change',
+                    child: Text('Change'.tr,
                         style: ThemeProvider.sans(
                             size: 12, color: ThemeProvider.gold)),
                   ),
@@ -175,7 +175,6 @@ class _ProductPaymentScreenState extends State<ProductPaymentScreen> {
       children: [
         _header(Icons.account_balance_wallet_outlined, 'Payment Method'),
         ...List.generate(value.paymentList.length, (i) {
-          if (!value.checkPremium && i == 0) return const SizedBox.shrink();
           final p = value.paymentList[i];
           final selected = p.id == value.paymentId;
           return GestureDetector(
@@ -199,7 +198,7 @@ class _ProductPaymentScreenState extends State<ProductPaymentScreen> {
                             style: ThemeProvider.sans(
                                 size: 14, weight: FontWeight.w600)),
                         if (selected)
-                          Text('Default',
+                          Text('Default'.tr,
                               style: ThemeProvider.sans(
                                   size: 11, color: ThemeProvider.gold)),
                       ],
@@ -232,7 +231,7 @@ class _ProductPaymentScreenState extends State<ProductPaymentScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Elite Rewards Points',
+                Text('Elite Rewards Points'.tr,
                     style: ThemeProvider.sans(
                         size: 14, weight: FontWeight.w600)),
                 Text(
@@ -262,7 +261,7 @@ class _ProductPaymentScreenState extends State<ProductPaymentScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Order Summary', style: ThemeProvider.serif(size: 22)),
+          Text('Order Summary'.tr, style: ThemeProvider.serif(size: 22)),
           const Divider(color: Color(0xFF2A2A2A)),
           ...cart.savedInCart.map((p) => Padding(
                 padding: const EdgeInsets.only(bottom: 8),
@@ -303,13 +302,19 @@ class _ProductPaymentScreenState extends State<ProductPaymentScreen> {
               elitePrice(value.currencySide, value.currencySymbol,
                   value.deliveryPrice,
                   digits: 2)),
-          _row(
-              'Tax',
-              elitePrice(value.currencySide, value.currencySymbol,
-                  value.taxAmount,
-                  digits: 2)),
+          if (value.taxAmount > 0)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 8, top: 4),
+              child: Text(
+                'Taxable: ${elitePrice(value.currencySide, value.currencySymbol, value.taxableValue, digits: 2)} | GST: ${elitePrice(value.currencySide, value.currencySymbol, value.taxAmount, digits: 2)}',
+                style: ThemeProvider.sans(
+                  size: 11,
+                  color: ThemeProvider.greyColor,
+                ),
+              ),
+            ),
           const Divider(color: Color(0xFF2A2A2A)),
-          Text('TOTAL AMOUNT',
+          Text('TOTAL AMOUNT'.tr,
               style: ThemeProvider.sans(
                   size: 10, color: ThemeProvider.gold, letterSpacing: 1)),
           Row(
@@ -318,13 +323,12 @@ class _ProductPaymentScreenState extends State<ProductPaymentScreen> {
                 elitePrice(value.currencySide, value.currencySymbol,
                     value.grandTotal,
                     digits: 2),
-                style: ThemeProvider.serif(
-                    size: 32, color: ThemeProvider.gold),
+                style: ThemeProvider.price(
+                    size: 28,
+                    weight: FontWeight.w700,
+                    color: ThemeProvider.gold),
               ),
               const Spacer(),
-              Text('Tax Included',
-                  style: ThemeProvider.sans(
-                      size: 11, color: ThemeProvider.greyColor)),
             ],
           ),
           const SizedBox(height: 14),
@@ -344,7 +348,7 @@ class _ProductPaymentScreenState extends State<ProductPaymentScreen> {
                 children: [
                   const Icon(Icons.lock_outline, size: 16),
                   const SizedBox(width: 8),
-                  Text('Pay Now',
+                  Text('Pay Now'.tr,
                       style:
                           ThemeProvider.serif(size: 18, color: Colors.black)),
                 ],

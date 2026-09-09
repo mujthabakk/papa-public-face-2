@@ -34,10 +34,9 @@ class _AppPagesScreenState extends State<AppPagesScreen> {
                 )
               : (value.content.toString().isEmpty ||
                       value.content.toString() == 'null')
-                  ? const Center(
-                      child: Text(
-                        'API is not available',
-                        style: TextStyle(color: ThemeProvider.greyColor),
+                  ? Center(
+                      child: Text('API is not available'.tr,
+                        style: const TextStyle(color: ThemeProvider.greyColor),
                       ),
                     )
                   : SingleChildScrollView(

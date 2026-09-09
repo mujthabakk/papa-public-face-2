@@ -4,6 +4,7 @@ import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
+import 'package:salon_user/app/controller/languages_controller.dart';
 import 'package:salon_user/app/controller/splash_controller.dart';
 import 'package:salon_user/app/env.dart';
 import 'package:salon_user/app/helper/router.dart';
@@ -27,7 +28,7 @@ class _SplashScreenState extends State<SplashScreen> {
     _connectivitySubscription =
         _connectivity.onConnectivityChanged.listen(_updateConnectionStatus);
     Get.find<SplashController>().initSharedData();
-    _routing();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _routing());
   }
 
   @override
@@ -37,40 +38,19 @@ class _SplashScreenState extends State<SplashScreen> {
   }
 
   void _routing() {
-    Get.find<SplashController>().getConfigData().then((isSuccess) {
+    Future(() async {
+      try {
+        await Get.find<SplashController>().initLocale();
+      } catch (e) {
+        debugPrint('Splash initLocale failed (continuing): $e');
+      }
+      final isSuccess = await Get.find<SplashController>().getConfigData();
+      if (!mounted) return;
       if (isSuccess) {
-        if (Get.find<SplashController>().getLanguageCode() != '') {
-          var locale = Get.find<SplashController>().getLanguageCode();
-          Get.updateLocale(Locale(locale));
-        } else {
-          var locale =
-              Get.find<SplashController>().defaultLanguage.languageCode != '' &&
-                      Get.find<SplashController>()
-                              .defaultLanguage
-                              .languageCode !=
-                          ''
-                  ? Locale(Get.find<SplashController>()
-                      .defaultLanguage
-                      .languageCode
-                      .toString())
-                  : Locale('en'.tr);
-          Get.updateLocale(locale);
-        }
-
-        if (Get.find<SplashController>().parser.isNewUser() == false) {
-          Get.find<SplashController>().parser.saveWelcome(true);
-          Get.offNamed(AppRouter.getInitialRoute());
-        } else {
-          Get.find<SplashController>().parser.saveWelcome(true);
-          Get.offNamed(AppRouter.getChooseLocationRoutes());
-        }
-        // if (Get.find<SplashController>().parser.isNewUser() == false) {
-        //   Get.find<SplashController>().parser.saveWelcome(true);
-        //   Get.offNamed(AppRouter.getIntroRoutes());
-        // } else {
-        //   Get.find<SplashController>().parser.saveWelcome(true);
-        //   Get.offNamed(AppRouter.getChooseLocationRoute());
-        // }
+        // Always start with the location pick screen (map flow).
+        // Language / country stay on Profile only — not on this screen.
+        Get.find<SplashController>().parser.saveWelcome(true);
+        Get.offNamed(AppRouter.getChooseLocationRoutes());
       } else {
         Get.toNamed(AppRouter.getErrorRoutes());
       }
@@ -105,6 +85,15 @@ class _SplashScreenState extends State<SplashScreen> {
       return Scaffold(
         backgroundColor: Colors.black,
         body: Stack(alignment: AlignmentDirectional.center, children: [
+          Positioned(
+            top: MediaQuery.of(context).padding.top + 8,
+            right: 12,
+            child: IconButton(
+              icon: const Icon(Icons.translate, color: ThemeProvider.gold),
+              onPressed: () => Get.find<LanguagesController>()
+                  .showLocaleSettings(initialTab: 0),
+            ),
+          ),
           const Center(
             child: SizedBox(
               height: 260,
@@ -141,8 +130,7 @@ class _SplashScreenState extends State<SplashScreen> {
           Positioned(
             top: 180,
             child: Center(
-              child: Text(
-                'PAPA BEAR',
+              child: Text('PAPA BEAR'.tr,
                 style: ThemeProvider.serif(
                     color: ThemeProvider.gold,
                     size: 22,

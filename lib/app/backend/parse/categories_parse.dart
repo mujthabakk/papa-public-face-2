@@ -16,6 +16,21 @@ class CategoriesParser {
     return response;
   }
 
+  Future<Response> getProductsForYou() async {
+    return apiService.postPublic(
+      AppConstants.getTopProducts,
+      {'lat': getLat(), 'lng': getLng()},
+    );
+  }
+
+  double getLat() {
+    return sharedPreferencesManager.getDouble('lat') ?? 0.0;
+  }
+
+  double getLng() {
+    return sharedPreferencesManager.getDouble('lng') ?? 0.0;
+  }
+
   String getCurrencyCode() {
     return sharedPreferencesManager.getString('currencyCode') ??
         AppConstants.defaultCurrencyCode;

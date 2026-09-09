@@ -38,12 +38,12 @@ class _ProductOrderScreenState extends State<ProductOrderScreen> {
           backgroundColor: ThemeProvider.backgroundColor,
           appBar: EliteAppBar(
             showBack: true,
-            title: 'My History',
+            title: 'My History'.tr,
             onMore: c.getProductById,
           ),
           body: !c.parser.haveLoggedIn()
               ? Center(
-                  child: Text('Please log in to view history',
+                  child: Text('Please log in to view history'.tr,
                       style: ThemeProvider.sans(size: 13, color: Colors.white70)),
                 )
               : c.apiCalled == false
@@ -105,7 +105,7 @@ class _ProductOrderScreenState extends State<ProductOrderScreen> {
   Widget _services() {
     if (!Get.isRegistered<BookingController>()) {
       return Center(
-        child: Text('Open Appointments to load service history',
+        child: Text('Open Appointments to load service history'.tr,
             style: ThemeProvider.sans(size: 13, color: Colors.white70)),
       );
     }
@@ -196,7 +196,7 @@ class _ProductOrderScreenState extends State<ProductOrderScreen> {
                     Text(' ${_fmt(a.saveDate)}',
                         style: ThemeProvider.sans(
                             size: 12, color: ThemeProvider.greyColor)),
-                    const Text('  •  ',
+                    Text('  •  ',
                         style: TextStyle(color: ThemeProvider.greyColor)),
                     const Icon(Icons.person_outline,
                         size: 12, color: ThemeProvider.greyColor),
@@ -243,7 +243,7 @@ class _ProductOrderScreenState extends State<ProductOrderScreen> {
                           padding: const EdgeInsets.symmetric(
                               horizontal: 10, vertical: 6),
                         ),
-                        child: Text('WRITE REVIEW',
+                        child: Text('WRITE REVIEW'.tr,
                             style: ThemeProvider.sans(
                               size: 10,
                               weight: FontWeight.w700,
@@ -251,7 +251,7 @@ class _ProductOrderScreenState extends State<ProductOrderScreen> {
                             )),
                       )
                     else
-                      Text('Reviewed',
+                      Text('Reviewed'.tr,
                           style: ThemeProvider.sans(
                               size: 12, color: ThemeProvider.greyColor)),
                   ],

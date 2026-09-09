@@ -22,8 +22,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
           child: Column(
             children: [
               const Spacer(),
-              Text(
-                'PAPA BEAR',
+              Text('PAPA BEAR'.tr,
                 style: ThemeProvider.serif(
                   size: 36,
                   color: ThemeProvider.gold,
@@ -39,12 +38,12 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
               ),
               const Spacer(),
               EliteGoldButton(
-                label: 'SIGN IN',
+                label: 'SIGN IN'.tr,
                 onTap: () => Get.toNamed(AppRouter.getLoginRoute()),
               ),
               const SizedBox(height: 12),
               EliteGoldButton(
-                label: 'CREATE ACCOUNT',
+                label: 'CREATE ACCOUNT'.tr,
                 outlined: true,
                 onTap: () => Get.toNamed(AppRouter.getRegisterRoute()),
               ),

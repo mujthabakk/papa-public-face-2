@@ -47,76 +47,82 @@ class NearController extends GetxController implements GetxService {
     _individualList = [];
     markers.clear();
 
-    Response response = await parser.getHomeData(param);
-    final map = ApiBody.asMap(response.body);
-    if (map != null) {
-      _parseSalons(map['salon'] ?? map['salons']);
-      _parseIndividuals(map['individual'] ?? map['individuals']);
-      if (_salonList.isEmpty && map['data'] is Map) {
-        final nested = Map<String, dynamic>.from(map['data']);
-        _parseSalons(nested['salon'] ?? nested['salons']);
-        _parseIndividuals(nested['individual'] ?? nested['individuals']);
+    try {
+      Response response = await parser.getHomeData(param);
+      final map = ApiBody.asMap(response.body);
+      if (map != null) {
+        _parseSalons(map['salon'] ?? map['salons']);
+        _parseIndividuals(map['individual'] ?? map['individuals']);
+        if (_salonList.isEmpty && map['data'] is Map) {
+          final nested = Map<String, dynamic>.from(map['data']);
+          _parseSalons(nested['salon'] ?? nested['salons']);
+          _parseIndividuals(nested['individual'] ?? nested['individuals']);
+        }
       }
-    }
 
-    if (_salonList.isEmpty) {
-      try {
-        final top = await parser.getTopSalon(param);
-        _parseSalons(ApiBody.asList(top.body));
-      } catch (e) {
-        debugPrint('near top salon: $e');
+      if (_salonList.isEmpty) {
+        try {
+          final top = await parser.getTopSalon(param);
+          _parseSalons(ApiBody.asList(top.body));
+        } catch (e) {
+          debugPrint('near top salon: $e');
+        }
       }
-    }
-    if (_individualList.isEmpty) {
-      try {
-        final top = await parser.getTopFreelancer(param);
-        _parseIndividuals(ApiBody.asList(top.body));
-      } catch (e) {
-        debugPrint('near top freelancer: $e');
+      if (_individualList.isEmpty) {
+        try {
+          final top = await parser.getTopFreelancer(param);
+          _parseIndividuals(ApiBody.asList(top.body));
+        } catch (e) {
+          debugPrint('near top freelancer: $e');
+        }
       }
+
+      var destPosition = LatLng(parser.getLat(), parser.getLng());
+      initialCameraPosition = CameraPosition(
+          zoom: cameraZoom,
+          tilt: cameraTilt,
+          bearing: cameraBearing,
+          target: destPosition);
+
+      for (var element in _salonList) {
+        final lat = element.salonLat ?? 0;
+        final lng = element.salonLng ?? 0;
+        if (lat == 0 && lng == 0) continue;
+        markers.add(Marker(
+          markerId: MarkerId('${element.id}salon'),
+          position: LatLng(lat, lng),
+          infoWindow: InfoWindow(
+            title: element.name,
+            snippet: element.address,
+          ),
+          icon: BitmapDescriptor.defaultMarker,
+        ));
+      }
+
+      for (var element in _individualList) {
+        final lat = element.lat ?? 0;
+        final lng = element.lng ?? 0;
+        if (lat == 0 && lng == 0) continue;
+        markers.add(Marker(
+          markerId: MarkerId('${element.uid}freelancer'),
+          position: LatLng(lat, lng),
+          infoWindow: InfoWindow(
+            title:
+                '${element.userInfo?.firstName ?? ''} ${element.userInfo?.lastName ?? ''}'
+                    .trim(),
+          ),
+          icon: BitmapDescriptor.defaultMarker,
+        ));
+      }
+
+      haveData = salonList.isNotEmpty || individualList.isNotEmpty;
+    } catch (e, st) {
+      debugPrint('near getHomeData error: $e\n$st');
+      haveData = false;
+    } finally {
+      apiCalled = true;
+      update();
     }
-
-    var destPosition = LatLng(parser.getLat(), parser.getLng());
-    initialCameraPosition = CameraPosition(
-        zoom: cameraZoom,
-        tilt: cameraTilt,
-        bearing: cameraBearing,
-        target: destPosition);
-
-    for (var element in _salonList) {
-      final lat = element.salonLat ?? 0;
-      final lng = element.salonLng ?? 0;
-      if (lat == 0 && lng == 0) continue;
-      markers.add(Marker(
-        markerId: MarkerId('${element.id}salon'),
-        position: LatLng(lat, lng),
-        infoWindow: InfoWindow(
-          title: element.name,
-          snippet: element.address,
-        ),
-        icon: BitmapDescriptor.defaultMarker,
-      ));
-    }
-
-    for (var element in _individualList) {
-      final lat = element.lat ?? 0;
-      final lng = element.lng ?? 0;
-      if (lat == 0 && lng == 0) continue;
-      markers.add(Marker(
-        markerId: MarkerId('${element.uid}freelancer'),
-        position: LatLng(lat, lng),
-        infoWindow: InfoWindow(
-          title:
-              '${element.userInfo?.firstName ?? ''} ${element.userInfo?.lastName ?? ''}'
-                  .trim(),
-        ),
-        icon: BitmapDescriptor.defaultMarker,
-      ));
-    }
-
-    haveData = salonList.isNotEmpty || individualList.isNotEmpty;
-    apiCalled = true;
-    update();
   }
 
   void _parseSalons(dynamic raw) {

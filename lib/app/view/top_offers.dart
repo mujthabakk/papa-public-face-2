@@ -19,9 +19,9 @@ class _TopOffersScreenState extends State<TopOffersScreen> {
       builder: (value) {
         return Scaffold(
           backgroundColor: ThemeProvider.backgroundColor,
-          appBar: const EliteAppBar(
+          appBar: EliteAppBar(
             showBack: true,
-            title: 'Featured Centers',
+            title: 'Featured Centers'.tr,
           ),
           body: value.apiCalled == false
               ? const Center(
@@ -108,7 +108,7 @@ class _TopOffersScreenState extends State<TopOffersScreen> {
                 SizedBox(
                   width: double.infinity,
                   child: EliteGoldButton(
-                    label: 'BOOK NOW',
+                    label: 'BOOK NOW'.tr,
                     onTap: () => value.onServices(item.uid as int),
                   ),
                 ),

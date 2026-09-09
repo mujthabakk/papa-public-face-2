@@ -37,7 +37,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
     return GetBuilder<ResetPasswordController>(builder: (value) {
       return Scaffold(
         backgroundColor: ThemeProvider.backgroundColor,
-        appBar: const EliteAppBar(showBack: true, title: 'Reset Password'),
+        appBar: EliteAppBar(showBack: true, title: 'Reset Password'.tr),
         body: AbsorbPointer(
           absorbing: value.isLogin.value,
           child: ListView(
@@ -58,7 +58,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                   decoration: _dec('Email Address'.tr),
                 ),
                 const SizedBox(height: 24),
-                EliteGoldButton(label: 'SEND CODE', onTap: value.sendMail),
+                EliteGoldButton(label: 'SEND CODE'.tr, onTap: value.sendMail),
               ] else ...[
                 Text(
                   'Generate New Password'.tr,
@@ -91,7 +91,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                 ),
                 const SizedBox(height: 24),
                 EliteGoldButton(
-                    label: 'UPDATE PASSWORD', onTap: value.updatePassword),
+                    label: 'UPDATE PASSWORD'.tr, onTap: value.updatePassword),
               ],
             ],
           ),

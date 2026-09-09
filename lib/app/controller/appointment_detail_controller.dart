@@ -1,18 +1,23 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:salon_user/app/backend/api/handler.dart';
 import 'package:salon_user/app/backend/models/appointment_model.dart';
+import 'package:salon_user/app/backend/models/checkout_payment_model.dart';
+import 'package:salon_user/app/backend/models/payment_options_model.dart';
 import 'package:salon_user/app/backend/parse/appointment_detail_parse.dart';
+import 'package:salon_user/app/backend/parse/payment_parse.dart';
 import 'package:salon_user/app/controller/add_review_controller.dart';
 import 'package:salon_user/app/controller/booking_controller.dart';
 import 'package:salon_user/app/controller/chat_controller.dart';
 import 'package:salon_user/app/controller/complaints_controller.dart';
+import 'package:salon_user/app/controller/payment_socket_controller.dart';
 import 'package:salon_user/app/controller/reschedule_slot_controller.dart';
 import 'package:salon_user/app/helper/router.dart';
 import 'package:salon_user/app/util/constant.dart';
 import 'package:salon_user/app/util/theme.dart';
 import 'package:salon_user/app/util/toast.dart';
+import 'package:salon_user/app/view/upgrade_payment.dart';
+import 'package:salon_user/app/view/widgets/elite_ui.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class AppointmentDetailController extends GetxController
@@ -60,7 +65,24 @@ class AppointmentDetailController extends GetxController
     'Paystack'.tr,
     'Flutterwave'.tr
   ];
+
+  PaymentOptionsModel? paymentOptions;
+  bool paymentLoading = false;
+  bool payingNow = false;
+
+  bool get isPaid => paymentOptions?.isPaid == true;
+  bool get showPayNow =>
+      paymentOptions != null &&
+      paymentOptions!.showPayNow &&
+      !paymentOptions!.isPaid;
+  bool get showCodHint =>
+      paymentOptions != null &&
+      paymentOptions!.showCod &&
+      !paymentOptions!.isPaid;
+
   AppointmentDetailController({required this.parser});
+
+  PaymentParser get _paymentParser => Get.find<PaymentParser>();
 
   @override
   void onInit() {
@@ -70,7 +92,7 @@ class AppointmentDetailController extends GetxController
     appointmentId = Get.arguments[0] as int;
     debugPrint('appointment id --> $appointmentId');
     invoiceURL =
-        '${parser.apiService.appBaseUrl}${AppConstants.getAppointmentsInvoice}$appointmentId&token=${parser.getToken()}';
+        '${parser.apiService.appBaseUrl}${AppConstants.getAppointmentsReceipt}$appointmentId&token=${parser.getToken()}';
     getAppointmentDetails();
   }
 
@@ -134,11 +156,146 @@ class AppointmentDetailController extends GetxController
       total = _appointmentInfo.total.toString();
       grandTotal = _appointmentInfo.grandTotal.toString();
       update();
+      await loadPaymentOptions();
+      await _listenPaymentSocket();
     } else {
       ApiChecker.checkApi(response);
     }
 
     update();
+  }
+
+  Future<void> loadPaymentOptions() async {
+    if (!Get.isRegistered<PaymentParser>()) return;
+    paymentLoading = true;
+    update();
+    final result =
+        await _paymentParser.getPaymentOptions(bookId: appointmentId);
+    paymentLoading = false;
+    if (result.success && result.data != null) {
+      paymentOptions = result.data;
+      if (paymentOptions!.amount > 0) {
+        grandTotal = paymentOptions!.amount.toString();
+      }
+    }
+    update();
+  }
+
+  /// Called from dashboard PaymentSocketController.
+  void applyPaymentCompletedFromSocket(Map<String, dynamic> payload) {
+    try {
+      final parsed = PaymentOptionsModel.fromJson(payload);
+      paymentOptions = (paymentOptions ?? parsed).copyWith(
+        isPaid: true,
+        canPayNow: false,
+        showPayNow: false,
+        showCod: false,
+        paymentStatus: parsed.paymentStatus.isNotEmpty
+            ? parsed.paymentStatus
+            : 'paid',
+        message: parsed.message.isNotEmpty
+            ? parsed.message
+            : paymentOptions?.message,
+      );
+    } catch (_) {
+      paymentOptions = (paymentOptions ?? PaymentOptionsModel()).copyWith(
+        isPaid: true,
+        canPayNow: false,
+        showPayNow: false,
+        showCod: false,
+        paymentStatus: 'paid',
+      );
+    }
+    update();
+  }
+
+  Future<void> _listenPaymentSocket() async {
+    // Dashboard owns the global payment socket + popup.
+    if (!Get.isRegistered<PaymentSocketController>()) return;
+    await Get.find<PaymentSocketController>().startListening();
+  }
+
+  /// Public COD Pay Now flow: getPaymentOptions → payNow → WebView → verify/socket.
+  Future<void> onPayNow() async {
+    if (payingNow || !showPayNow) return;
+    payingNow = true;
+    update();
+
+    try {
+      await loadPaymentOptions();
+      if (paymentOptions == null || !paymentOptions!.showPayNow) {
+        showToast(paymentOptions?.message.isNotEmpty == true
+            ? paymentOptions!.message
+            : 'Pay Now is not available.'.tr);
+        return;
+      }
+
+      Get.dialog(
+        const Center(child: CircularProgressIndicator(color: ThemeProvider.gold)),
+        barrierDismissible: false,
+      );
+
+      final amount = paymentOptions!.amount > 0
+          ? paymentOptions!.amount
+          : (double.tryParse(grandTotal) ?? 0);
+
+      final result = await _paymentParser.generateCheckoutPaymentUrl(
+        appointmentId: appointmentId,
+        amount: amount,
+      );
+
+      if (Get.isDialogOpen ?? false) Get.back();
+
+      if (!result.success || result.data == null) {
+        showToast(result.message.isNotEmpty
+            ? result.message
+            : 'Unable to start payment.'.tr);
+        return;
+      }
+
+      final paymentData = result.data!;
+      if (paymentData.paymentUrl.isEmpty) {
+        showToast('Payment URL not available.'.tr);
+        return;
+      }
+
+      final verifyResult = await openUpgradePaymentWebView(
+        paymentUrl: paymentData.paymentUrl,
+        appointmentId: paymentData.appointmentId > 0
+            ? paymentData.appointmentId
+            : appointmentId,
+        paymentLinkId: paymentData.paymentLinkId,
+        onPaid: () {
+          paymentOptions = (paymentOptions ?? PaymentOptionsModel()).copyWith(
+            isPaid: true,
+            canPayNow: false,
+            showPayNow: false,
+            showCod: false,
+          );
+          update();
+        },
+      );
+
+      // Re-attach socket after WebView (may have paused connection).
+      await _listenPaymentSocket();
+
+      if (verifyResult is CheckoutVerifyData && verifyResult.isPaid) {
+        paymentOptions = (paymentOptions ?? PaymentOptionsModel()).copyWith(
+          isPaid: true,
+          canPayNow: false,
+          showPayNow: false,
+          showCod: false,
+        );
+        showToast('Payment successful'.tr);
+        update();
+      } else {
+        // Refresh options once via getPaymentOptions — never poll getStatus here.
+        await loadPaymentOptions();
+      }
+    } finally {
+      payingNow = false;
+      update();
+    }
   }
 
   Future<void> onUpdateAppointmentStatus(int status) async {
@@ -744,147 +901,83 @@ class AppointmentDetailController extends GetxController
   }
 
   void openHelpModal() {
-    var context = Get.context as BuildContext;
-    showModalBottomSheet(
-      context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-      ),
-      builder: (BuildContext context) => Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Text(
-              'Choose'.tr,
-              style: const TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
-          const Divider(height: 1),
-          ListTile(
-            leading: const Icon(Icons.chat, color: ThemeProvider.appColor),
-            title: Text('Chat'.tr),
-            onTap: () {
-              Navigator.pop(context);
-              Get.delete(force: true);
-              Get.toNamed(AppRouter.getChatRoutes(), arguments: [
-                parser.getAdminId().toString(),
-                parser.getAdminName()
-              ]);
-            },
-          ),
-          ListTile(
-            leading:
-                const Icon(Icons.report_problem, color: ThemeProvider.appColor),
-            title: Text('Complaints'.tr),
-            onTap: () {
-              Navigator.pop(context);
-              Get.delete<ComplaintsController>(force: true);
-              Get.toNamed(AppRouter.getComplaintsRoutes(),
-                  arguments: [appointmentId, 'appointments']);
-            },
-          ),
-          ListTile(
-            leading: const Icon(Icons.cancel, color: Colors.red),
-            title: Text(
-              'Close'.tr,
-              style: const TextStyle(color: Colors.red),
-            ),
-            onTap: () {
-              Navigator.pop(context);
-            },
-          ),
-          const SizedBox(height: 8),
-        ],
-      ),
+    final context = Get.context as BuildContext;
+    showEliteBottomSheet(
+      context,
+      title: 'Choose'.tr,
+      actions: [
+        EliteSheetAction(
+          icon: Icons.chat_bubble_outline,
+          label: 'Chat'.tr,
+          onTap: () {
+            Navigator.pop(context);
+            Get.delete<ChatController>(force: true);
+            Get.toNamed(AppRouter.getChatRoutes(), arguments: [
+              parser.getAdminId().toString(),
+              parser.getAdminName(),
+            ]);
+          },
+        ),
+        EliteSheetAction(
+          icon: Icons.report_problem_outlined,
+          label: 'Complaints'.tr,
+          onTap: () {
+            Navigator.pop(context);
+            Get.delete<ComplaintsController>(force: true);
+            Get.toNamed(
+              AppRouter.getComplaintsRoutes(),
+              arguments: [appointmentId, 'appointments'],
+            );
+          },
+        ),
+        EliteSheetAction(
+          icon: Icons.close,
+          label: 'Close'.tr,
+          destructive: true,
+          onTap: () => Navigator.pop(context),
+        ),
+      ],
     );
   }
 
   void onContactInfo(String name, String phone, String email, String uid) {
-    var context = Get.context as BuildContext;
-    showModalBottomSheet(
-      context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      backgroundColor: Colors.white,
-      builder: (BuildContext context) {
-        return Padding(
-          padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                'Choose'.tr,
-                style: const TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              const SizedBox(height: 12),
-              Divider(color: Colors.grey.shade300),
-              const SizedBox(height: 8),
-              _buildOption(
-                icon: Icons.chat,
-                text: 'Chat'.tr,
-                iconColor: ThemeProvider.appColor,
-                onTap: () {
-                  Navigator.pop(context);
-                  Get.delete<ChatController>(force: true);
-                  Get.toNamed(AppRouter.getChatRoutes(),
-                      arguments: [uid, name]);
-                },
-              ),
-              _buildOption(
-                icon: Icons.phone,
-                text: 'Call'.tr,
-                iconColor: ThemeProvider.appColor,
-                onTap: () {
-                  Navigator.pop(context);
-                  makePhoneCall(phone);
-                },
-              ),
-              _buildOption(
-                icon: Icons.email,
-                text: 'Email'.tr,
-                iconColor: ThemeProvider.appColor,
-                onTap: () {
-                  Navigator.pop(context);
-                  onMail(email);
-                },
-              ),
-              _buildOption(
-                icon: Icons.cancel,
-                text: 'Close'.tr,
-                iconColor: Colors.red,
-                textColor: Colors.red,
-                onTap: () => Navigator.pop(context),
-              ),
-              const SizedBox(height: 12),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _buildOption({
-    required IconData icon,
-    required String text,
-    required Color iconColor,
-    Color? textColor,
-    required VoidCallback onTap,
-  }) {
-    return ListTile(
-      leading: Icon(icon, color: iconColor),
-      title: Text(
-        text,
-        style: TextStyle(color: textColor ?? Colors.black),
-      ),
-      onTap: onTap,
+    final context = Get.context as BuildContext;
+    showEliteBottomSheet(
+      context,
+      title: 'Contact'.tr,
+      actions: [
+        EliteSheetAction(
+          icon: Icons.chat_bubble_outline,
+          label: 'Chat'.tr,
+          onTap: () {
+            Navigator.pop(context);
+            Get.delete<ChatController>(force: true);
+            Get.toNamed(AppRouter.getChatRoutes(), arguments: [uid, name]);
+          },
+        ),
+        EliteSheetAction(
+          icon: Icons.phone_outlined,
+          label: 'Call'.tr,
+          onTap: () {
+            Navigator.pop(context);
+            makePhoneCall(phone);
+          },
+        ),
+        EliteSheetAction(
+          icon: Icons.email_outlined,
+          label: 'Email'.tr,
+          onTap: () {
+            Navigator.pop(context);
+            onMail(email);
+          },
+        ),
+        EliteSheetAction(
+          icon: Icons.close,
+          label: 'Close'.tr,
+          destructive: true,
+          onTap: () => Navigator.pop(context),
+        ),
+      ],
     );
   }
 }

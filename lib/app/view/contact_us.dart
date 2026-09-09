@@ -36,7 +36,7 @@ class _ContactUsScreenState extends State<ContactUsScreen> {
       builder: (value) {
         return Scaffold(
           backgroundColor: ThemeProvider.backgroundColor,
-          appBar: const EliteAppBar(showBack: true, title: 'Contact Us'),
+          appBar: EliteAppBar(showBack: true, title: 'Contact Us'.tr),
           body: ListView(
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
             children: [

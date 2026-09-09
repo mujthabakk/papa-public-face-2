@@ -176,8 +176,7 @@ class _SideMenuScreenState extends State<SideMenuScreen> {
                     children: [
                       const Icon(Icons.logout, size: 18),
                       const SizedBox(width: 8),
-                      Text(
-                        'LOGOUT SESSION',
+                      Text('LOGOUT SESSION'.tr,
                         style: ThemeProvider.sans(
                           size: 12,
                           weight: FontWeight.w600,
@@ -192,8 +191,7 @@ class _SideMenuScreenState extends State<SideMenuScreen> {
               Padding(
                 padding: const EdgeInsets.only(bottom: 16),
                 child: Center(
-                  child: Text(
-                    'PAPA BEAR ELITE V4.2.1',
+                  child: Text('PAPA BEAR ELITE V4.2.1'.tr,
                     style: ThemeProvider.sans(
                       size: 10,
                       color: const Color(0xFF5A5A5A),

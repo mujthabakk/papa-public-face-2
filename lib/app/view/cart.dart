@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:salon_user/app/controller/cart_controller.dart';
 import 'package:salon_user/app/controller/product_cart_controller.dart';
+import 'package:salon_user/app/controller/tabs_controller.dart';
 import 'package:salon_user/app/env.dart';
+import 'package:salon_user/app/helper/router.dart';
 import 'package:salon_user/app/util/theme.dart';
 import 'package:salon_user/app/view/widgets/elite_ui.dart';
 
@@ -28,9 +30,9 @@ class _CartScreenState extends State<CartScreen> {
       builder: (value) {
         return Scaffold(
           backgroundColor: ThemeProvider.backgroundColor,
-          appBar: const EliteAppBar(
+          appBar: EliteAppBar(
             showBack: true,
-            title: 'My Cart',
+            title: 'My Cart'.tr,
             onMore: _noop,
           ),
           body: value.savedInCart.isEmpty
@@ -38,12 +40,11 @@ class _CartScreenState extends State<CartScreen> {
               : ListView(
                   padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
                   children: [
-                    Text('Cart Selection',
+                    Text('Cart Selection'.tr,
                         style: ThemeProvider.serif(
                             size: 28, weight: FontWeight.w700)),
                     const SizedBox(height: 4),
-                    Text(
-                      'Review your premium wellness curated list.',
+                    Text('Review your premium wellness curated list.'.tr,
                       style: ThemeProvider.sans(
                           size: 13, color: ThemeProvider.greyColor),
                     ),
@@ -72,10 +73,77 @@ class _CartScreenState extends State<CartScreen> {
           const Icon(Icons.shopping_bag_outlined,
               size: 56, color: ThemeProvider.gold),
           const SizedBox(height: 16),
-          Text('Your cart is empty', style: ThemeProvider.serif(size: 22)),
+          Text('Your cart is empty'.tr, style: ThemeProvider.serif(size: 22)),
           const SizedBox(height: 20),
-          EliteGoldButton(label: 'Continue Shopping', onTap: () => Get.back()),
+          EliteGoldButton(
+            label: 'Continue Shopping'.tr,
+            onTap: _continueShopping,
+          ),
         ],
+      ),
+    );
+  }
+
+  void _continueShopping() {
+    Get.bottomSheet(
+      Container(
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+        decoration: const BoxDecoration(
+          color: Color(0xFF1A1A1A),
+          borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+        ),
+        child: SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Continue Shopping'.tr,
+                style: ThemeProvider.serif(size: 18, color: ThemeProvider.gold),
+              ),
+              const SizedBox(height: 14),
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: const Icon(Icons.storefront_outlined,
+                    color: ThemeProvider.gold),
+                title: Text('Products'.tr,
+                    style: ThemeProvider.sans(size: 15, color: Colors.white)),
+                trailing: const Icon(Icons.chevron_right,
+                    color: ThemeProvider.gold),
+                onTap: () {
+                  Get.back();
+                  Get.back();
+                  Get.toNamed(AppRouter.getProductsRoutes());
+                },
+              ),
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: const Icon(Icons.spa_outlined,
+                    color: ThemeProvider.gold),
+                title: Text('Services'.tr,
+                    style: ThemeProvider.sans(size: 15, color: Colors.white)),
+                trailing: const Icon(Icons.chevron_right,
+                    color: ThemeProvider.gold),
+                onTap: () {
+                  Get.back();
+                  Get.back();
+                  if (Get.isRegistered<TabsController>()) {
+                    Get.find<TabsController>().updateTabId(3);
+                  }
+                  Get.offNamedUntil(
+                    AppRouter.getTabsBarRoute(),
+                    (route) => false,
+                  );
+                  Future.delayed(const Duration(milliseconds: 80), () {
+                    if (Get.isRegistered<TabsController>()) {
+                      Get.find<TabsController>().updateTabId(3);
+                    }
+                  });
+                },
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -101,8 +169,7 @@ class _CartScreenState extends State<CartScreen> {
                   padding:
                       const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                   color: const Color(0xFF2A2A2A),
-                  child: Text(
-                    'PRODUCT',
+                  child: Text('PRODUCT'.tr,
                     style: ThemeProvider.sans(size: 8, letterSpacing: 0.6),
                   ),
                 ),
@@ -151,8 +218,10 @@ class _CartScreenState extends State<CartScreen> {
                           elitePrice(value.currencySide, value.currencySymbol,
                               value.getFinalTotal(index),
                               digits: 2),
-                          style: ThemeProvider.serif(
-                              size: 18, color: ThemeProvider.gold),
+                          style: ThemeProvider.price(
+                              size: 16,
+                              weight: FontWeight.w700,
+                              color: ThemeProvider.gold),
                         ),
                         Text(
                           '${elitePrice(value.currencySide, value.currencySymbol, item.sellPrice, digits: 2)} each',
@@ -178,8 +247,7 @@ class _CartScreenState extends State<CartScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'REDEEM COUPON',
+          Text('REDEEM COUPON'.tr,
             style: ThemeProvider.sans(
               size: 10,
               color: ThemeProvider.gold,
@@ -195,7 +263,7 @@ class _CartScreenState extends State<CartScreen> {
                   ThemeProvider.sans(size: 13, color: ThemeProvider.greyColor),
               suffixIcon: TextButton(
                 onPressed: () {},
-                child: Text('APPLY',
+                child: Text('APPLY'.tr,
                     style: ThemeProvider.sans(
                         size: 12,
                         weight: FontWeight.w700,
@@ -214,13 +282,8 @@ class _CartScreenState extends State<CartScreen> {
               elitePrice(value.currencySide, value.currencySymbol,
                   productCart.totalPrice,
                   digits: 2)),
-          _bill(
-              'Product Tax (${productCart.orderTax}%)',
-              elitePrice(value.currencySide, value.currencySymbol,
-                  productCart.taxAmount,
-                  digits: 2)),
           const SizedBox(height: 10),
-          Text('TOTAL AMOUNT',
+          Text('TOTAL AMOUNT'.tr,
               style: ThemeProvider.sans(
                   size: 10, color: ThemeProvider.greyColor, letterSpacing: 1)),
           Row(
@@ -229,8 +292,10 @@ class _CartScreenState extends State<CartScreen> {
                 elitePrice(value.currencySide, value.currencySymbol,
                     productCart.grandTotal,
                     digits: 2),
-                style: ThemeProvider.serif(
-                    size: 32, color: ThemeProvider.gold),
+                style: ThemeProvider.price(
+                    size: 28,
+                    weight: FontWeight.w700,
+                    color: ThemeProvider.gold),
               ),
               const SizedBox(width: 8),
               const CircleAvatar(
@@ -314,7 +379,7 @@ class _CartScreenState extends State<CartScreen> {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Text('Proceed to Checkout',
+                    Text('Proceed to Checkout'.tr,
                         style: ThemeProvider.serif(size: 18, color: Colors.black)),
                     const SizedBox(width: 6),
                     const Icon(Icons.chevron_right),

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:salon_user/app/controller/account_controller.dart';
+import 'package:salon_user/app/controller/common_notification_controller.dart';
+import 'package:salon_user/app/controller/languages_controller.dart';
 import 'package:salon_user/app/controller/tabs_controller.dart';
 import 'package:salon_user/app/env.dart';
 import 'package:salon_user/app/helper/router.dart';
@@ -22,137 +24,169 @@ class _AccountScreenState extends State<AccountScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return GetBuilder<AccountController>(builder: (value) {
-      return Scaffold(
-        key: _scaffoldKey,
-        backgroundColor: ThemeProvider.backgroundColor,
-        drawer: const SideMenuScreen(),
-        body: ListView(
-          padding: const EdgeInsets.only(bottom: 100),
-          children: [
-            SafeArea(
-              bottom: false,
-              child: EliteAppBar(
-                onMenu: () => _scaffoldKey.currentState?.openDrawer(),
-              ),
-            ),
-            const SizedBox(height: 12),
-            Center(
-              child: Stack(
-                children: [
-                  Container(
-                    width: 110,
-                    height: 110,
-                    padding: const EdgeInsets.all(3),
-                    decoration: BoxDecoration(
-                      border: Border.all(color: ThemeProvider.gold, width: 3),
-                      borderRadius: BorderRadius.circular(18),
-                      boxShadow: const [
-                        BoxShadow(
-                          color: ThemeProvider.appColorShadow,
-                          blurRadius: 18,
-                        ),
-                      ],
-                    ),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(14),
-                      child: value.parser.haveLoggedIn()
-                          ? EliteNetworkImage(
-                              url: '${Environments.imageURL}${value.cover}',
-                            )
-                          : Image.asset('assets/images/placeholder.jpeg',
-                              fit: BoxFit.cover),
+    return GetBuilder<LanguagesController>(
+      builder: (locale) {
+        return GetBuilder<AccountController>(builder: (value) {
+          return Scaffold(
+            key: _scaffoldKey,
+            backgroundColor: ThemeProvider.backgroundColor,
+            drawer: const SideMenuScreen(),
+            body: ListView(
+              padding: const EdgeInsets.only(bottom: 100),
+              children: [
+                SafeArea(
+                  bottom: false,
+                  child: GetBuilder<CommonNotificationController>(
+                    builder: (notify) => EliteAppBar(
+                      onMenu: () => _scaffoldKey.currentState?.openDrawer(),
+                      onNotification: () =>
+                          Get.toNamed(AppRouter.getNotificatinRoutes()),
+                      notificationCount: notify.unreadCount,
                     ),
                   ),
-                  if (value.parser.haveLoggedIn())
-                    Positioned(
-                      right: 0,
-                      bottom: 0,
-                      child: GestureDetector(
-                        onTap: value.onEdit,
-                        child: Container(
-                          width: 32,
-                          height: 32,
-                          decoration: const BoxDecoration(
-                            color: ThemeProvider.gold,
-                            shape: BoxShape.circle,
-                          ),
-                          child: const Icon(Icons.edit, size: 16, color: Colors.black),
+                ),
+                const SizedBox(height: 12),
+                Center(
+                  child: Stack(
+                    children: [
+                      Container(
+                        width: 110,
+                        height: 110,
+                        padding: const EdgeInsets.all(3),
+                        decoration: BoxDecoration(
+                          border:
+                              Border.all(color: ThemeProvider.gold, width: 3),
+                          borderRadius: BorderRadius.circular(18),
+                          boxShadow: const [
+                            BoxShadow(
+                              color: ThemeProvider.appColorShadow,
+                              blurRadius: 18,
+                            ),
+                          ],
+                        ),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(14),
+                          child: value.parser.haveLoggedIn()
+                              ? EliteNetworkImage(
+                                  url:
+                                      '${Environments.imageURL}${value.cover}',
+                                )
+                              : Image.asset(
+                                  'assets/images/placeholder.jpeg',
+                                  fit: BoxFit.cover),
                         ),
                       ),
-                    ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 12),
-            Center(
-              child: Text(
-                value.parser.haveLoggedIn()
-                    ? '${value.firstName} ${value.lastName}'
-                    : 'Guest',
-                style: ThemeProvider.serif(size: 24),
-              ),
-            ),
-            if (value.parser.haveLoggedIn() && value.email.isNotEmpty)
-              Center(
-                child: Text(
-                  value.email,
-                  style: ThemeProvider.sans(
-                      size: 12, color: ThemeProvider.greyColor),
+                      if (value.parser.haveLoggedIn())
+                        Positioned(
+                          right: 0,
+                          bottom: 0,
+                          child: GestureDetector(
+                            onTap: value.onEdit,
+                            child: Container(
+                              width: 32,
+                              height: 32,
+                              decoration: const BoxDecoration(
+                                color: ThemeProvider.gold,
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(Icons.edit,
+                                  size: 16, color: Colors.black),
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
                 ),
-              ),
-            const SizedBox(height: 18),
-            if (!value.parser.haveLoggedIn())
-              _section('ACCOUNT', [
-                _row(Icons.login, 'Sign In / Sign Up', value.onLogin),
-              ]),
-            if (value.parser.haveLoggedIn()) ...[
-              _section('BOOKINGS', [
-                _row(Icons.calendar_today_outlined, 'My Appointments', () {
-                  Get.find<TabsController>().updateTabId(4);
-                }),
-                _row(Icons.history, 'My History', value.onProductOrder),
-              ]),
-              _section('OFFERS & REWARDS', [
-                _row(Icons.local_offer_outlined, 'Exclusive Coupons', () {
-                  Get.toNamed(AppRouter.getCouponRoutes());
-                }),
-                _row(Icons.discount_outlined, 'Shop Discounts', () {
-                  Get.toNamed(AppRouter.getTopOffersRoutes());
-                }),
-                _row(Icons.card_giftcard_outlined, 'Refer & Earn',
-                    value.onReferAndEarn),
-              ]),
-              _section('ACCOUNT MANAGEMENT', [
-                _row(Icons.person_outline, 'Personal Information', value.onEdit),
-                _row(Icons.lock_outline, 'Security & Password',
-                    value.onChangePassword),
-                _row(Icons.account_balance_wallet_outlined, 'Wallet',
-                    value.onWallet),
-                _row(Icons.location_on_outlined, 'Payment Methods',
-                    value.onAddress),
-                _row(Icons.chat_bubble_outline, 'Chats', value.onAccountChat),
-              ]),
-            ],
-            _section('SUPPORT & HELP', [
-              _row(Icons.support_agent_outlined, 'Help Center',
-                  () => value.onAppPages('Help'.tr, '6')),
-              _row(Icons.help_outline, 'Frequently Asked Questions',
-                  () => value.onAppPages('Frequently Asked Questions'.tr, '5')),
-              _row(Icons.chat_outlined, 'Priority VIP Support', _openWhatsApp),
-              if (value.parser.haveLoggedIn())
-                _row(Icons.delete_outline, 'Delete My Account',
-                    value.onDeleteAccount),
-            ]),
-            _section('LEGAL & INFORMATION', [
-              _row(Icons.privacy_tip_outlined, 'Privacy Policy',
+                const SizedBox(height: 12),
+                Center(
+                  child: Text(
+                    value.parser.haveLoggedIn()
+                        ? '${value.firstName} ${value.lastName}'
+                        : 'Guest'.tr,
+                    style: ThemeProvider.serif(size: 24),
+                  ),
+                ),
+                if (value.parser.haveLoggedIn() && value.email.isNotEmpty)
+                  Center(
+                    child: Text(
+                      value.email,
+                      style: ThemeProvider.sans(
+                          size: 12, color: ThemeProvider.greyColor),
+                    ),
+                  ),
+                const SizedBox(height: 18),
+                // Language + Country first so they are always visible
+                _section('PREFERENCES'.tr, [
+                  _row(
+                    Icons.translate,
+                    'Language'.tr,
+                    () => locale.showLocaleSettings(initialTab: 0),
+                    badge: locale.selectedLanguage.displayName,
+                  ),
+                  _row(
+                    Icons.public,
+                    'Country/Region'.tr,
+                    () => locale.showLocaleSettings(initialTab: 1),
+                    badge: locale.selectedCountryLabel,
+                  ),
+                ]),
+                if (!value.parser.haveLoggedIn())
+                  _section('ACCOUNT'.tr, [
+                    _row(Icons.login, 'Sign In / Sign Up'.tr, value.onLogin),
+                  ]),
+                if (value.parser.haveLoggedIn()) ...[
+                  _section('BOOKINGS'.tr, [
+                    _row(Icons.calendar_today_outlined, 'My Appointments'.tr,
+                        () {
+                      Get.find<TabsController>().updateTabId(4);
+                    }),
+                    _row(Icons.history, 'My History'.tr, value.onProductOrder),
+                  ]),
+                  _section('OFFERS & REWARDS'.tr, [
+                    _row(Icons.local_offer_outlined, 'Exclusive Coupons'.tr,
+                        () {
+                      Get.toNamed(AppRouter.getCouponRoutes());
+                    }),
+                    _row(Icons.discount_outlined, 'Shop Discounts'.tr, () {
+                      Get.toNamed(AppRouter.getTopOffersRoutes());
+                    }),
+                    _row(Icons.card_giftcard_outlined, 'Refer & Earn'.tr,
+                        value.onReferAndEarn),
+                  ]),
+                  _section('ACCOUNT MANAGEMENT'.tr, [
+                    _row(Icons.person_outline, 'Personal Information'.tr,
+                        value.onEdit),
+                    _row(Icons.lock_outline, 'Security & Password'.tr,
+                        value.onChangePassword),
+                    _row(Icons.account_balance_wallet_outlined, 'Wallet'.tr,
+                        value.onWallet),
+                    _row(Icons.location_on_outlined, 'Payment Methods'.tr,
+                        value.onAddress),
+                    _row(Icons.chat_bubble_outline, 'Chats'.tr,
+                        value.onAccountChat),
+                  ]),
+                ],
+                _section('SUPPORT & HELP'.tr, [
+                  _row(Icons.support_agent_outlined, 'Help Center'.tr,
+                      () => value.onAppPages('Help'.tr, '6')),
+                  _row(Icons.help_outline, 'Frequently Asked Questions'.tr,
+                      () => value.onAppPages(
+                          'Frequently Asked Questions'.tr, '5')),
+                  _row(Icons.chat_outlined, 'Priority VIP Support'.tr,
+                      _openWhatsApp),
+                  if (value.parser.haveLoggedIn())
+                    _row(Icons.delete_outline, 'Delete My Account'.tr,
+                        value.onDeleteAccount),
+                ]),
+                _section('LEGAL & INFORMATION'.tr, [
+              _row(Icons.privacy_tip_outlined, 'Privacy Policy'.tr,
                   () => value.onAppPages('Privacy Policy'.tr, '2')),
-              _row(Icons.info_outline, 'About Papa Bear',
+              _row(Icons.info_outline, 'About Papa Bear'.tr,
                   () => value.onAppPages('About us'.tr, '1')),
-              _row(Icons.gavel_outlined, 'Terms & Conditions',
+              _row(Icons.gavel_outlined, 'Terms & Conditions'.tr,
                   () => value.onAppPages('Terms & Conditions'.tr, '3')),
-              _row(Icons.settings_outlined, 'Settings', value.onLanguages),
-              _row(Icons.mail_outline, 'Contact Us', value.onContactUs),
+              _row(Icons.settings_outlined, 'Settings'.tr, value.onLanguages),
+              _row(Icons.mail_outline, 'Contact Us'.tr, value.onContactUs),
             ]),
             if (value.parser.haveLoggedIn())
               Padding(
@@ -168,7 +202,7 @@ class _AccountScreenState extends State<AccountScreen> {
                     ),
                   ),
                   child: Text(
-                    'Logout from VIP Portal',
+                    'Logout from VIP Portal'.tr,
                     style: ThemeProvider.sans(
                       size: 13,
                       weight: FontWeight.w600,
@@ -189,7 +223,9 @@ class _AccountScreenState extends State<AccountScreen> {
           ],
         ),
       );
-    });
+        });
+      },
+    );
   }
 
   Widget _section(String title, List<Widget> children) {
@@ -261,15 +297,14 @@ class _AccountScreenState extends State<AccountScreen> {
       AlertDialog(
         backgroundColor: ThemeProvider.surface,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Text('Logout', style: ThemeProvider.serif(size: 20)),
-        content: Text(
-          'Are you sure you want to logout from your account?',
+        title: Text('Logout'.tr, style: ThemeProvider.serif(size: 20)),
+        content: Text('Are you sure you want to logout from your account?'.tr,
           style: ThemeProvider.sans(size: 14, color: Colors.white70),
         ),
         actions: [
           TextButton(
             onPressed: () => Get.back(),
-            child: Text('Cancel',
+            child: Text('Cancel'.tr,
                 style: ThemeProvider.sans(color: ThemeProvider.greyColor)),
           ),
           ElevatedButton(
@@ -281,7 +316,7 @@ class _AccountScreenState extends State<AccountScreen> {
               backgroundColor: ThemeProvider.logoutRose,
               foregroundColor: Colors.black,
             ),
-            child: const Text('Logout'),
+            child: Text('Logout'.tr),
           ),
         ],
       ),

@@ -4,6 +4,7 @@ import 'package:jiffy/jiffy.dart';
 import 'package:salon_user/app/backend/models/appointment_model.dart';
 import 'package:salon_user/app/controller/add_review_controller.dart';
 import 'package:salon_user/app/controller/booking_controller.dart';
+import 'package:salon_user/app/controller/languages_controller.dart';
 import 'package:salon_user/app/controller/reschedule_slot_controller.dart';
 import 'package:salon_user/app/controller/tabs_controller.dart';
 import 'package:salon_user/app/env.dart';
@@ -21,12 +22,12 @@ class BookingScreen extends StatefulWidget {
 class _BookingScreenState extends State<BookingScreen> {
   String _title(AppointmentModel a) {
     if (a.items?.services?.isNotEmpty == true) {
-      return a.items!.services!.first.name ?? 'Appointment';
+      return a.items!.services!.first.name ?? 'Appointment'.tr;
     }
     if (a.items?.packages?.isNotEmpty == true) {
-      return a.items!.packages!.first.name ?? 'Appointment';
+      return a.items!.packages!.first.name ?? 'Appointment'.tr;
     }
-    return a.salonInfo?.name ?? 'Appointment';
+    return a.salonInfo?.name ?? 'Appointment'.tr;
   }
 
   String _cover(AppointmentModel a) {
@@ -45,7 +46,7 @@ class _BookingScreenState extends State<BookingScreen> {
       return '${a.ownerInfo!.firstName ?? ''} ${a.ownerInfo!.lastName ?? ''}'
           .trim();
     }
-    return 'Specialist';
+    return 'Specialist'.tr;
   }
 
   String _date(String? raw) {
@@ -59,72 +60,76 @@ class _BookingScreenState extends State<BookingScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return GetBuilder<BookingController>(
-      builder: (c) {
-        return Scaffold(
-          backgroundColor: ThemeProvider.backgroundColor,
-          appBar: EliteAppBar(
-            showBack: true,
-            title: 'My Appointments',
-            onMenu: () => Get.find<TabsController>().updateTabId(5),
-            onMore: c.parser.haveLoggedIn() ? c.getAppointmentById : null,
-          ),
-          body: !c.parser.haveLoggedIn()
-              ? _login(c)
-              : c.apiCalled == false
-                  ? const Center(
-                      child: CircularProgressIndicator(
-                          color: ThemeProvider.gold),
-                    )
-                  : ListView(
-                      padding: const EdgeInsets.fromLTRB(16, 8, 16, 100),
-                      children: [
-                        Text(
-                          'NEXT SESSIONS',
-                          style: ThemeProvider.sans(
-                            size: 11,
-                            color: ThemeProvider.gold,
-                            letterSpacing: 1.4,
-                          ),
-                        ),
-                        Text('Upcoming',
-                            style: ThemeProvider.serif(size: 28)),
-                        const SizedBox(height: 12),
-                        if (c.appointmentList.isEmpty)
-                          const EliteApiUnavailable()
-                        else
-                          ...c.appointmentList.map((a) => _upcoming(c, a)),
-                        const SizedBox(height: 18),
-                        Text(
-                          'RECORD OF EXCELLENCE',
-                          style: ThemeProvider.sans(
-                            size: 11,
-                            color: ThemeProvider.gold,
-                            letterSpacing: 1.4,
-                          ),
-                        ),
-                        Row(
+    return GetBuilder<LanguagesController>(
+      builder: (_) {
+        return GetBuilder<BookingController>(
+          builder: (c) {
+            return Scaffold(
+              backgroundColor: ThemeProvider.backgroundColor,
+              appBar: EliteAppBar(
+                showBack: true,
+                title: 'My Appointments'.tr,
+                onMenu: () => Get.find<TabsController>().updateTabId(5),
+                onMore: c.parser.haveLoggedIn() ? c.getAppointmentById : null,
+              ),
+              body: !c.parser.haveLoggedIn()
+                  ? _login(c)
+                  : c.apiCalled == false
+                      ? const Center(
+                          child: CircularProgressIndicator(
+                              color: ThemeProvider.gold),
+                        )
+                      : ListView(
+                          padding: const EdgeInsets.fromLTRB(16, 8, 16, 100),
                           children: [
-                            Expanded(
-                                child: Text('History',
-                                    style: ThemeProvider.serif(size: 28))),
-                            Text('Download Receipts',
-                                style: ThemeProvider.sans(
-                                    size: 12, color: ThemeProvider.gold)),
+                            Text(
+                              'NEXT SESSIONS'.tr,
+                              style: ThemeProvider.sans(
+                                size: 11,
+                                color: ThemeProvider.gold,
+                                letterSpacing: 1.4,
+                              ),
+                            ),
+                            Text('Upcoming'.tr,
+                                style: ThemeProvider.serif(size: 28)),
+                            const SizedBox(height: 12),
+                            if (c.appointmentList.isEmpty)
+                              const EliteApiUnavailable()
+                            else
+                              ...c.appointmentList.map((a) => _upcoming(c, a)),
+                            const SizedBox(height: 18),
+                            Text(
+                              'RECORD OF EXCELLENCE'.tr,
+                              style: ThemeProvider.sans(
+                                size: 11,
+                                color: ThemeProvider.gold,
+                                letterSpacing: 1.4,
+                              ),
+                            ),
+                            Row(
+                              children: [
+                                Expanded(
+                                    child: Text('History'.tr,
+                                        style: ThemeProvider.serif(size: 28))),
+                                Text('Download Receipts'.tr,
+                                    style: ThemeProvider.sans(
+                                        size: 12, color: ThemeProvider.gold)),
+                              ],
+                            ),
+                            const SizedBox(height: 12),
+                            EliteCard(
+                              child: c.appointmentListOld.isEmpty
+                                  ? const EliteApiUnavailable()
+                                  : Column(
+                                      children: c.appointmentListOld
+                                          .map((a) => _history(c, a))
+                                          .toList(),
+                                    ),
+                            ),
                           ],
                         ),
-                        const SizedBox(height: 12),
-                        EliteCard(
-                          child: c.appointmentListOld.isEmpty
-                              ? const EliteApiUnavailable()
-                              : Column(
-                                  children: c.appointmentListOld
-                                      .map((a) => _history(c, a))
-                                      .toList(),
-                                ),
-                        ),
-                      ],
-                    ),
+            );
+          },
         );
       },
     );
@@ -137,16 +142,17 @@ class _BookingScreenState extends State<BookingScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text('Access Your Appointments',
+            Text('Access Your Appointments'.tr,
                 style: ThemeProvider.serif(size: 22)),
             const SizedBox(height: 8),
             Text(
-              'Please log in to view your appointments.',
+              'Please log in to view your appointments.'.tr,
               style: ThemeProvider.sans(size: 13, color: Colors.white70),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 16),
-            EliteGoldButton(label: 'Login / Register', onTap: c.onLoginRoutes),
+            EliteGoldButton(
+                label: 'Login / Register'.tr, onTap: c.onLoginRoutes),
           ],
         ),
       ),
@@ -181,14 +187,14 @@ class _BookingScreenState extends State<BookingScreen> {
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Text(
-                    (c.statusName[a.status ?? 0]).toUpperCase(),
+                    (c.statusName[a.status ?? 0]).tr.toUpperCase(),
                     style: ThemeProvider.sans(
                         size: 9, color: ThemeProvider.gold, letterSpacing: 0.6),
                   ),
                 ),
               ],
             ),
-            Text('Specialist: ${_provider(a)}',
+            Text('${'Specialist'.tr}: ${_provider(a)}',
                 style: ThemeProvider.sans(
                     size: 12, color: ThemeProvider.greyColor)),
             const SizedBox(height: 8),
@@ -212,7 +218,7 @@ class _BookingScreenState extends State<BookingScreen> {
               children: [
                 Expanded(
                   child: EliteGoldButton(
-                    label: 'Reschedule',
+                    label: 'Reschedule'.tr,
                     onTap: () {
                       Get.delete<RescheduleSlotController>(force: true);
                       final uid = (a.salonId ?? 0) != 0
@@ -228,7 +234,7 @@ class _BookingScreenState extends State<BookingScreen> {
                 const SizedBox(width: 10),
                 Expanded(
                   child: EliteGoldButton(
-                    label: 'Cancel',
+                    label: 'Cancel'.tr,
                     outlined: true,
                     onTap: () => c.onAppointment(a.id as int),
                   ),
@@ -296,7 +302,7 @@ class _BookingScreenState extends State<BookingScreen> {
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Text(
-                    (c.statusName[a.status ?? 0]).toUpperCase(),
+                    (c.statusName[a.status ?? 0]).tr.toUpperCase(),
                     style: ThemeProvider.sans(
                       size: 9,
                       color: completed
@@ -321,7 +327,7 @@ class _BookingScreenState extends State<BookingScreen> {
                             : a.freelancerId.toString(),
                       ]);
                     },
-                    child: Text('WRITE REVIEW',
+                    child: Text('WRITE REVIEW'.tr,
                         style: ThemeProvider.sans(
                             size: 10, color: ThemeProvider.gold)),
                   ),

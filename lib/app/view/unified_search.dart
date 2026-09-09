@@ -1,6 +1,7 @@
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:salon_user/app/backend/models/salon_model.dart';
 import 'package:salon_user/app/controller/unified_search_controller.dart';
 import 'package:salon_user/app/env.dart';
 import 'package:salon_user/app/helper/router.dart';
@@ -126,7 +127,7 @@ class _UnifiedSearchScreenState extends State<UnifiedSearchScreen> {
                       decoration: InputDecoration(
                         prefixIcon: const Icon(Icons.search,
                             color: ThemeProvider.gold, size: 18),
-                        hintText: 'Search For Services...'.tr,
+                        hintText: 'Search shops, freelancers...'.tr,
                         hintStyle: ThemeProvider.sans(
                             size: 13, color: ThemeProvider.greyColor),
                         filled: true,
@@ -182,13 +183,13 @@ class _UnifiedSearchScreenState extends State<UnifiedSearchScreen> {
             child: Row(
               children: [
                 _modeButton(
-                  label: 'Shops',
+                  label: 'Shops'.tr,
                   selected: value.tabID.value == 0,
                   onTap: () => value.updateTabID(0),
                 ),
                 const SizedBox(width: 4),
                 _modeButton(
-                  label: 'Freelancers',
+                  label: 'Freelancers'.tr,
                   selected: value.tabID.value == 1,
                   onTap: () => value.updateTabID(1),
                 ),
@@ -205,12 +206,17 @@ class _UnifiedSearchScreenState extends State<UnifiedSearchScreen> {
                   ? _resultList(
                       banners: value.bannerList,
                       searched: value.hasSearched,
-                      empty: value.isEmptySearchSalon || value.salonList.isEmpty,
-                      children: value.salonList
+                      empty: value.isEmptySearchSalon ||
+                          value.filteredSalonList.isEmpty,
+                      children: value.filteredSalonList
                           .map((s) => _resultCard(
                                 cover: s.cover,
-                                title: s.serviceName ?? s.name ?? '',
-                                subtitle: s.name ?? '',
+                                title: s.name ?? '',
+                                subtitle: (s.serviceName != null &&
+                                        s.serviceName!.isNotEmpty &&
+                                        s.serviceName != s.name)
+                                    ? s.serviceName!
+                                    : 'Shop'.tr,
                                 address: s.address,
                                 distance: s.distance,
                                 duration: s.duration,
@@ -220,7 +226,6 @@ class _UnifiedSearchScreenState extends State<UnifiedSearchScreen> {
                                 price: s.price,
                                 offer: s.off,
                                 discount: s.discount,
-                                isPremium: s.isPremium == true,
                                 onTap: () => value.onServices(s.uid ?? 0),
                               ))
                           .toList(),
@@ -230,12 +235,16 @@ class _UnifiedSearchScreenState extends State<UnifiedSearchScreen> {
                       banners: value.bannerList,
                       searched: value.hasSearched,
                       empty: value.isEmptySearchFreelancer ||
-                          value.individualList.isEmpty,
-                      children: value.individualList
+                          value.filteredIndividualList.isEmpty,
+                      children: value.filteredIndividualList
                           .map((s) => _resultCard(
                                 cover: s.cover,
-                                title: s.serviceName ?? s.name ?? '',
-                                subtitle: s.name ?? '',
+                                title: s.name ?? '',
+                                subtitle: (s.serviceName != null &&
+                                        s.serviceName!.isNotEmpty &&
+                                        s.serviceName != s.name)
+                                    ? s.serviceName!
+                                    : 'Freelancer'.tr,
                                 address: s.address,
                                 distance: s.distance,
                                 duration: s.duration,
@@ -245,7 +254,6 @@ class _UnifiedSearchScreenState extends State<UnifiedSearchScreen> {
                                 price: s.price,
                                 offer: s.off,
                                 discount: s.discount,
-                                isPremium: s.isPremium == true,
                                 onTap: () => value.onSpecialist(s.uid ?? 0),
                               ))
                           .toList(),
@@ -305,9 +313,15 @@ class _UnifiedSearchScreenState extends State<UnifiedSearchScreen> {
                 Icon(Icons.search_off, size: 48, color: Colors.grey.shade500),
                 const SizedBox(height: 12),
                 Text(
-                  'Result Not Found',
+                  'No shops or freelancers found'.tr,
                   style: ThemeProvider.sans(
                       size: 16, weight: FontWeight.w600, color: Colors.white70),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  'Try another shop or freelancer name'.tr,
+                  style: ThemeProvider.sans(
+                      size: 12, color: ThemeProvider.greyColor),
                 ),
               ],
             ),
@@ -359,7 +373,6 @@ class _UnifiedSearchScreenState extends State<UnifiedSearchScreen> {
     required double? price,
     required double? offer,
     required double? discount,
-    required bool isPremium,
     required VoidCallback onTap,
   }) {
     final original = price ?? 0;
@@ -492,21 +505,15 @@ class _UnifiedSearchScreenState extends State<UnifiedSearchScreen> {
                               color: Colors.white,
                             ),
                           ),
-                        Text(
-                          'Free cancellation',
+                        Text('Free cancellation'.tr,
                           style: ThemeProvider.sans(
                               size: 10, color: ThemeProvider.greenColor),
                         ),
-                        Text(
-                          isPremium
-                              ? 'No payment needed, Pay at shop'
-                              : 'Pay at shop not available',
+                        Text('No payment needed, Pay at shop'.tr,
                           textAlign: TextAlign.right,
                           style: ThemeProvider.sans(
                             size: 10,
-                            color: isPremium
-                                ? ThemeProvider.greenColor
-                                : ThemeProvider.redColor,
+                            color: ThemeProvider.greenColor,
                           ),
                         ),
                       ],
@@ -526,167 +533,123 @@ class _UnifiedSearchScreenState extends State<UnifiedSearchScreen> {
       return const Center(
           child: CircularProgressIndicator(color: ThemeProvider.gold));
     }
-    final hero = value.salonList.isNotEmpty
-        ? value.salonList.first.cover
-        : (value.individualList.isNotEmpty
-            ? value.individualList.first.cover
-            : '');
+
+    // Deduplicate shops by uid so each partner appears once with full card details.
+    final shops = <SalonModel>[];
+    final seen = <int>{};
+    for (final s in value.salonList) {
+      final id = s.uid ?? 0;
+      if (id <= 0 || seen.contains(id)) continue;
+      seen.add(id);
+      shops.add(s);
+    }
+
+    if (shops.isEmpty && value.individualList.isEmpty) {
+      return const EliteApiUnavailable();
+    }
+
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
       children: [
-        ClipRRect(
-          borderRadius: BorderRadius.circular(14),
-          child: Stack(
-            children: [
-              EliteNetworkImage(
-                url: '${Environments.imageURL}$hero',
-                height: 210,
-                width: double.infinity,
-              ),
-              Container(
-                height: 210,
-                width: double.infinity,
-                decoration: const BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [Colors.transparent, Color(0xE60D0D0D)],
-                  ),
-                ),
-                padding: const EdgeInsets.all(16),
-                alignment: Alignment.bottomLeft,
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'PREMIER CATEGORY',
-                      style: ThemeProvider.sans(
-                        size: 10,
-                        color: ThemeProvider.gold,
-                        letterSpacing: 1.4,
-                      ),
-                    ),
-                    Text(
-                      'The Art of Restoration',
-                      style: ThemeProvider.serif(
-                          size: 24, color: ThemeProvider.gold),
-                    ),
-                    Text(
-                      'A curated alchemy of rare botanical extracts and artisanal techniques designed for the modern elite.',
-                      style: ThemeProvider.sans(
-                          size: 12, color: Colors.white70),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 18),
         Row(
           children: [
             Expanded(
-              child: Text('Curated Treatments',
+              child: Text('Featured Shops'.tr,
                   style: ThemeProvider.serif(size: 20)),
             ),
             Text(
-              '${value.salonList.length} Services Available',
+              '${shops.length} ${'Shops Available'.tr}',
               style: ThemeProvider.sans(size: 11, color: ThemeProvider.gold),
             ),
           ],
         ),
-        const SizedBox(height: 10),
-        ...value.salonList.map((s) => _treatment(value, s)),
-        if (value.salonList.length > 1) ...[
-          const SizedBox(height: 8),
-          Text('Shop Selection', style: ThemeProvider.serif(size: 20)),
+        const SizedBox(height: 12),
+        ...shops.map((s) => _shopCard(value, s)),
+        if (value.individualList.isNotEmpty) ...[
+          const SizedBox(height: 16),
+          Text('Expert Freelancers'.tr, style: ThemeProvider.serif(size: 20)),
           const SizedBox(height: 10),
-          SizedBox(
-            height: 88,
-            child: ListView.separated(
-              scrollDirection: Axis.horizontal,
-              itemCount: value.salonList.take(6).length,
-              separatorBuilder: (_, __) => const SizedBox(width: 10),
-              itemBuilder: (_, i) {
-                final s = value.salonList[i];
-                return GestureDetector(
-                  onTap: () => value.onServices(s.uid ?? 0),
-                  child: EliteCard(
-                    margin: EdgeInsets.zero,
-                    child: SizedBox(
-                      width: 130,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(s.name ?? '',
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: ThemeProvider.serif(size: 13)),
-                          Text(
-                            elitePrice('left', '₹', s.off ?? s.price),
-                            style: ThemeProvider.sans(
-                                size: 12, color: ThemeProvider.gold),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                );
-              },
-            ),
-          ),
+          ...value.individualList.map((s) => _expert(value, s)),
         ],
-        const SizedBox(height: 16),
-        Text('Expert Freelancers', style: ThemeProvider.serif(size: 20)),
-        const SizedBox(height: 10),
-        ...value.individualList.map((s) => _expert(value, s)),
       ],
     );
   }
 
-  Widget _treatment(UnifiedSearchController value, dynamic s) {
+  Widget _shopCard(UnifiedSearchController value, SalonModel s) {
     return GestureDetector(
       onTap: () => value.onServices(s.uid ?? 0),
-      child: EliteCard(
-        child: Row(
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 14),
+        padding: const EdgeInsets.all(10),
+        decoration: BoxDecoration(
+          color: ThemeProvider.surface,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: ThemeProvider.gold.withValues(alpha: 0.25)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(s.serviceName ?? s.name ?? '',
-                      style: ThemeProvider.serif(size: 16)),
-                  const SizedBox(height: 4),
-                  Row(
-                    children: [
-                      const Icon(Icons.access_time,
-                          size: 13, color: Colors.white70),
-                      Text(' ${s.duration ?? 60} min',
-                          style: ThemeProvider.sans(
-                              size: 12, color: Colors.white70)),
-                      const SizedBox(width: 8),
-                      Text('·', style: ThemeProvider.sans(size: 12)),
-                      const SizedBox(width: 8),
-                      Text(
-                        elitePrice('left', '₹', s.off ?? s.price),
-                        style: ThemeProvider.sans(
-                            size: 12, color: ThemeProvider.gold),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
+            EliteNetworkImage(
+              url: _imageUrl(s.cover),
+              height: 150,
+              width: double.infinity,
+              radius: BorderRadius.circular(10),
             ),
-            Container(
-              width: 32,
-              height: 32,
-              decoration: BoxDecoration(
-                border: Border.all(color: ThemeProvider.gold),
-                borderRadius: BorderRadius.circular(6),
+            const SizedBox(height: 10),
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    s.name ?? '',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: ThemeProvider.serif(
+                        size: 16, color: ThemeProvider.gold),
+                  ),
+                ),
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: Colors.white10,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    '★ ${(s.rating ?? 0).toStringAsFixed(1)}',
+                    style: ThemeProvider.sans(size: 11),
+                  ),
+                ),
+              ],
+            ),
+            if ((s.address ?? '').isNotEmpty) ...[
+              const SizedBox(height: 4),
+              Text(
+                s.address!,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: ThemeProvider.sans(
+                    size: 11, color: ThemeProvider.greyColor),
               ),
-              child: const Icon(Icons.chevron_right,
-                  color: ThemeProvider.gold, size: 18),
+            ],
+            if ((s.distance ?? 0) > 0) ...[
+              const SizedBox(height: 4),
+              Text(
+                '${(s.distance ?? 0).toStringAsFixed(1)} ${'mi away'.tr}',
+                style: ThemeProvider.sans(
+                    size: 11, color: ThemeProvider.gold),
+              ),
+            ],
+            const SizedBox(height: 10),
+            Align(
+              alignment: Alignment.centerRight,
+              child: Text(
+                'VIEW SHOP  →'.tr,
+                style: ThemeProvider.sans(
+                  size: 12,
+                  weight: FontWeight.w700,
+                  color: ThemeProvider.gold,
+                ),
+              ),
             ),
           ],
         ),

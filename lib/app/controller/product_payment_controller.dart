@@ -13,6 +13,8 @@ import 'package:salon_user/app/backend/models/owner_user_model.dart';
 import 'package:salon_user/app/backend/models/payment_models.dart';
 import 'package:salon_user/app/backend/models/products_model.dart';
 import 'package:salon_user/app/backend/models/salon_details_model.dart';
+import 'package:salon_user/app/backend/models/pricing_model.dart';
+import 'package:salon_user/app/backend/parse/pricing_parse.dart';
 import 'package:salon_user/app/backend/parse/product_payment_parse.dart';
 import 'package:salon_user/app/controller/address_list_controller.dart';
 import 'package:salon_user/app/controller/coupon_controller.dart';
@@ -101,6 +103,9 @@ class ProductPaymentController extends GetxController implements GetxService {
   double balance = 0.0;
   double walletDiscount = 0.0;
   double taxAmount = 0.0;
+  double taxableValue = 0.0;
+  bool taxInclusive = true;
+  PricingOrderFields? orderFields;
 
   late Razorpay _razorpay;
 
@@ -443,44 +448,69 @@ class ProductPaymentController extends GetxController implements GetxService {
   }
 
   void calculateAllCharge() {
-    taxAmount = Get.find<ProductCartController>().totalPrice *
-        //  (Get.find<ProductCartController>().orderTax / 100);
-        (18 / 100); // hardcoded
-
-    double totalPrice = Get.find<ProductCartController>().totalPrice +
-        taxAmount +
-        //  Get.find<ProductCartController>().serviceCharge +
-        deliveryPrice;
+    _discount = 0;
     if (_selectedCoupon.discount != null && _selectedCoupon.discount != 0) {
       double percentage(numFirst, per) {
         return (numFirst / 100) * per;
       }
 
-      _discount = percentage(Get.find<ProductCartController>().totalPrice,
-          _selectedCoupon.discount); // null
-      if (_discount > _selectedCoupon.upto!) {
+      _discount = percentage(
+        Get.find<ProductCartController>().totalPrice,
+        _selectedCoupon.discount,
+      );
+      if (_discount > (_selectedCoupon.upto ?? _discount)) {
         _discount = _selectedCoupon.upto!;
       }
     }
-    walletDiscount = balance;
-    if (isWalletChecked == true) {
-      if (totalPrice <= walletDiscount) {
-        walletDiscount = totalPrice;
-        totalPrice = totalPrice - walletDiscount;
-      } else {
-        totalPrice = totalPrice - walletDiscount;
-      }
-    } else {
-      if (totalPrice <= discount) {
-        _discount = totalPrice;
-        totalPrice = totalPrice - discount;
-      } else {
-        totalPrice = totalPrice - discount;
-      }
+
+    walletDiscount = isWalletChecked ? balance : 0;
+    refreshPricingFromApi();
+  }
+
+  Future<void> refreshPricingFromApi() async {
+    if (!Get.isRegistered<PricingParser>()) {
+      _applyLocalPricingFallback();
+      update();
+      return;
     }
-    debugPrint('grand total $totalPrice');
-    _grandTotal = double.parse((totalPrice).toStringAsFixed(2));
+
+    final result = await Get.find<PricingParser>().calculateProductOrder(
+      itemsAmount: Get.find<ProductCartController>().totalPrice,
+      discount: discount,
+      deliveryCharge: deliveryPrice,
+      walletAmount: isWalletChecked ? walletDiscount : 0,
+    );
+
+    if (result.success && result.data != null) {
+      final data = result.data!;
+      taxAmount = data.tax;
+      taxableValue = data.taxableValue;
+      taxInclusive = data.taxInclusive;
+      orderFields = data.orderFields;
+      _grandTotal = data.grandTotal;
+    } else {
+      _applyLocalPricingFallback();
+    }
     update();
+  }
+
+  void _applyLocalPricingFallback() {
+    double totalPrice =
+        Get.find<ProductCartController>().totalPrice + deliveryPrice;
+
+    if (!isWalletChecked) {
+      totalPrice -= discount;
+    } else if (totalPrice <= walletDiscount) {
+      walletDiscount = totalPrice;
+      totalPrice = 0;
+    } else {
+      totalPrice -= walletDiscount;
+    }
+
+    taxAmount = 0;
+    taxableValue = totalPrice;
+    orderFields = null;
+    _grandTotal = double.parse(totalPrice.toStringAsFixed(2));
   }
 
   void updateStatus() {
@@ -649,6 +679,7 @@ class ProductPaymentController extends GetxController implements GetxService {
   }
 
   Future<void> createOrder({String? transactionId}) async {
+    await refreshPricingFromApi();
     Get.dialog(
       SimpleDialog(
         children: [
@@ -675,23 +706,28 @@ class ProductPaymentController extends GetxController implements GetxService {
       barrierDismissible: false,
     );
 
+    final cart = Get.find<ProductCartController>();
+    final orderTotal = orderFields?.total ?? cart.totalPrice;
+    final orderTax = orderFields?.tax ?? taxAmount;
+    final orderGrandTotal = orderFields?.grandTotal ?? grandTotal;
+
     var param = {
       "uid": parser.getUID(),
       "freelancer_id": ownerType == 'individual'
-          ? Get.find<ProductCartController>().savedInCart[0].freelacerId
+          ? cart.savedInCart[0].freelacerId
           : 0,
       "salon_id": ownerType == 'salon'
-          ? Get.find<ProductCartController>().savedInCart[0].freelacerId
+          ? cart.savedInCart[0].freelacerId
           : 0,
       "date_time": Jiffy.now().format(pattern: 'yyyy-MM-dd'),
       "paid_method": paymentId,
       "order_to": "home",
-      "orders": jsonEncode(Get.find<ProductCartController>().savedInCart),
+      "orders": jsonEncode(cart.savedInCart),
       "notes": notesEditor.text.isNotEmpty ? notesEditor.text : 'NA',
       "address": jsonEncode(addressInfo),
-      "total": Get.find<ProductCartController>().totalPrice,
-      "tax": Get.find<ProductCartController>().taxAmount,
-      "grand_total": grandTotal,
+      "total": orderTotal,
+      "tax": orderTax,
+      "grand_total": orderGrandTotal,
       "discount": discount,
       "driver_id": 0,
       "delivery_charge": deliveryPrice,

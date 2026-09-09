@@ -1,77 +1,95 @@
 PODS:
   - connectivity_plus (0.0.1):
     - FlutterMacOS
-    - ReachabilitySwift
   - file_selector_macos (0.0.1):
     - FlutterMacOS
-  - Firebase/CoreOnly (10.10.0):
-    - FirebaseCore (= 10.10.0)
-  - Firebase/Messaging (10.10.0):
+  - Firebase/CoreOnly (12.4.0):
+    - FirebaseCore (~> 12.4.0)
+  - Firebase/Messaging (12.4.0):
     - Firebase/CoreOnly
-    - FirebaseMessaging (~> 10.10.0)
-  - firebase_core (2.14.0):
-    - Firebase/CoreOnly (~> 10.10.0)
+    - FirebaseMessaging (~> 12.4.0)
+  - firebase_core (4.2.1):
+    - Firebase/CoreOnly (~> 12.4.0)
     - FlutterMacOS
-  - firebase_messaging (14.6.4):
-    - Firebase/CoreOnly (~> 10.10.0)
-    - Firebase/Messaging (~> 10.10.0)
+  - firebase_messaging (16.0.4):
+    - Firebase/CoreOnly (~> 12.4.0)
+    - Firebase/Messaging (~> 12.4.0)
     - firebase_core
     - FlutterMacOS
-  - FirebaseCore (10.10.0):
-    - FirebaseCoreInternal (~> 10.0)
-    - GoogleUtilities/Environment (~> 7.8)
-    - GoogleUtilities/Logger (~> 7.8)
-  - FirebaseCoreInternal (10.17.0):
-    - "GoogleUtilities/NSData+zlib (~> 7.8)"
-  - FirebaseInstallations (10.17.0):
-    - FirebaseCore (~> 10.0)
-    - GoogleUtilities/Environment (~> 7.8)
-    - GoogleUtilities/UserDefaults (~> 7.8)
-    - PromisesObjC (~> 2.1)
-  - FirebaseMessaging (10.10.0):
-    - FirebaseCore (~> 10.0)
-    - FirebaseInstallations (~> 10.0)
-    - GoogleDataTransport (~> 9.2)
-    - GoogleUtilities/AppDelegateSwizzler (~> 7.8)
-    - GoogleUtilities/Environment (~> 7.8)
-    - GoogleUtilities/Reachability (~> 7.8)
-    - GoogleUtilities/UserDefaults (~> 7.8)
-    - nanopb (< 2.30910.0, >= 2.30908.0)
+  - FirebaseCore (12.4.0):
+    - FirebaseCoreInternal (~> 12.4.0)
+    - GoogleUtilities/Environment (~> 8.1)
+    - GoogleUtilities/Logger (~> 8.1)
+  - FirebaseCoreInternal (12.4.0):
+    - "GoogleUtilities/NSData+zlib (~> 8.1)"
+  - FirebaseInstallations (12.4.0):
+    - FirebaseCore (~> 12.4.0)
+    - GoogleUtilities/Environment (~> 8.1)
+    - GoogleUtilities/UserDefaults (~> 8.1)
+    - PromisesObjC (~> 2.4)
+  - FirebaseMessaging (12.4.0):
+    - FirebaseCore (~> 12.4.0)
+    - FirebaseInstallations (~> 12.4.0)
+    - GoogleDataTransport (~> 10.1)
+    - GoogleUtilities/AppDelegateSwizzler (~> 8.1)
+    - GoogleUtilities/Environment (~> 8.1)
+    - GoogleUtilities/Reachability (~> 8.1)
+    - GoogleUtilities/UserDefaults (~> 8.1)
+    - nanopb (~> 3.30910.0)
   - FlutterMacOS (1.0.0)
   - geolocator_apple (1.2.0):
+    - Flutter
     - FlutterMacOS
-  - GoogleDataTransport (9.2.5):
-    - GoogleUtilities/Environment (~> 7.7)
-    - nanopb (< 2.30910.0, >= 2.30908.0)
-    - PromisesObjC (< 3.0, >= 1.2)
-  - GoogleUtilities/AppDelegateSwizzler (7.11.6):
+  - GoogleDataTransport (10.1.1):
+    - nanopb (~> 3.30910.0)
+    - PromisesObjC (~> 2.4)
+  - GoogleUtilities/AppDelegateSwizzler (8.1.3):
     - GoogleUtilities/Environment
     - GoogleUtilities/Logger
     - GoogleUtilities/Network
-  - GoogleUtilities/Environment (7.11.6):
-    - PromisesObjC (< 3.0, >= 1.2)
-  - GoogleUtilities/Logger (7.11.6):
+    - GoogleUtilities/Privacy
+  - GoogleUtilities/Environment (8.1.3):
+    - GoogleUtilities/Privacy
+  - GoogleUtilities/Logger (8.1.3):
     - GoogleUtilities/Environment
-  - GoogleUtilities/Network (7.11.6):
+    - GoogleUtilities/Privacy
+  - GoogleUtilities/Network (8.1.3):
     - GoogleUtilities/Logger
     - "GoogleUtilities/NSData+zlib"
+    - GoogleUtilities/Privacy
     - GoogleUtilities/Reachability
-  - "GoogleUtilities/NSData+zlib (7.11.6)"
-  - GoogleUtilities/Reachability (7.11.6):
+  - "GoogleUtilities/NSData+zlib (8.1.3)":
+    - GoogleUtilities/Privacy
+  - GoogleUtilities/Privacy (8.1.3)
+  - GoogleUtilities/Reachability (8.1.3):
     - GoogleUtilities/Logger
-  - GoogleUtilities/UserDefaults (7.11.6):
+    - GoogleUtilities/Privacy
+  - GoogleUtilities/UserDefaults (8.1.3):
     - GoogleUtilities/Logger
-  - nanopb (2.30909.1):
-    - nanopb/decode (= 2.30909.1)
-    - nanopb/encode (= 2.30909.1)
-  - nanopb/decode (2.30909.1)
-  - nanopb/encode (2.30909.1)
-  - PromisesObjC (2.3.1)
-  - ReachabilitySwift (5.0.0)
+    - GoogleUtilities/Privacy
+  - mobile_scanner (6.0.2):
+    - FlutterMacOS
+  - nanopb (3.30910.0):
+    - nanopb/decode (= 3.30910.0)
+    - nanopb/encode (= 3.30910.0)
+  - nanopb/decode (3.30910.0)
+  - nanopb/encode (3.30910.0)
+  - path_provider_foundation (0.0.1):
+    - Flutter
+    - FlutterMacOS
+  - PromisesObjC (2.4.1)
+  - share_plus (0.0.1):
+    - FlutterMacOS
   - shared_preferences_foundation (0.0.1):
     - Flutter
     - FlutterMacOS
+  - sqflite_darwin (0.0.4):
+    - Flutter
+    - FlutterMacOS
   - url_launcher_macos (0.0.1):
+    - FlutterMacOS
+  - webview_flutter_wkwebview (0.0.1):
+    - Flutter
     - FlutterMacOS
 
 DEPENDENCIES:
@@ -80,9 +98,14 @@ DEPENDENCIES:
   - firebase_core (from `Flutter/ephemeral/.symlinks/plugins/firebase_core/macos`)
   - firebase_messaging (from `Flutter/ephemeral/.symlinks/plugins/firebase_messaging/macos`)
   - FlutterMacOS (from `Flutter/ephemeral`)
-  - geolocator_apple (from `Flutter/ephemeral/.symlinks/plugins/geolocator_apple/macos`)
+  - geolocator_apple (from `Flutter/ephemeral/.symlinks/plugins/geolocator_apple/darwin`)
+  - mobile_scanner (from `Flutter/ephemeral/.symlinks/plugins/mobile_scanner/macos`)
+  - path_provider_foundation (from `Flutter/ephemeral/.symlinks/plugins/path_provider_foundation/darwin`)
+  - share_plus (from `Flutter/ephemeral/.symlinks/plugins/share_plus/macos`)
   - shared_preferences_foundation (from `Flutter/ephemeral/.symlinks/plugins/shared_preferences_foundation/darwin`)
+  - sqflite_darwin (from `Flutter/ephemeral/.symlinks/plugins/sqflite_darwin/darwin`)
   - url_launcher_macos (from `Flutter/ephemeral/.symlinks/plugins/url_launcher_macos/macos`)
+  - webview_flutter_wkwebview (from `Flutter/ephemeral/.symlinks/plugins/webview_flutter_wkwebview/darwin`)
 
 SPEC REPOS:
   trunk:
@@ -95,7 +118,6 @@ SPEC REPOS:
     - GoogleUtilities
     - nanopb
     - PromisesObjC
-    - ReachabilitySwift
 
 EXTERNAL SOURCES:
   connectivity_plus:
@@ -109,32 +131,46 @@ EXTERNAL SOURCES:
   FlutterMacOS:
     :path: Flutter/ephemeral
   geolocator_apple:
-    :path: Flutter/ephemeral/.symlinks/plugins/geolocator_apple/macos
+    :path: Flutter/ephemeral/.symlinks/plugins/geolocator_apple/darwin
+  mobile_scanner:
+    :path: Flutter/ephemeral/.symlinks/plugins/mobile_scanner/macos
+  path_provider_foundation:
+    :path: Flutter/ephemeral/.symlinks/plugins/path_provider_foundation/darwin
+  share_plus:
+    :path: Flutter/ephemeral/.symlinks/plugins/share_plus/macos
   shared_preferences_foundation:
     :path: Flutter/ephemeral/.symlinks/plugins/shared_preferences_foundation/darwin
+  sqflite_darwin:
+    :path: Flutter/ephemeral/.symlinks/plugins/sqflite_darwin/darwin
   url_launcher_macos:
     :path: Flutter/ephemeral/.symlinks/plugins/url_launcher_macos/macos
+  webview_flutter_wkwebview:
+    :path: Flutter/ephemeral/.symlinks/plugins/webview_flutter_wkwebview/darwin
 
 SPEC CHECKSUMS:
-  connectivity_plus: 18d3c32514c886e046de60e9c13895109866c747
-  file_selector_macos: 468fb6b81fac7c0e88d71317f3eec34c3b008ff9
-  Firebase: facd334e557a979bd03a0b58d90fd56b52b8aba0
-  firebase_core: 33b1cfa8f29afeada24bacee69c3b27e7292346b
-  firebase_messaging: ce592d1f2c70c250cfddb6710bc00bc28096c79e
-  FirebaseCore: d027ff503d37edb78db98429b11f580a24a7df2a
-  FirebaseCoreInternal: 2cf9202e226e3f78d2bf6d56c472686b935bfb7f
-  FirebaseInstallations: 9387bf15abfc69a714f54e54f74a251264fdb79b
-  FirebaseMessaging: 8a3b9a8b98ce72a42d22e69865cf662e38d2d6f5
-  FlutterMacOS: 8f6f14fa908a6fb3fba0cd85dbd81ec4b251fb24
-  geolocator_apple: 72a78ae3f3e4ec0db62117bd93e34523f5011d58
-  GoogleDataTransport: 54dee9d48d14580407f8f5fbf2f496e92437a2f2
-  GoogleUtilities: 202e7a9f5128accd11160fb9c19612de1911aa19
-  nanopb: d4d75c12cd1316f4a64e3c6963f879ecd4b5e0d5
-  PromisesObjC: c50d2056b5253dadbd6c2bea79b0674bd5a52fa4
-  ReachabilitySwift: 985039c6f7b23a1da463388634119492ff86c825
-  shared_preferences_foundation: 5b919d13b803cadd15ed2dc053125c68730e5126
-  url_launcher_macos: 5335912b679c073563f29d89d33d10d459f95451
+  connectivity_plus: 4adf20a405e25b42b9c9f87feff8f4b6fde18a4e
+  file_selector_macos: 9e9e068e90ebee155097d00e89ae91edb2374db7
+  Firebase: f07b15ae5a6ec0f93713e30b923d9970d144af3e
+  firebase_core: e054894ab56033ef9bcbe2d9eac9395e5306e2fc
+  firebase_messaging: 373ac3a56e5aa37bb9aff4127f700aa5973c1168
+  FirebaseCore: bb595f3114953664e3c1dc032f008a244147cfd3
+  FirebaseCoreInternal: d7f5a043c2cd01a08103ab586587c1468047bca6
+  FirebaseInstallations: ae9f4902cb5bf1d0c5eaa31ec1f4e5495a0714e2
+  FirebaseMessaging: d33971b7bb252745ea6cd31ab190d1a1df4b8ed5
+  FlutterMacOS: d0db08ddef1a9af05a5ec4b724367152bb0500b1
+  geolocator_apple: ab36aa0e8b7d7a2d7639b3b4e48308394e8cef5e
+  GoogleDataTransport: a24e58982ab3ba2f64d79613e027fe7f57e88539
+  GoogleUtilities: 4e0c2ad9fa0d0d18b5c4df8bf57b461cba35b0bb
+  mobile_scanner: 0e365ed56cad24f28c0fd858ca04edefb40dfac3
+  nanopb: fad817b59e0457d11a5dfbde799381cd727c1275
+  path_provider_foundation: bb55f6dbba17d0dccd6737fe6f7f34fbd0376880
+  PromisesObjC: 752c3227f599e3467650e47ea36f433eeb10c273
+  share_plus: 510bf0af1a42cd602274b4629920c9649c52f4cc
+  shared_preferences_foundation: 7036424c3d8ec98dfe75ff1667cb0cd531ec82bb
+  sqflite_darwin: 20b2a3a3b70e43edae938624ce550a3cbf66a3d0
+  url_launcher_macos: f87a979182d112f911de6820aefddaf56ee9fbfd
+  webview_flutter_wkwebview: 8ebf4fded22593026f7dbff1fbff31ea98573c8d
 
-PODFILE CHECKSUM: 236401fc2c932af29a9fcf0e97baeeb2d750d367
+PODFILE CHECKSUM: 9ebaf0ce3d369aaa26a9ea0e159195ed94724cf3
 
-COCOAPODS: 1.13.0
+COCOAPODS: 1.17.0

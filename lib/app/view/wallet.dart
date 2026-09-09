@@ -21,7 +21,7 @@ class _WalletScreenState extends State<WalletScreen> {
           backgroundColor: ThemeProvider.backgroundColor,
           appBar: EliteAppBar(
             showBack: true,
-            title: 'Redeem Rewards',
+            title: 'Redeem Rewards'.tr,
             onMore: () {},
           ),
           body: value.apiCalled == false
@@ -34,8 +34,7 @@ class _WalletScreenState extends State<WalletScreen> {
                     EliteCard(
                       child: Column(
                         children: [
-                          Text(
-                            'AVAILABLE BALANCE',
+                          Text('AVAILABLE BALANCE'.tr,
                             style: ThemeProvider.sans(
                               size: 11,
                               weight: FontWeight.w700,
@@ -50,8 +49,10 @@ class _WalletScreenState extends State<WalletScreen> {
                             children: [
                               Text(
                                 NumberFormat('#,###').format(value.amount.round()),
-                                style: ThemeProvider.serif(
-                                    size: 36, color: ThemeProvider.gold),
+                                style: ThemeProvider.price(
+                                    size: 36,
+                                    weight: FontWeight.w700,
+                                    color: ThemeProvider.gold),
                               ),
                               const SizedBox(width: 8),
                               Padding(
@@ -75,8 +76,7 @@ class _WalletScreenState extends State<WalletScreen> {
                         ],
                       ),
                     ),
-                    Text(
-                      'HISTORY',
+                    Text('HISTORY'.tr,
                       style: ThemeProvider.sans(
                         size: 11,
                         weight: FontWeight.w700,

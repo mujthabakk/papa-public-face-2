@@ -15,7 +15,8 @@ class ApiChecker {
     }
     final message = ApiBody.message(response);
     if (message != null && message.isNotEmpty) {
-      showToast(message.tr);
+      // Backend already returns localized message when lang is set.
+      showToast(message);
       return;
     }
     final code = response.statusCode ?? 0;

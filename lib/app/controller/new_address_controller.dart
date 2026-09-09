@@ -1163,7 +1163,7 @@ class NewAddressController extends GetxController implements GetxService {
     );
 
     // Move camera to new position if map is ready
-    if (isMapReady.value && mapController != null) {
+    if (isMapReady.value) {
       try {
         mapController.animateCamera(
           CameraUpdate.newLatLngZoom(newPosition, 16.0),

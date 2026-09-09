@@ -24,7 +24,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         backgroundColor: ThemeProvider.backgroundColor,
         appBar: EliteAppBar(
           showBack: true,
-          title: 'Personal Information',
+          title: 'Personal Information'.tr,
           onMore: () {},
         ),
         body: value.apiCalled == false
@@ -33,15 +33,15 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               )
             : ListView(
                 padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
-                children: [
+                  children: [
                   Center(
                     child: Stack(
-                      children: [
-                        Container(
+            children: [
+              Container(
                           width: 110,
                           height: 110,
                           padding: const EdgeInsets.all(3),
-                          decoration: BoxDecoration(
+                decoration: BoxDecoration(
                             border: Border.all(
                                 color: ThemeProvider.gold, width: 2),
                             borderRadius: BorderRadius.circular(18),
@@ -51,18 +51,18 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                             child: EliteNetworkImage(
                               url:
                                   '${Environments.imageURL}${value.cover}',
-                            ),
-                          ),
-                        ),
-                        Positioned(
+                  ),
+                ),
+              ),
+              Positioned(
                           right: 0,
-                          bottom: 0,
-                          child: GestureDetector(
-                            onTap: () => _showImagePicker(value),
-                            child: Container(
+                bottom: 0,
+                child: GestureDetector(
+                  onTap: () => _showImagePicker(value),
+                  child: Container(
                               width: 32,
                               height: 32,
-                              decoration: BoxDecoration(
+                    decoration: BoxDecoration(
                                 color: ThemeProvider.gold,
                                 borderRadius: BorderRadius.circular(8),
                               ),
@@ -97,9 +97,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                         style: ThemeProvider.sans(size: 14),
                         decoration: _input('Last name'),
                         onChanged: (_) => setState(() {}),
-                      ),
-                    ),
                   ),
+                ),
+              ),
                   _field(
                     'EMAIL ADDRESS',
                     Icons.mail_outline,
@@ -113,8 +113,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                   _field(
                     'PHONE NUMBER',
                     Icons.phone_outlined,
-                    Row(
-                      children: [
+          Row(
+            children: [
                         CountryCodePicker(
                           onChanged: (code) {
                             value.saveCountryCode(
@@ -129,16 +129,16 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                           dialogBackgroundColor: ThemeProvider.surface,
                           barrierColor: Colors.black54,
                         ),
-                        Expanded(
+              Expanded(
                           child: TextField(
                             controller: value.mobileTextEditor,
                             keyboardType: TextInputType.phone,
                             style: ThemeProvider.sans(size: 14),
                             decoration: _input('Mobile'),
-                          ),
-                        ),
-                      ],
-                    ),
+                ),
+              ),
+            ],
+          ),
                   ),
                   _field(
                     'GENDER',
@@ -162,12 +162,12 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                     ),
                   ),
                   EliteCard(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
                         Row(
                           children: [
-                            Text('Account Verification',
+                            Text('Account Verification'.tr,
                                 style: ThemeProvider.serif(size: 16)),
                             const Spacer(),
                             Container(
@@ -182,36 +182,34 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                                   const Icon(Icons.check,
                                       size: 12, color: Colors.white),
                                   const SizedBox(width: 4),
-                                  Text(
-                                    'VERIFIED',
+                                  Text('VERIFIED'.tr,
                                     style: ThemeProvider.sans(
                                       size: 10,
                                       weight: FontWeight.w700,
                                       color: Colors.white,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
                           ],
                         ),
                         const SizedBox(height: 8),
-                        Text(
-                          'Your personal information is encrypted using enterprise-grade security.',
+                        Text('Your personal information is encrypted using enterprise-grade security.'.tr,
                           style: ThemeProvider.sans(
                               size: 12, color: ThemeProvider.greyColor),
-                        ),
-                      ],
-                    ),
-                  ),
+                ),
+              ],
+            ),
+          ),
                   EliteGoldButton(
-                    label: 'SAVE CHANGES',
+                    label: 'SAVE CHANGES'.tr,
                     icon: Icons.save_outlined,
                     onTap: value.onUpdateInfo,
                   ),
                   const SizedBox(height: 10),
                   EliteGoldButton(
-                    label: 'RESET TO DEFAULT',
+                    label: 'RESET TO DEFAULT'.tr,
                     outlined: true,
                     onTap: value.getUserByID,
                   ),
@@ -235,10 +233,10 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   Widget _field(String label, IconData icon, Widget child, {Widget? extra}) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 14),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
             label,
             style: ThemeProvider.sans(
               size: 11,
@@ -250,7 +248,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
           const SizedBox(height: 8),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-            decoration: BoxDecoration(
+          decoration: BoxDecoration(
               color: ThemeProvider.surface,
               borderRadius: BorderRadius.circular(10),
               border: Border.all(color: const Color(0xFF2C2C2C)),
@@ -273,32 +271,32 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     Get.bottomSheet(
       Container(
         padding: const EdgeInsets.all(20),
-        decoration: const BoxDecoration(
+          decoration: const BoxDecoration(
           color: ThemeProvider.surface,
           borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
             Text('Choose Profile Picture'.tr,
                 style: ThemeProvider.serif(size: 18)),
             const SizedBox(height: 16),
             EliteGoldButton(
-              label: 'CAMERA',
-              icon: Icons.camera_alt,
-              onTap: () {
+              label: 'CAMERA'.tr,
+                            icon: Icons.camera_alt,
+                            onTap: () {
                 Get.back();
-                value.selectFromGallery('camera');
-              },
-            ),
+                              value.selectFromGallery('camera');
+                            },
+                          ),
             const SizedBox(height: 10),
             EliteGoldButton(
-              label: 'GALLERY',
+              label: 'GALLERY'.tr,
               outlined: true,
-              onTap: () {
+                            onTap: () {
                 Get.back();
-                value.selectFromGallery('gallery');
-              },
+                              value.selectFromGallery('gallery');
+                            },
             ),
           ],
         ),
@@ -310,28 +308,28 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     Get.bottomSheet(
       Container(
         padding: const EdgeInsets.all(20),
-        decoration: const BoxDecoration(
+          decoration: const BoxDecoration(
           color: ThemeProvider.surface,
           borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
             Text('Select Gender'.tr, style: ThemeProvider.serif(size: 18)),
             const SizedBox(height: 12),
             ListTile(
               leading: const Icon(Icons.male, color: ThemeProvider.gold),
               title: Text('Male'.tr, style: ThemeProvider.sans()),
-              onTap: () {
-                value.updateGender(1);
+                      onTap: () {
+                        value.updateGender(1);
                 Get.back();
               },
             ),
             ListTile(
               leading: const Icon(Icons.female, color: ThemeProvider.gold),
               title: Text('Female'.tr, style: ThemeProvider.sans()),
-              onTap: () {
-                value.updateGender(0);
+                      onTap: () {
+                        value.updateGender(0);
                 Get.back();
               },
             ),

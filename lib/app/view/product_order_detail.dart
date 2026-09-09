@@ -22,7 +22,7 @@ class _ProductOrderDetailState extends State<ProductOrderDetail> {
           backgroundColor: ThemeProvider.backgroundColor,
           appBar: EliteAppBar(
             showBack: true,
-            title: 'Invoice',
+            title: 'Invoice'.tr,
             onMore: value.openHelpModal,
           ),
           body: value.apiCalled != true
@@ -95,7 +95,8 @@ class _ProductOrderDetailState extends State<ProductOrderDetail> {
         const SizedBox(height: 8),
         Text(
           _money(value.grandTotal, value),
-          style: ThemeProvider.serif(size: 36, color: ThemeProvider.gold),
+          style: ThemeProvider.price(
+              size: 32, weight: FontWeight.w700, color: ThemeProvider.gold),
         ),
       ],
     );
@@ -111,8 +112,7 @@ class _ProductOrderDetailState extends State<ProductOrderDetail> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'TRANSACTION DETAILS',
+          Text('TRANSACTION DETAILS'.tr,
             style: ThemeProvider.sans(
               size: 11,
               weight: FontWeight.w700,
@@ -137,8 +137,7 @@ class _ProductOrderDetailState extends State<ProductOrderDetail> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'ITEMIZED RECEIPT',
+          Text('ITEMIZED RECEIPT'.tr,
             style: ThemeProvider.sans(
               size: 11,
               weight: FontWeight.w700,
@@ -185,11 +184,16 @@ class _ProductOrderDetailState extends State<ProductOrderDetail> {
           ),
           Row(
             children: [
-              Text('Total Paid', style: ThemeProvider.serif(size: 20)),
+              Text('Total Paid'.tr,
+                  style: ThemeProvider.sans(
+                      size: 16, weight: FontWeight.w600)),
               const Spacer(),
               Text(
                 _money(value.grandTotal, value),
-                style: ThemeProvider.serif(size: 20, color: ThemeProvider.gold),
+                style: ThemeProvider.price(
+                    size: 18,
+                    weight: FontWeight.w700,
+                    color: ThemeProvider.gold),
               ),
             ],
           ),
@@ -260,13 +264,13 @@ class _ProductOrderDetailState extends State<ProductOrderDetail> {
           mainAxisSize: MainAxisSize.min,
           children: [
             EliteGoldButton(
-              label: 'DOWNLOAD RECEIPT',
+              label: 'DOWNLOAD RECEIPT'.tr,
               icon: Icons.download,
               onTap: value.launchInBrowser,
             ),
             const SizedBox(height: 10),
             EliteGoldButton(
-              label: 'BACK TO HOME',
+              label: 'BACK TO HOME'.tr,
               outlined: true,
               icon: Icons.home_outlined,
               onTap: () => Get.offAllNamed(AppRouter.getTabsBarRoute()),
@@ -275,8 +279,7 @@ class _ProductOrderDetailState extends State<ProductOrderDetail> {
               const SizedBox(height: 10),
               TextButton(
                 onPressed: () => value.onUpdateAppointmentStatus(5),
-                child: Text(
-                  'CANCEL ORDER',
+                child: Text('CANCEL ORDER'.tr,
                   style: ThemeProvider.sans(
                     size: 12,
                     weight: FontWeight.w700,
@@ -291,8 +294,7 @@ class _ProductOrderDetailState extends State<ProductOrderDetail> {
               TextButton(
                 onPressed: () => value
                     .onAddReview(value.salonOrderInfo.freelancerId as int),
-                child: Text(
-                  'ADD REVIEW',
+                child: Text('ADD REVIEW'.tr,
                   style: ThemeProvider.sans(
                     size: 12,
                     weight: FontWeight.w700,

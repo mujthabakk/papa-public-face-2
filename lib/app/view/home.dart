@@ -2,8 +2,11 @@ import 'package:carousel_slider/carousel_slider.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:salon_user/app/controller/home_controller.dart';
+import 'package:salon_user/app/controller/languages_controller.dart';
+import 'package:salon_user/app/controller/common_notification_controller.dart';
 import 'package:salon_user/app/controller/service_cart_controller.dart';
 import 'package:salon_user/app/env.dart';
+import 'package:salon_user/app/helper/router.dart';
 import 'package:salon_user/app/util/theme.dart';
 import 'package:salon_user/app/view/sidemenu.dart';
 import 'package:salon_user/app/view/widgets/elite_ui.dart';
@@ -23,8 +26,10 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return GetBuilder<HomeController>(
-      builder: (value) {
+    return GetBuilder<LanguagesController>(
+      builder: (_) {
+        return GetBuilder<HomeController>(
+          builder: (value) {
             if (value.apiCalled && !_spinShown) {
               _spinShown = true;
               WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -41,9 +46,18 @@ class _HomeScreenState extends State<HomeScreen> {
                       children: [
                         SafeArea(
                           bottom: false,
-                          child: EliteAppBar(
-                            onMenu: () =>
-                                _scaffoldKey.currentState?.openDrawer(),
+                          child: GetBuilder<CommonNotificationController>(
+                            builder: (notify) => EliteAppBar(
+                              onMenu: () =>
+                                  _scaffoldKey.currentState?.openDrawer(),
+                              onNotification: () => Get.toNamed(
+                                  AppRouter.getNotificatinRoutes()),
+                              notificationCount: notify.unreadCount,
+                              onLanguage: () => Get.find<LanguagesController>()
+                                  .showLanguagePicker(),
+                              onCountry: () => Get.find<LanguagesController>()
+                                  .showCountryPicker(),
+                            ),
                           ),
                         ),
                         Expanded(
@@ -52,7 +66,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                   children: [
                                     const SizedBox(height: 8),
                                     EliteSearchBar(
-                                      hint: 'Search services...'.tr,
+                                      hint: 'Search shops, freelancers...'.tr,
                                       onTap: value.onSearch,
                                       onFilter: value.onFilter,
                                     ),
@@ -70,7 +84,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                         : const EliteApiUnavailable(),
                                     EliteSectionHeader(
                                       title: 'Exclusive Offers'.tr,
-                                      action: 'VIEW ALL',
+                                      action: 'VIEW ALL'.tr,
                                       onAction: value.onAllOffersList,
                                     ),
                                     value.offersList.isNotEmpty
@@ -78,7 +92,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                         : const EliteApiUnavailable(),
                                     EliteSectionHeader(
                                       title: 'Featured Centers'.tr,
-                                      action: 'VIEW ALL',
+                                      action: 'VIEW ALL'.tr,
                                       onAction: value.onAllOffers,
                                     ),
                                     value.salonList.isNotEmpty
@@ -93,12 +107,18 @@ class _HomeScreenState extends State<HomeScreen> {
                                         : const EliteApiUnavailable(),
                                     EliteSectionHeader(
                                       title: 'Top Products'.tr,
-                                      action: 'VIEW ALL',
+                                      action: 'VIEW ALL'.tr,
                                       onAction: value.onTopProducts,
                                     ),
                                     value.productsList.isNotEmpty
                                         ? _products(value)
                                         : const EliteApiUnavailable(),
+                                    if (value.topPartners.isNotEmpty) ...[
+                                      EliteSectionHeader(
+                                        title: 'Top Partners'.tr,
+                                      ),
+                                      _topPartners(value),
+                                    ],
                                   ],
                                 ),
                         ),
@@ -149,6 +169,8 @@ class _HomeScreenState extends State<HomeScreen> {
                 },
               ),
             );
+          },
+        );
       },
     );
   }
@@ -333,7 +355,7 @@ class _HomeScreenState extends State<HomeScreen> {
               ? '${(offer.discount ?? 0).toStringAsFixed(0)}% OFF'
               : '${value.currencySymbol}${(offer.discount ?? 0).toStringAsFixed(0)} OFF';
           return GestureDetector(
-            onTap: () => value.claimOffer(offer),
+            onTap: () => value.openExclusiveOffer(offer),
             child: Container(
               width: 280,
               padding: const EdgeInsets.all(16),
@@ -374,7 +396,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                   const Spacer(),
                   Text(
-                    offer.canBook ? 'BOOK NOW  →' : 'COPY CODE  →',
+                    'VIEW DETAILS  →'.tr,
                     style: ThemeProvider.sans(
                       size: 12,
                       weight: FontWeight.w700,
@@ -484,8 +506,9 @@ class _HomeScreenState extends State<HomeScreen> {
                         Text(
                           elitePrice(value.currencySide, value.currencySymbol,
                               p.sellPrice ?? p.originalPrice, digits: 0),
-                          style: ThemeProvider.serif(
-                            size: 16,
+                          style: ThemeProvider.price(
+                            size: 14,
+                            weight: FontWeight.w700,
                             color: ThemeProvider.gold,
                           ),
                         ),
@@ -502,7 +525,7 @@ class _HomeScreenState extends State<HomeScreen> {
                               padding: EdgeInsets.zero,
                             ),
                             child: Text(
-                              'ADD',
+                              'ADD'.tr,
                               style: ThemeProvider.sans(
                                 size: 11,
                                 weight: FontWeight.w700,
@@ -623,7 +646,165 @@ class _HomeScreenState extends State<HomeScreen> {
                               padding: EdgeInsets.zero,
                             ),
                             child: Text(
-                              'BOOK NOW',
+                              'BOOK NOW'.tr,
+                              style: ThemeProvider.sans(
+                                size: 11,
+                                weight: FontWeight.w700,
+                                color: Colors.black,
+                                letterSpacing: 0.8,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _topPartners(HomeController value) {
+    return SizedBox(
+      height: 248,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        itemCount: value.topPartners.length,
+        separatorBuilder: (_, __) => const SizedBox(width: 12),
+        itemBuilder: (context, index) {
+          final item = value.topPartners[index];
+          final cover = item.cover ?? '';
+          final imageUrl = cover.startsWith('http')
+              ? cover
+              : '${Environments.imageURL}$cover';
+          final distance = item.distance;
+          final badge = (item.badge ?? '').trim();
+          return GestureDetector(
+            onTap: () => value.onTopPartner(item),
+            child: Container(
+              width: 260,
+              decoration: BoxDecoration(
+                color: ThemeProvider.surface,
+                borderRadius: BorderRadius.circular(16),
+              ),
+              clipBehavior: Clip.antiAlias,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Stack(
+                    children: [
+                      EliteNetworkImage(
+                        url: imageUrl,
+                        height: 140,
+                        width: 260,
+                      ),
+                      if (badge.isNotEmpty)
+                        Positioned(
+                          top: 10,
+                          left: 10,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 8, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: ThemeProvider.gold,
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: Text(
+                              badge,
+                              style: ThemeProvider.sans(
+                                size: 10,
+                                weight: FontWeight.w700,
+                                color: Colors.black,
+                              ),
+                            ),
+                          ),
+                        ),
+                      Positioned(
+                        top: 10,
+                        right: 10,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: Colors.black54,
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Row(
+                            children: [
+                              const Icon(Icons.star,
+                                  color: ThemeProvider.gold, size: 14),
+                              const SizedBox(width: 4),
+                              Text(
+                                (item.rating ?? 0).toStringAsFixed(1),
+                                style: ThemeProvider.sans(
+                                    size: 12, weight: FontWeight.w600),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          item.name ?? '',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: ThemeProvider.serif(size: 16),
+                        ),
+                        const SizedBox(height: 4),
+                        Row(
+                          children: [
+                            const Icon(Icons.location_on_outlined,
+                                color: ThemeProvider.gold, size: 14),
+                            const SizedBox(width: 4),
+                            Expanded(
+                              child: Text(
+                                item.city?.isNotEmpty == true
+                                    ? item.city!
+                                    : (item.address ?? ''),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: ThemeProvider.sans(
+                                  size: 11,
+                                  color: ThemeProvider.greyColor,
+                                ),
+                              ),
+                            ),
+                            if (distance != null && distance > 0)
+                              Text(
+                                '${distance.toStringAsFixed(1)} km',
+                                style: ThemeProvider.sans(
+                                  size: 10,
+                                  weight: FontWeight.w600,
+                                  color: ThemeProvider.gold,
+                                ),
+                              ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        SizedBox(
+                          width: double.infinity,
+                          height: 34,
+                          child: ElevatedButton(
+                            onPressed: () => value.onTopPartner(item),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: ThemeProvider.gold,
+                              foregroundColor: Colors.black,
+                              elevation: 0,
+                              padding: EdgeInsets.zero,
+                            ),
+                            child: Text(
+                              'VIEW'.tr,
                               style: ThemeProvider.sans(
                                 size: 11,
                                 weight: FontWeight.w700,

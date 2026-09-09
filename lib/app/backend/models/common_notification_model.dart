@@ -1,5 +1,3 @@
-import 'dart:convert';
-
 class NotificationModel {
   final bool success;
   final List<NotificationItem> data;
@@ -12,13 +10,19 @@ class NotificationModel {
   });
 
   factory NotificationModel.fromJson(Map<String, dynamic> json) {
+    final raw = json['data'];
+    final list = <NotificationItem>[];
+    if (raw is List) {
+      for (final e in raw) {
+        if (e is Map) {
+          list.add(NotificationItem.fromJson(Map<String, dynamic>.from(e)));
+        }
+      }
+    }
     return NotificationModel(
-      success: json['success'] ?? false,
-      data: (json['data'] as List?)
-              ?.map((e) => NotificationItem.fromJson(e))
-              .toList() ??
-          [],
-      status: json['status'] ?? 0,
+      success: json['success'] == true || json['success']?.toString() == '1',
+      data: list,
+      status: int.tryParse(json['status']?.toString() ?? '') ?? 0,
     );
   }
 }
@@ -29,7 +33,7 @@ class NotificationItem {
   final String title;
   final String message;
   final String type;
-  final String status;
+  String status;
   final NotificationData data;
 
   NotificationItem({
@@ -42,15 +46,59 @@ class NotificationItem {
     required this.data,
   });
 
+  /// Handles: unread/read, 0/1, false/true, is_read, etc.
+  bool get isUnread {
+    final s = status.trim().toLowerCase();
+    if (s.isEmpty) return true;
+    if (s == 'unread' || s == 'new' || s == '0' || s == 'false') return true;
+    if (s == 'read' || s == 'seen' || s == '1' || s == 'true') return false;
+    return s != 'read';
+  }
+
+  void markReadLocally() {
+    status = 'read';
+  }
+
   factory NotificationItem.fromJson(Map<String, dynamic> json) {
+    final id = int.tryParse(json['id']?.toString() ?? '') ?? 0;
+
+    // Prefer explicit is_read / is_unread when present.
+    String status = json['status']?.toString() ?? '';
+    if (json.containsKey('is_read')) {
+      final read = json['is_read'] == true ||
+          json['is_read']?.toString() == '1' ||
+          json['is_read']?.toString().toLowerCase() == 'true';
+      status = read ? 'read' : 'unread';
+    } else if (json.containsKey('is_unread')) {
+      final unread = json['is_unread'] == true ||
+          json['is_unread']?.toString() == '1' ||
+          json['is_unread']?.toString().toLowerCase() == 'true';
+      status = unread ? 'unread' : 'read';
+    } else if (status == '0') {
+      status = 'unread';
+    } else if (status == '1') {
+      status = 'read';
+    }
+
+    final rawMessage = json['message']?.toString() ?? '';
+    final message = rawMessage
+        .replaceAll('Reminder Description: null', '')
+        .replaceAll(' null', '')
+        .replaceAll(RegExp(r'\s+'), ' ')
+        .trim();
+
     return NotificationItem(
-      id: json['id'] ?? 0,
-      uid: json['uid'] ?? '',
-      title: json['title'] ?? '',
-      message: json['message'] ?? '',
-      type: json['type'] ?? '',
-      status: json['status'] ?? '',
-      data: NotificationData.fromJson(json['data'] ?? {}),
+      id: id,
+      uid: json['uid']?.toString() ?? '',
+      title: json['title']?.toString() ?? '',
+      message: message,
+      type: json['type']?.toString() ?? '',
+      status: status.isEmpty ? 'unread' : status,
+      data: NotificationData.fromJson(
+        json['data'] is Map
+            ? Map<String, dynamic>.from(json['data'] as Map)
+            : <String, dynamic>{},
+      ),
     );
   }
 }
@@ -75,15 +123,15 @@ class NotificationData {
   });
 
   factory NotificationData.fromJson(Map<String, dynamic> json) {
-    String rawDate = json['date'] ?? '';
+    String rawDate = json['date']?.toString() ?? '';
     String formattedDate =
         rawDate.contains(' ') ? rawDate.split(' ').first : rawDate;
     return NotificationData(
-      appointmentId: json['appointment_id'],
-      orderId: json['order_id'],
-      businessName: json['business_name'] ?? '',
-      customerName: json['customer'] ?? '',
-      price: json['price'] ?? 0,
+      appointmentId: int.tryParse(json['appointment_id']?.toString() ?? ''),
+      orderId: int.tryParse(json['order_id']?.toString() ?? ''),
+      businessName: json['business_name']?.toString() ?? '',
+      customerName: json['customer']?.toString() ?? '',
+      price: num.tryParse(json['price']?.toString() ?? '') ?? 0,
       date: formattedDate,
       status: json['status']?.toString() ?? '',
     );

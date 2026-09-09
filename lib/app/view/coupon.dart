@@ -19,6 +19,14 @@ class CouponScreen extends StatefulWidget {
 }
 
 class _CouponScreenState extends State<CouponScreen> {
+  final _manualCode = TextEditingController();
+
+  @override
+  void dispose() {
+    _manualCode.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     return GetBuilder<CouponController>(
@@ -59,8 +67,10 @@ class _CouponScreenState extends State<CouponScreen> {
                                 Get.find<WalletController>().currencySymbol,
                                 Get.find<WalletController>().amount,
                               ),
-                              style: ThemeProvider.serif(
-                                  size: 36, color: ThemeProvider.gold),
+                              style: ThemeProvider.price(
+                                  size: 32,
+                                  weight: FontWeight.w700,
+                                  color: ThemeProvider.gold),
                             ),
                             const SizedBox(height: 14),
                             OutlinedButton.icon(
@@ -90,6 +100,56 @@ class _CouponScreenState extends State<CouponScreen> {
                       ),
                     if (Get.isRegistered<WalletController>())
                       const SizedBox(height: 16),
+                    if (value.action != 'browse') ...[
+                      EliteCard(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('ENTER COUPON CODE'.tr,
+                              style: ThemeProvider.sans(
+                                size: 10,
+                                color: ThemeProvider.gold,
+                                letterSpacing: 1.2,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            TextField(
+                              controller: _manualCode,
+                              textCapitalization:
+                                  TextCapitalization.characters,
+                              style: ThemeProvider.sans(size: 14),
+                              decoration: InputDecoration(
+                                hintText: 'Type code here',
+                                hintStyle: ThemeProvider.sans(
+                                  size: 13,
+                                  color: ThemeProvider.greyColor,
+                                ),
+                                suffixIcon: TextButton(
+                                  onPressed: () =>
+                                      value.applyCouponByCode(_manualCode.text),
+                                  child: Text('APPLY'.tr,
+                                    style: ThemeProvider.sans(
+                                      size: 12,
+                                      weight: FontWeight.w700,
+                                      color: ThemeProvider.gold,
+                                    ),
+                                  ),
+                                ),
+                                enabledBorder: const UnderlineInputBorder(
+                                  borderSide:
+                                      BorderSide(color: Color(0xFF2A2A2A)),
+                                ),
+                                focusedBorder: const UnderlineInputBorder(
+                                  borderSide:
+                                      BorderSide(color: ThemeProvider.gold),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                    ],
                     if (value.couponList.isEmpty)
                       const EliteApiUnavailable(minHeight: 180)
                     else
@@ -102,7 +162,7 @@ class _CouponScreenState extends State<CouponScreen> {
                   child: Padding(
                     padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
                     child: EliteGoldButton(
-                      label: 'APPLY COUPON',
+                      label: 'APPLY COUPON'.tr,
                       onTap: value.onSaveCoupon,
                     ),
                   ),
@@ -173,8 +233,7 @@ class _CouponScreenState extends State<CouponScreen> {
                               color: ThemeProvider.gold,
                               borderRadius: BorderRadius.circular(20),
                             ),
-                            child: Text(
-                              '$days DAYS LEFT',
+                            child: Text('${days} ${'DAYS LEFT'.tr}',
                               style: ThemeProvider.sans(
                                 size: 9,
                                 weight: FontWeight.w800,
@@ -195,8 +254,7 @@ class _CouponScreenState extends State<CouponScreen> {
                     ],
                     if (coupon.partners.isNotEmpty) ...[
                       const SizedBox(height: 12),
-                      Text(
-                        'VALID AT',
+                      Text('VALID AT'.tr,
                         style: ThemeProvider.sans(
                           size: 10,
                           color: ThemeProvider.greyColor,
@@ -209,8 +267,7 @@ class _CouponScreenState extends State<CouponScreen> {
                     ],
                     if (coupon.services.isNotEmpty) ...[
                       const SizedBox(height: 12),
-                      Text(
-                        'SERVICES',
+                      Text('SERVICES'.tr,
                         style: ThemeProvider.sans(
                           size: 10,
                           color: ThemeProvider.greyColor,
@@ -233,7 +290,7 @@ class _CouponScreenState extends State<CouponScreen> {
                     if (coupon.canBook) ...[
                       const SizedBox(height: 14),
                       EliteGoldButton(
-                        label: 'BOOK NOW',
+                        label: 'BOOK NOW'.tr,
                         onTap: () => value.bookOffer(coupon),
                       ),
                     ],
@@ -283,8 +340,7 @@ class _CouponScreenState extends State<CouponScreen> {
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text(
-                                    'COUPON CODE',
+                                  Text('COUPON CODE'.tr,
                                     style: ThemeProvider.sans(
                                       size: 10,
                                       color: ThemeProvider.greyColor,
@@ -311,8 +367,7 @@ class _CouponScreenState extends State<CouponScreen> {
                                 }
                               },
                               icon: const Icon(Icons.copy, size: 14),
-                              label: Text(
-                                'Copy Code',
+                              label: Text('Copy Code'.tr,
                                 style: ThemeProvider.sans(
                                     size: 11, weight: FontWeight.w600),
                               ),

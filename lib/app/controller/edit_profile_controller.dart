@@ -4,6 +4,7 @@ import 'package:salon_user/app/backend/api/handler.dart';
 import 'package:salon_user/app/backend/models/profile_model.dart';
 import 'package:salon_user/app/backend/parse/edit_profile_parse.dart';
 import 'package:salon_user/app/controller/account_controller.dart';
+import 'package:salon_user/app/controller/languages_controller.dart';
 import 'package:salon_user/app/util/theme.dart';
 import 'package:salon_user/app/util/toast.dart';
 import 'package:image_picker/image_picker.dart';
@@ -55,6 +56,12 @@ class EditProfileController extends GetxController implements GetxService {
       debugPrint('*****************');
       debugPrint(cover);
       debugPrint('*****************');
+      if (Get.isRegistered<LanguagesController>() && body is Map) {
+        Get.find<LanguagesController>().applyPreferredFromUser(
+          Map<String, dynamic>.from(body),
+          reloadUi: true,
+        );
+      }
       update();
     } else {
       ApiChecker.checkApi(response);

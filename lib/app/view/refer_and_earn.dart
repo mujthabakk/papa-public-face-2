@@ -21,7 +21,7 @@ class _ReferAndEarnScreenState extends State<ReferAndEarnScreen> {
           backgroundColor: ThemeProvider.backgroundColor,
           appBar: EliteAppBar(
             showBack: true,
-            title: 'Refer & Earn',
+            title: 'Refer & Earn'.tr,
             onMore: () {},
           ),
           body: value.apiCalled == false
@@ -34,7 +34,7 @@ class _ReferAndEarnScreenState extends State<ReferAndEarnScreen> {
                     EliteCard(
                       child: Column(
                         children: [
-                          Text('Refer & Earn',
+                          Text('Refer & Earn'.tr,
                               style: ThemeProvider.sans(
                                   size: 12, color: ThemeProvider.greyColor)),
                           const SizedBox(height: 16),
@@ -54,8 +54,7 @@ class _ReferAndEarnScreenState extends State<ReferAndEarnScreen> {
                         ],
                       ),
                     ),
-                    Text(
-                      'Share the Elite Experience',
+                    Text('Share the Elite Experience'.tr,
                       textAlign: TextAlign.center,
                       style: ThemeProvider.serif(
                           size: 26, color: ThemeProvider.gold),
@@ -84,8 +83,7 @@ class _ReferAndEarnScreenState extends State<ReferAndEarnScreen> {
                     EliteCard(
                       child: Column(
                         children: [
-                          Text(
-                            'YOUR EXCLUSIVE REFERRAL CODE',
+                          Text('YOUR EXCLUSIVE REFERRAL CODE'.tr,
                             style: ThemeProvider.sans(
                               size: 10,
                               color: ThemeProvider.greyColor,
@@ -108,7 +106,7 @@ class _ReferAndEarnScreenState extends State<ReferAndEarnScreen> {
                           ),
                           const SizedBox(height: 12),
                           EliteGoldButton(
-                            label: 'COPY CODE',
+                            label: 'COPY CODE'.tr,
                             icon: Icons.copy,
                             onTap: value.copyToClipBoard,
                           ),
@@ -116,8 +114,7 @@ class _ReferAndEarnScreenState extends State<ReferAndEarnScreen> {
                       ),
                     ),
                     const SizedBox(height: 8),
-                    Text(
-                      'HOW PRIVILEGE SCALES',
+                    Text('HOW PRIVILEGE SCALES'.tr,
                       style: ThemeProvider.sans(
                         size: 10,
                         color: ThemeProvider.greyColor,
@@ -138,7 +135,7 @@ class _ReferAndEarnScreenState extends State<ReferAndEarnScreen> {
                       child: ElevatedButton.icon(
                         onPressed: value.share,
                         icon: const Icon(Icons.ios_share, color: Colors.black),
-                        label: Text('INVITE FRIENDS',
+                        label: Text('INVITE FRIENDS'.tr,
                             style: ThemeProvider.sans(
                               size: 13,
                               weight: FontWeight.w700,
@@ -154,8 +151,7 @@ class _ReferAndEarnScreenState extends State<ReferAndEarnScreen> {
                       ),
                     ),
                     const SizedBox(height: 10),
-                    Text(
-                      'Terms and Conditions apply. Subject to verification.',
+                    Text('Terms and Conditions apply. Subject to verification.'.tr,
                       textAlign: TextAlign.center,
                       style: ThemeProvider.sans(
                           size: 11, color: ThemeProvider.greyColor),

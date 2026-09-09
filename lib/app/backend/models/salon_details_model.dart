@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:salon_user/app/backend/models/salon_social_model.dart';
 import 'package:salon_user/app/backend/models/timing_model.dart';
 
 class SalonDetailsModel {
@@ -29,6 +30,7 @@ class SalonDetailsModel {
   String? email;
   String? mobile;
   int? status;
+  SalonSocialLinks? socialLinks;
 
   SalonDetailsModel(
       {this.id,
@@ -59,42 +61,47 @@ class SalonDetailsModel {
       this.status});
 
   SalonDetailsModel.fromJson(Map<String, dynamic> json) {
-    id = int.parse(json['id'].toString());
-    uid = int.parse(json['uid'].toString());
-    name = json['name'];
-    cover = json['cover'];
-    categories = json['categories'];
-    address = json['address'];
-    lat = double.parse(json['lat'].toString());
-    lng = double.parse(json['lng'].toString());
-    cid = int.parse(json['cid'].toString());
-    about = json['about'];
-    rating = double.parse(json['rating'].toString());
-    totalRating = int.parse(json['total_rating'].toString());
-    website = json['website'];
-    if (json['timing'] != null &&
-        json['timing'] != 'NA' &&
-        json['timing'] != '') {
-      timing = <TimingModel>[];
-      var items = jsonDecode(json['timing']);
-      items.forEach((v) {
-        timing!.add(TimingModel.fromJson(v));
-      });
-    } else {
-      timing = [];
+    id = int.tryParse(json['id']?.toString() ?? '') ?? 0;
+    uid = int.tryParse(json['uid']?.toString() ?? '') ?? 0;
+    name = json['name']?.toString();
+    cover = json['cover']?.toString();
+    categories = json['categories']?.toString();
+    address = json['address']?.toString();
+    lat = double.tryParse(json['lat']?.toString() ?? '') ?? 0;
+    lng = double.tryParse(json['lng']?.toString() ?? '') ?? 0;
+    cid = int.tryParse(json['cid']?.toString() ?? '') ?? 0;
+    about = json['about']?.toString();
+    rating = double.tryParse(json['rating']?.toString() ?? '') ?? 0;
+    totalRating = int.tryParse(json['total_rating']?.toString() ?? '') ?? 0;
+    website = json['website']?.toString();
+    timing = _parseTiming(json['timing']);
+    images = json['images']?.toString();
+    zipcode = json['zipcode']?.toString();
+    serviceAtHome = int.tryParse(json['service_at_home']?.toString() ?? '') ?? 0;
+    verified = int.tryParse(json['verified']?.toString() ?? '') ?? 0;
+    inHome = int.tryParse(json['in_home']?.toString() ?? '') ?? 0;
+    popular = int.tryParse(json['popular']?.toString() ?? '') ?? 0;
+    haveShop = int.tryParse(json['have_shop']?.toString() ?? '') ?? 0;
+    haveStylist = int.tryParse(json['have_stylist']?.toString() ?? '') ?? 0;
+    extraField = json['extra_field']?.toString();
+    email = json['email']?.toString();
+    mobile = json['mobile']?.toString();
+    status = int.tryParse(json['status']?.toString() ?? '') ?? 0;
+    socialLinks = SalonSocialLinks.fromSalonJson(json);
+  }
+
+  static List<TimingModel> _parseTiming(dynamic raw) {
+    if (raw == null || raw == 'NA' || raw == '') return [];
+    try {
+      final items = raw is String ? jsonDecode(raw) : raw;
+      if (items is! List) return [];
+      return items
+          .whereType<Map>()
+          .map((v) => TimingModel.fromJson(Map<String, dynamic>.from(v)))
+          .toList();
+    } catch (_) {
+      return [];
     }
-    images = json['images'];
-    zipcode = json['zipcode'];
-    serviceAtHome = int.parse(json['service_at_home'].toString());
-    verified = int.parse(json['verified'].toString());
-    inHome = int.parse(json['in_home'].toString());
-    popular = int.parse(json['popular'].toString());
-    haveShop = int.parse(json['have_shop'].toString());
-    haveStylist = int.parse(json['have_stylist'].toString());
-    extraField = json['extra_field'];
-    email = json['email'];
-    mobile = json['mobile'];
-    status = int.parse(json['status'].toString());
   }
 
   Map<String, dynamic> toJson() {
@@ -122,7 +129,12 @@ class SalonDetailsModel {
     data['have_shop'] = haveShop;
     data['have_stylist'] = haveStylist;
     data['extra_field'] = extraField;
+    data['email'] = email;
+    data['mobile'] = mobile;
     data['status'] = status;
     return data;
   }
+
+  SalonSocialLinks get contactLinks =>
+      socialLinks ?? SalonSocialLinks.fromSalonJson(toJson());
 }

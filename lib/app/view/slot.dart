@@ -41,10 +41,10 @@ class _SlotScreenState extends State<SlotScreen> {
       builder: (value) {
         return Scaffold(
           backgroundColor: ThemeProvider.backgroundColor,
-          appBar: const EliteAppBar(
+          appBar: EliteAppBar(
             showBack: true,
             leadingLabel: 'CANCEL',
-            title: 'Service Booking',
+            title: 'Service Booking'.tr,
           ),
           body: value.apiCalled == false
               ? const Center(
@@ -205,7 +205,7 @@ class _SlotScreenState extends State<SlotScreen> {
         Row(
           children: [
             Expanded(
-              child: Text('Choose Availability',
+              child: Text('Choose Availability'.tr,
                   style: ThemeProvider.serif(
                       size: 18, color: ThemeProvider.gold)),
             ),
@@ -436,7 +436,7 @@ class _SlotScreenState extends State<SlotScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Booking Summary',
+          Text('Booking Summary'.tr,
               style: ThemeProvider.serif(size: 18, color: ThemeProvider.gold)),
           const SizedBox(height: 12),
           _row('SERVICE', first ?? '',
@@ -458,15 +458,17 @@ class _SlotScreenState extends State<SlotScreen> {
           const SizedBox(height: 8),
           Row(
             children: [
-              Text('Total',
+              Text('Total'.tr,
                   style: ThemeProvider.serif(
                       size: 18, color: ThemeProvider.gold)),
               const Spacer(),
               Text(
                 elitePrice(checkout.currencySide, checkout.currencySymbol,
                     cart.grandTotal, digits: 2),
-                style: ThemeProvider.serif(
-                    size: 22, color: ThemeProvider.gold),
+                style: ThemeProvider.price(
+                    size: 20,
+                    weight: FontWeight.w700,
+                    color: ThemeProvider.gold),
               ),
             ],
           ),
@@ -499,7 +501,7 @@ class _SlotScreenState extends State<SlotScreen> {
             ),
           ),
           if (price.isNotEmpty)
-            Text(price, style: ThemeProvider.serif(size: 16)),
+            Text(price, style: ThemeProvider.price(size: 15, weight: FontWeight.w600)),
         ],
       ),
     );
@@ -527,7 +529,7 @@ class _SlotScreenState extends State<SlotScreen> {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Text('Confirm Booking',
+                    Text('Confirm Booking'.tr,
                         style: ThemeProvider.serif(size: 18, color: Colors.black)),
                     const SizedBox(width: 8),
                     const Icon(Icons.auto_awesome, size: 16),
@@ -553,7 +555,7 @@ class _SlotScreenState extends State<SlotScreen> {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Text('Add to Cart',
+                    Text('Add to Cart'.tr,
                         style: ThemeProvider.serif(
                             size: 16, color: ThemeProvider.gold)),
                     const SizedBox(width: 8),

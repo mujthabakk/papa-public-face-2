@@ -44,7 +44,7 @@ class _AllCategoriesScreenState extends State<AllCategoriesScreen> {
           backgroundColor: ThemeProvider.backgroundColor,
           appBar: EliteAppBar(
             showBack: true,
-            title: 'Top Services',
+            title: 'Top Services'.tr,
             onMore: () {},
           ),
           body: value.apiCalled == false
@@ -125,7 +125,7 @@ class _AllCategoriesScreenState extends State<AllCategoriesScreen> {
                   ],
                   const SizedBox(height: 12),
                   EliteGoldButton(
-                    label: 'VIEW TREATMENTS',
+                    label: 'VIEW TREATMENTS'.tr,
                     onTap: () => value.onCategoriesList(
                         item.id as int, item.name.toString()),
                   ),

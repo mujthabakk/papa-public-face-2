@@ -10,6 +10,7 @@ import 'package:salon_user/app/controller/product_payment_controller.dart';
 import 'package:salon_user/app/controller/services_controller.dart';
 import 'package:salon_user/app/controller/specialist_controller.dart';
 import 'package:salon_user/app/helper/router.dart';
+import 'package:salon_user/app/util/toast.dart';
 import 'package:intl/intl.dart';
 
 class CouponController extends GetxController implements GetxService {
@@ -18,6 +19,7 @@ class CouponController extends GetxController implements GetxService {
   String selectedCouponCode = '';
   bool apiCalled = false;
   String action = 'service';
+  int? focusOfferId;
 
   List<CouponsModel> _couponList = <CouponsModel>[];
   List<CouponsModel> get couponList => _couponList;
@@ -30,7 +32,10 @@ class CouponController extends GetxController implements GetxService {
   void onInit() {
     super.onInit();
     final args = Get.arguments;
-    if (args is List && args.isNotEmpty) {
+    if (args is Map) {
+      action = 'browse';
+      focusOfferId = int.tryParse('${args['offerId'] ?? ''}');
+    } else if (args is List && args.isNotEmpty) {
       if (args[0] == 'product') {
         action = 'product';
       } else if (args[0] == 'individual-service') {
@@ -105,6 +110,18 @@ class CouponController extends GetxController implements GetxService {
         }
         return 0;
       });
+
+      if (focusOfferId != null && focusOfferId! > 0) {
+        final idx =
+            _couponList.indexWhere((c) => (c.id ?? 0) == focusOfferId);
+        if (idx > 0) {
+          final focused = _couponList.removeAt(idx);
+          _couponList.insert(0, focused);
+        }
+        if (idx >= 0) {
+          selectedCouponCode = focusOfferId.toString();
+        }
+      }
     } else {
       ApiChecker.checkApi(response);
     }
@@ -401,9 +418,40 @@ class CouponController extends GetxController implements GetxService {
     update();
   }
 
+  void applyCouponByCode(String code) {
+    final trimmed = code.trim();
+    if (trimmed.isEmpty) {
+      showToast('Please enter a coupon code.');
+      return;
+    }
+    CouponsModel? matched;
+    for (final coupon in _couponList) {
+      if ((coupon.code ?? '').trim().toLowerCase() == trimmed.toLowerCase()) {
+        matched = coupon;
+        break;
+      }
+    }
+    if (matched == null) {
+      showToast('Invalid coupon code.');
+      return;
+    }
+    if (cartValue != null && cartValue! < (matched.minCartValue ?? 0)) {
+      showToast(
+          'Minimum cart value is ₹${matched.minCartValue!.toStringAsFixed(0)}.');
+      return;
+    }
+    selectedCouponCode = matched.id.toString();
+    update();
+    onSaveCoupon();
+  }
+
   void onSaveCoupon() {
     if (action == 'browse') {
       Get.back();
+      return;
+    }
+    if (selectedCouponCode.isEmpty) {
+      showToast('Please select or enter a coupon code.');
       return;
     }
     if (action == 'service') {

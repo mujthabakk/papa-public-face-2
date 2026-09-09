@@ -19,7 +19,7 @@ class _AccountChatScreenState extends State<AccountChatScreen> {
       builder: (value) {
         return Scaffold(
           backgroundColor: ThemeProvider.backgroundColor,
-          appBar: const EliteAppBar(showBack: true, title: 'Messages'),
+          appBar: EliteAppBar(showBack: true, title: 'Messages'.tr),
           body: !value.parser.haveLoggedIn()
               ? Center(
                   child: Padding(
@@ -34,7 +34,7 @@ class _AccountChatScreenState extends State<AccountChatScreen> {
                             style: ThemeProvider.serif(size: 20)),
                         const SizedBox(height: 20),
                         EliteGoldButton(
-                          label: 'LOGIN / REGISTER',
+                          label: 'LOGIN / REGISTER'.tr,
                           onTap: value.onLoginRoutes,
                         ),
                       ],

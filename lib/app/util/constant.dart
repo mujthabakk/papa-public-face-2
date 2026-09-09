@@ -1,4 +1,5 @@
 import 'package:salon_user/app/backend/models/language_model.dart';
+import 'package:salon_user/app/backend/models/locale_api_model.dart';
 import 'package:salon_user/app/env.dart';
 
 class AppConstants {
@@ -24,6 +25,21 @@ class AppConstants {
 
   static const String getBannerData = 'api/v1/home/getBannerData';
   static const String getAppSettings = 'api/v1/settings/getDefault';
+
+  static const String getLanguages = 'api/v1/locale/getLanguages';
+  static const String getLocaleConfig = 'api/v1/locale/getConfig';
+  static const String getUiStrings = 'api/v1/locale/getUiStrings';
+  static const String saveUserPreference = 'api/v1/locale/saveUserPreference';
+  static const String getActiveCountries = 'api/v1/cities/getActiveCountries';
+  static const String getActiveStates = 'api/v1/cities/getActiveStates';
+  static const String getAppSettingsByLanguageId =
+      'api/v1/settings/getAppSettingsByLanguageId';
+
+  static const String pricingGetTaxSettings = 'api/v1/pricing/getTaxSettings';
+  static const String pricingCalculateAppointment =
+      'api/v1/pricing/calculateAppointment';
+  static const String pricingCalculateProductOrder =
+      'api/v1/pricing/calculateProductOrder';
   static const String getFacilities = 'api/v1/facilities/getAll';
   static const String getFacilitiesNew = 'api/v1/facilities/index';
 
@@ -44,6 +60,7 @@ class AppConstants {
       'api/v1/salon/getDataFromCategory';
   static const String getTopFreelancer = 'api/v1/salon/getTopFreelancer';
   static const String getTopSalon = 'api/v1/salon/getTopSalon';
+  static const String getTopPartners = 'api/v1/top_partners/getAll';
   static const String salonDetails = 'api/v1/salon/salonDetails';
   static const String getOwnerReviewsList = 'api/v1/owner_reviews/getMyReviews';
 
@@ -123,10 +140,47 @@ class AppConstants {
 
   static const String checkPremium = 'api/v1/premium/check';
 
+  static const String paymentsGeneratePaymentUrl =
+      'api/v1/payments/generatePaymentUrl';
+  static const String paymentsPayNow = 'api/v1/payments/payNow';
+  static const String paymentsVerifyPayment = 'api/v1/payments/verifyPayment';
+  static const String paymentsVerifyCheckoutPayment =
+      'api/v1/payments/verifyCheckoutPayment';
+  static const String paymentsGetPaymentOptions =
+      'api/v1/payments/getPaymentOptions';
+  static const String paymentsGetStatus = 'api/v1/payments/getStatus';
+  static const String paymentsGetPaymentStatus =
+      'api/v1/payments/getPaymentStatus';
+  static const String paymentsSocketConfig = 'api/v1/payments/socketConfig';
+  // Partner-only (do NOT call from public app): payments/markCashPaid
+
+  /// Pusher payment realtime (ws-ap2.pusher.com — never api-ap2.pusher.com)
+  static const String paymentPusherKey = '69a6a1c7ee697669f24c';
+  static const String paymentPusherCluster = 'ap2';
+  static const String paymentPusherHost = 'ws-ap2.pusher.com';
+  static const int paymentPusherPort = 443;
+  static const String paymentPusherWsUrl = 'wss://ws-ap2.pusher.com';
+  static const bool paymentPusherForceTls = true;
+  // Channel is per-customer: `payment-status-<uid>` (e.g. payment-status-1617).
+  // This prefix is only the fallback base when no uid is known yet.
+  static const String paymentPusherChannel = 'payment-status';
+  // Owner tapped "Service completed" → show the Pay Now modal (payment_url).
+  static const String paymentPusherPayNowEvent = 'pay-now-popup';
+  // Customer actually paid → mark paid only when payload.is_paid == true.
+  static const String paymentPusherEvent = 'payment-completed';
+
+  static const String upgradeGeneratePaymentUrl =
+      'api/v1/upgrade/generatePaymentUrl';
+  static const String upgradeVerifyPayment = 'api/v1/upgrade/verifyPayment';
+
   static const String updateAppointmentStatus = 'api/v1/appoinments/update';
   static const String updateProductOrder = 'api/v1/product_order/update';
+  static const String getAppointmentsReceipt =
+      'api/v1/appointments/orderInvoice?id=';
   static const String getAppointmentsInvoice =
       'api/v1/appointments/printInvoice?id=';
+  static const String getProductOrderReceipt =
+      'api/v1/product_order/orderInvoice?id=';
   static const String getProductInvoice =
       'api/v1/product_order/printInvoice?id=';
   static const String getOwnerReviews = 'api/v1/owner_reviews/getOwnerReviews';
@@ -161,20 +215,49 @@ class AppConstants {
         languageName: 'English',
         countryCode: 'US',
         languageCode: 'en'),
-    // LanguageModel(
-    //     imageUrl: '',
-    //     languageName: 'عربي',
-    //     countryCode: 'AE',
-    //     languageCode: 'ar'),
-    // LanguageModel(
-    //     imageUrl: '',
-    //     languageName: 'हिन्दी',
-    //     countryCode: 'IN',
-    //     languageCode: 'hi'),
-    // LanguageModel(
-    //     imageUrl: '',
-    //     languageName: 'Español',
-    //     countryCode: 'De',
-    //     languageCode: 'es'),
+    LanguageModel(
+        imageUrl: '',
+        languageName: 'Arabic',
+        nativeName: 'العربية',
+        countryCode: 'QA',
+        languageCode: 'ar',
+        direction: 'rtl',
+        isRtl: true),
+    LanguageModel(
+        imageUrl: '',
+        languageName: 'Hindi',
+        nativeName: 'हिन्दी',
+        countryCode: 'IN',
+        languageCode: 'hi'),
+    LanguageModel(
+        imageUrl: '',
+        languageName: 'Spanish',
+        nativeName: 'Español',
+        countryCode: 'ES',
+        languageCode: 'es'),
+  ];
+
+  static List<LocaleCountryItem> defaultCountries = [
+    LocaleCountryItem(
+      name: 'India',
+      nameEn: 'India',
+      code: 'IN',
+      countryCode: '+91',
+      languages: const ['en', 'hi'],
+    ),
+    LocaleCountryItem(
+      name: 'Qatar',
+      nameEn: 'Qatar',
+      code: 'QA',
+      countryCode: '+974',
+      languages: const ['en', 'ar'],
+    ),
+    LocaleCountryItem(
+      name: 'United Arab Emirates',
+      nameEn: 'UAE',
+      code: 'AE',
+      countryCode: '+971',
+      languages: const ['en', 'ar'],
+    ),
   ];
 }

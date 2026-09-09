@@ -187,8 +187,7 @@ class _AddressScreenState extends State<AddressScreen> {
         icon: const Icon(Icons.arrow_back_ios_new, color: ThemeProvider.gold),
         onPressed: () => Get.back(),
       ),
-      title: Text(
-        'My Addresses',
+      title: Text('My Addresses'.tr,
         style: ThemeProvider.serif(size: 20, color: ThemeProvider.gold),
       ),
     );
@@ -345,8 +344,7 @@ class _AddressScreenState extends State<AddressScreen> {
                         ),
                       ),
                       const SizedBox(height: 2),
-                      const Text(
-                        'Tap to view full address',
+                      Text('Tap to view full address'.tr,
                         style: TextStyle(
                           fontSize: 12,
                           color: textLight,
@@ -603,8 +601,7 @@ class _AddressScreenState extends State<AddressScreen> {
                 ),
               ),
               const SizedBox(width: 12),
-              const Text(
-                'Delete Address',
+              Text('Delete Address'.tr,
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w600,
@@ -613,8 +610,7 @@ class _AddressScreenState extends State<AddressScreen> {
               ),
             ],
           ),
-          content: const Text(
-            'Are you sure you want to delete this address? This action cannot be undone.',
+          content: Text('Are you sure you want to delete this address? This action cannot be undone.'.tr,
             style: TextStyle(
               fontSize: 14,
               color: textSecondary,
@@ -623,8 +619,7 @@ class _AddressScreenState extends State<AddressScreen> {
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
-              child: Text(
-                'Cancel',
+              child: Text('Cancel'.tr,
                 style: TextStyle(
                   color: textSecondary,
                   fontWeight: FontWeight.w500,
@@ -645,8 +640,7 @@ class _AddressScreenState extends State<AddressScreen> {
                 padding:
                     const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
               ),
-              child: const Text(
-                'Delete',
+              child: Text('Delete'.tr,
                 style: TextStyle(fontWeight: FontWeight.w600),
               ),
             ),

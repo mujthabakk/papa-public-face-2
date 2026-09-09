@@ -1,11 +1,12 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:get/get.dart';
 import 'package:salon_user/app/backend/api/handler.dart';
 import 'package:salon_user/app/backend/models/common_notification_model.dart';
 import 'package:salon_user/app/backend/parse/common_notification_parse..dart';
 import 'package:salon_user/app/controller/appointment_detail_controller.dart';
 import 'package:salon_user/app/controller/product_order_detail_controller.dart';
-import 'package:salon_user/app/controller/products_details_controller.dart';
 import 'package:salon_user/app/helper/router.dart';
 import 'package:salon_user/app/util/theme.dart';
 
@@ -15,22 +16,55 @@ class CommonNotificationController extends GetxController
 
   String uid = '';
   bool apiCalled = false;
-  List<NotificationItem> _notificationList =
-      []; // Changed to List<NotificationItem>
+  bool _loading = false;
+  bool _updateScheduled = false;
+  List<NotificationItem> _notificationList = [];
 
   List<NotificationItem> get notificationList => _notificationList;
 
+  int get unreadCount =>
+      _notificationList.where((n) => n.isUnread).length;
+
   CommonNotificationController({required this.parser});
+
+  void safeUpdate() {
+    if (isClosed) return;
+    if (SchedulerBinding.instance.schedulerPhase == SchedulerPhase.idle) {
+      update();
+      return;
+    }
+    if (_updateScheduled) return;
+    _updateScheduled = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _updateScheduled = false;
+      if (!isClosed) update();
+    });
+  }
 
   @override
   void onInit() {
     super.onInit();
     uid = parser.getUID();
-    getAllNotifications(uid);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (isClosed) return;
+      if (uid.isNotEmpty) {
+        getAllNotifications(uid);
+      }
+    });
+  }
+
+  Future<void> refreshNotifications() async {
+    uid = parser.getUID();
+    if (uid.isEmpty) return;
+    await getAllNotifications(uid);
   }
 
   void showNotificationDialog(
       BuildContext context, NotificationItem notification) {
+    // Opening detail = mark as read
+    if (notification.isUnread) {
+      readNotifications(notification.id);
+    }
     showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -55,11 +89,11 @@ class CommonNotificationController extends GetxController
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Header with icon and title
                 Row(
                   children: [
                     CircleAvatar(
-                      backgroundColor: ThemeProvider.appColor.withOpacity(0.1),
+                      backgroundColor:
+                          ThemeProvider.appColor.withOpacity(0.1),
                       child: const Icon(
                         Icons.notifications_active,
                         color: ThemeProvider.appColor,
@@ -80,31 +114,23 @@ class CommonNotificationController extends GetxController
                     ),
                   ],
                 ),
-
                 const SizedBox(height: 20),
-
-                // Notification Details
                 _buildDetailRow(
                   icon: Icons.monetization_on,
                   label: 'Price',
                   value: notification.data.price.toString(),
                 ),
-
                 _buildDetailRow(
                   icon: Icons.business,
                   label: 'Business',
                   value: notification.data.businessName,
                 ),
-
                 _buildDetailRow(
                   icon: Icons.calendar_today,
                   label: 'Date',
                   value: notification.data.date,
                 ),
-
                 const SizedBox(height: 15),
-
-                // Message Section
                 Text(
                   notification.message,
                   style: TextStyle(
@@ -113,14 +139,10 @@ class CommonNotificationController extends GetxController
                     height: 1.5,
                   ),
                 ),
-
                 const SizedBox(height: 20),
-
-                // Action Buttons
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    // Dismiss Button
                     TextButton(
                       onPressed: () => Navigator.of(context).pop(),
                       child: Text(
@@ -131,13 +153,9 @@ class CommonNotificationController extends GetxController
                         ),
                       ),
                     ),
-
-                    // More Info Button
                     ElevatedButton(
                       onPressed: () {
                         Navigator.of(context).pop();
-                        readNotifications(notification.id.toString());
-
                         if (notification.data.appointmentId != null) {
                           onAppointment(notification.data.appointmentId!);
                         } else if (notification.data.orderId != null) {
@@ -169,7 +187,6 @@ class CommonNotificationController extends GetxController
     );
   }
 
-// Helper method to create consistent detail rows
   Widget _buildDetailRow({
     required IconData icon,
     required String label,
@@ -221,40 +238,98 @@ class CommonNotificationController extends GetxController
     Get.toNamed(AppRouter.getAppointmentDetailRoutes(), arguments: [id]);
   }
 
-  Future<void> getAllNotifications(String uid) async {
+  Future<void> getAllNotifications(String uidParam) async {
+    if (_loading) return;
+    _loading = true;
     uid = parser.getUID();
 
     apiCalled = true;
-    update();
-    Response response = await parser.getAllNotification(uid);
-    apiCalled = true;
-    if (response.statusCode == 200) {
-      Map<String, dynamic> jsonData = Map<String, dynamic>.from(response.body);
-      NotificationModel notificationResponse =
-          NotificationModel.fromJson(jsonData);
-      if (notificationResponse.success) {
-        _notificationList = notificationResponse.data.reversed
-            .toList(); // Directly assign the data list
-        debugPrint(notificationList.length.toString());
-      }
-      apiCalled = false;
-    } else {
-      ApiChecker.checkApi(response);
-      apiCalled = false;
+    safeUpdate();
 
-      update();
+    try {
+      final Response response = await parser.getAllNotification(uid);
+      if (response.statusCode == 200) {
+        final body = response.body;
+        final Map<String, dynamic> jsonData = body is Map
+            ? Map<String, dynamic>.from(body)
+            : <String, dynamic>{};
+        final NotificationModel notificationResponse =
+            NotificationModel.fromJson(jsonData);
+        if (notificationResponse.success ||
+            notificationResponse.data.isNotEmpty) {
+          _notificationList =
+              notificationResponse.data.reversed.toList();
+          debugPrint(
+              'Notifications loaded: ${_notificationList.length}, unread=$unreadCount');
+        }
+      } else {
+        ApiChecker.checkApi(response);
+      }
+    } finally {
+      apiCalled = false;
+      _loading = false;
+      safeUpdate();
     }
-    update();
   }
 
-  Future<void> readNotifications(String id) async {
-    Response response = await parser.readNotification(id);
-    apiCalled = true;
-    if (response.statusCode == 200) {
-      getAllNotifications(uid); // Refresh the list after marking as read
-    } else {
-      ApiChecker.checkApi(response);
+  /// Mark one notification read (optimistic UI + API).
+  Future<void> readNotifications(int notificationId) async {
+    if (notificationId <= 0) return;
+    uid = parser.getUID();
+
+    final idx = _notificationList.indexWhere((n) => n.id == notificationId);
+    if (idx >= 0 && _notificationList[idx].isUnread) {
+      _notificationList[idx].markReadLocally();
+      safeUpdate();
     }
-    update();
+
+    try {
+      final Response response = await parser.readNotification(
+        notificationId: notificationId,
+        uid: uid,
+      );
+      final ok = response.statusCode == 200;
+      final body = response.body;
+      final success = body is Map
+          ? (body['success'] == true || body['success']?.toString() == '1')
+          : ok;
+      if (!ok && !success) {
+        ApiChecker.checkApi(response);
+        // Revert by refreshing list
+        await getAllNotifications(uid);
+      }
+    } catch (e) {
+      debugPrint('readNotifications error: $e');
+      await getAllNotifications(uid);
+    }
+  }
+
+  /// Mark all unread as read (Clear All).
+  Future<void> markAllRead() async {
+    uid = parser.getUID();
+    final unreadIds =
+        _notificationList.where((n) => n.isUnread).map((n) => n.id).toList();
+    if (unreadIds.isEmpty) return;
+
+    // Optimistic
+    for (final n in _notificationList) {
+      if (n.isUnread) n.markReadLocally();
+    }
+    safeUpdate();
+
+    try {
+      // Try bulk first
+      final bulk = await parser.readAllNotifications(uid: uid);
+      final bulkOk = bulk.statusCode == 200;
+      if (bulkOk) return;
+
+      // Fallback: one-by-one without full list refresh each time
+      for (final id in unreadIds) {
+        await parser.readNotification(notificationId: id, uid: uid);
+      }
+    } catch (e) {
+      debugPrint('markAllRead error: $e');
+      await getAllNotifications(uid);
+    }
   }
 }

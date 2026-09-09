@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:salon_user/app/controller/languages_controller.dart';
 import 'package:salon_user/app/controller/tabs_controller.dart';
 import 'package:salon_user/app/util/theme.dart';
 import 'package:salon_user/app/view/account.dart';
@@ -29,7 +30,9 @@ class _TabScreenState extends State<TabScreen> {
       BookingScreen(),
       AccountScreen(),
     ];
-    return GetBuilder<TabsController>(builder: (value) {
+    return GetBuilder<LanguagesController>(
+      builder: (_) {
+        return GetBuilder<TabsController>(builder: (value) {
       return DefaultTabController(
         length: 6,
         child: Scaffold(
@@ -75,6 +78,8 @@ class _TabScreenState extends State<TabScreen> {
           ),
         ),
       );
-    });
+        });
+      },
+    );
   }
 }

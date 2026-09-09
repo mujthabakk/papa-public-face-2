@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 import 'package:salon_user/app/backend/models/slot_time_model.dart';
+import 'package:salon_user/app/controller/login_controller.dart';
 import 'package:salon_user/app/controller/service_cart_controller.dart';
 import 'package:salon_user/app/controller/specialist_controller.dart';
 import 'package:salon_user/app/env.dart';
+import 'package:salon_user/app/helper/router.dart';
 import 'package:salon_user/app/util/theme.dart';
 import 'package:salon_user/app/util/toast.dart';
 import 'package:salon_user/app/view/widgets/elite_ui.dart';
@@ -32,7 +34,7 @@ class _SpecialistScreenState extends State<SpecialistScreen> {
           backgroundColor: ThemeProvider.backgroundColor,
           appBar: EliteAppBar(
             showBack: true,
-            title: 'Expert Profile',
+            title: 'Expert Profile'.tr,
             onMore: () {},
           ),
           body: value.apiCalled == false
@@ -45,6 +47,24 @@ class _SpecialistScreenState extends State<SpecialistScreen> {
                     _header(value),
                     const SizedBox(height: 20),
                     _backgroundCard(value),
+                    const SizedBox(height: 22),
+                    EliteConnectSection(
+                      links: value.individualDetails.contactLinks,
+                      isAuthenticated: value.parser.isLogin(),
+                      onLoginRequired: () {
+                        Get.delete<LoginController>(force: true);
+                        Get.toNamed(AppRouter.getLoginRoute());
+                      },
+                      onCall: value.callIndividual,
+                      onChat: value.onChat,
+                      onWebsite: value.openWebsite,
+                      onInstagram: value.openInstagram,
+                      onYoutube: value.openYoutube,
+                      onFacebook: value.openFacebook,
+                      onWhatsapp: value.openWhatsapp,
+                      onTwitter: value.openTwitter,
+                      onLinkedin: value.openLinkedin,
+                    ),
                     const SizedBox(height: 22),
                     if (value.servicesList.isNotEmpty)
                       _services(value)
@@ -258,7 +278,7 @@ class _SpecialistScreenState extends State<SpecialistScreen> {
           ),
         Row(
           children: [
-            Text('Curated Services', style: ThemeProvider.serif(size: 22)),
+            Text('Curated Services'.tr, style: ThemeProvider.serif(size: 22)),
             const Spacer(),
             Text(
               '${value.servicesList.length} AVAILABLE',
@@ -698,8 +718,7 @@ class _SpecialistScreenState extends State<SpecialistScreen> {
                   children: [
                     const Icon(Icons.shopping_cart_outlined,
                         color: ThemeProvider.gold, size: 16),
-                    Text(
-                      'ADD TO CART',
+                    Text('ADD TO CART'.tr,
                       style: ThemeProvider.sans(
                         size: 10,
                         color: ThemeProvider.gold,
@@ -733,8 +752,7 @@ class _SpecialistScreenState extends State<SpecialistScreen> {
                   elevation: 8,
                   shadowColor: ThemeProvider.appColorShadow,
                 ),
-                child: Text(
-                  'BOOK NOW',
+                child: Text('BOOK NOW'.tr,
                   style: ThemeProvider.serif(
                     size: 18,
                     weight: FontWeight.w700,

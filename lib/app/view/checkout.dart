@@ -14,6 +14,29 @@ class CheckoutScreen extends StatefulWidget {
 }
 
 class _CheckoutScreenState extends State<CheckoutScreen> {
+  final _couponCode = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final controller = Get.find<CheckoutController>();
+      final coupon = Get.find<ServiceCartController>().selectedCoupon;
+      if ((coupon.code ?? '').isNotEmpty) {
+        _couponCode.text = coupon.code!;
+      }
+      controller.appliedCouponLabel = coupon.code ?? coupon.name ?? '';
+      controller.refreshPricingFromApi();
+      controller.update();
+    });
+  }
+
+  @override
+  void dispose() {
+    _couponCode.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     return GetBuilder<CheckoutController>(
@@ -23,17 +46,16 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
           backgroundColor: ThemeProvider.backgroundColor,
           appBar: EliteAppBar(
             showBack: true,
-            title: 'My Cart',
+            title: 'My Cart'.tr,
             onMore: () {},
           ),
           body: ListView(
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
             children: [
-              Text('Cart Selection',
+              Text('Cart Selection'.tr,
                   style: ThemeProvider.serif(size: 28, weight: FontWeight.w700)),
               const SizedBox(height: 4),
-              Text(
-                'Review your premium wellness curated list.',
+              Text('Review your premium wellness curated list.'.tr,
                 style: ThemeProvider.sans(
                     size: 13, color: ThemeProvider.greyColor),
               ),
@@ -79,54 +101,121 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    GestureDetector(
-                      onTap: value.onCoupon,
-                      child: Row(
-                        children: [
-                          Text(
-                            'REDEEM COUPON',
-                            style: ThemeProvider.sans(
-                              size: 10,
-                              color: ThemeProvider.gold,
-                              letterSpacing: 1.2,
-                            ),
-                          ),
-                          const Spacer(),
-                          Text('APPLY',
-                              style: ThemeProvider.sans(
-                                  size: 12,
-                                  weight: FontWeight.w700,
-                                  color: ThemeProvider.gold)),
-                        ],
+                    Text('REDEEM COUPON'.tr,
+                      style: ThemeProvider.sans(
+                        size: 10,
+                        color: ThemeProvider.gold,
+                        letterSpacing: 1.2,
                       ),
                     ),
+                    const SizedBox(height: 8),
+                    TextField(
+                      controller: _couponCode,
+                      style: ThemeProvider.sans(size: 14),
+                      textCapitalization: TextCapitalization.characters,
+                      decoration: InputDecoration(
+                        hintText: 'Enter coupon code',
+                        hintStyle: ThemeProvider.sans(
+                            size: 13, color: ThemeProvider.greyColor),
+                        enabledBorder: const UnderlineInputBorder(
+                          borderSide: BorderSide(color: Color(0xFF2A2A2A)),
+                        ),
+                        focusedBorder: const UnderlineInputBorder(
+                          borderSide: BorderSide(color: ThemeProvider.gold),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        TextButton(
+                          onPressed: value.onCoupon,
+                          child: Text('SELECT COUPON'.tr,
+                            style: ThemeProvider.sans(
+                              size: 11,
+                              weight: FontWeight.w700,
+                              color: ThemeProvider.gold,
+                              letterSpacing: 0.8,
+                            ),
+                          ),
+                        ),
+                        const Spacer(),
+                        TextButton(
+                          onPressed: () =>
+                              value.applyCouponByCode(_couponCode.text),
+                          child: Text('APPLY'.tr,
+                            style: ThemeProvider.sans(
+                              size: 12,
+                              weight: FontWeight.w700,
+                              color: ThemeProvider.gold,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    if (value.appliedCouponLabel.isNotEmpty) ...[
+                      const SizedBox(height: 4),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              'Applied: ${value.appliedCouponLabel}',
+                              style: ThemeProvider.sans(
+                                size: 12,
+                                color: Colors.white70,
+                              ),
+                            ),
+                          ),
+                          GestureDetector(
+                            onTap: value.removeCoupon,
+                            child: Text('REMOVE'.tr,
+                              style: ThemeProvider.sans(
+                                size: 11,
+                                weight: FontWeight.w700,
+                                color: ThemeProvider.gold,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
                     const Divider(color: Color(0xFF2A2A2A), height: 24),
                     _bill('Subtotal',
                         elitePrice(value.currencySide, value.currencySymbol,
                             cart.totalPrice,
                             digits: 2)),
                     _bill(
-                        'Service Tax (${cart.orderTax}%)',
-                        elitePrice(value.currencySide, value.currencySymbol,
-                            cart.taxAmount,
-                            digits: 2)),
-                    _bill(
                         'Service Charge (${cart.serviceCharge}%)',
                         elitePrice(value.currencySide, value.currencySymbol,
                             cart.serviceChargeAmount,
                             digits: 2)),
+                    if (value.taxAmount > 0) ...[
+                      const SizedBox(height: 6),
+                      Text(
+                        'Taxable: ${elitePrice(value.currencySide, value.currencySymbol, value.taxableValue, digits: 2)} | GST: ${elitePrice(value.currencySide, value.currencySymbol, value.taxAmount, digits: 2)}',
+                        style: ThemeProvider.sans(
+                          size: 11,
+                          color: ThemeProvider.greyColor,
+                        ),
+                      ),
+                    ],
                     const SizedBox(height: 8),
-                    Text('TOTAL AMOUNT',
+                    Text('TOTAL AMOUNT'.tr,
                         style: ThemeProvider.sans(
                             size: 10,
                             color: ThemeProvider.greyColor,
                             letterSpacing: 1)),
                     Text(
-                      elitePrice(value.currencySide, value.currencySymbol,
-                          cart.grandTotal,
-                          digits: 2),
-                      style: ThemeProvider.serif(
-                          size: 32, color: ThemeProvider.gold),
+                      elitePrice(
+                        value.currencySide,
+                        value.currencySymbol,
+                        value.grandTotal > 0 ? value.grandTotal : cart.grandTotal,
+                        digits: 2,
+                      ),
+                      style: ThemeProvider.price(
+                          size: 28,
+                          weight: FontWeight.w700,
+                          color: ThemeProvider.gold),
                     ),
                   ],
                 ),
@@ -138,7 +227,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
             child: SafeArea(
               child: EliteGoldButton(
-                label: 'Proceed to Checkout  ›',
+                label: 'Proceed to Checkout  ›'.tr,
                 onTap: value.onSlot,
               ),
             ),
@@ -217,8 +306,10 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                 Align(
                   alignment: Alignment.centerRight,
                   child: Text(price,
-                      style: ThemeProvider.serif(
-                          size: 18, color: ThemeProvider.gold)),
+                      style: ThemeProvider.price(
+                          size: 16,
+                          weight: FontWeight.w700,
+                          color: ThemeProvider.gold)),
                 ),
               ],
             ),

@@ -12,6 +12,8 @@ class ProfileModel {
   String? fcmToken;
   String? stripeKey;
   String? extraField;
+  String? preferredLanguage;
+  String? preferredCountry;
   int? status;
   String? createdAt;
   String? updatedAt;
@@ -29,26 +31,30 @@ class ProfileModel {
       this.fcmToken,
       this.stripeKey,
       this.extraField,
+      this.preferredLanguage,
+      this.preferredCountry,
       this.status,
       this.createdAt,
       this.updatedAt});
 
   ProfileModel.fromJson(Map<String, dynamic> json) {
-    id = int.parse(json['id'].toString());
-    firstName = json['first_name'];
-    lastName = json['last_name'];
-    email = json['email'];
-    countryCode = json['country_code'];
-    mobile = json['mobile'];
-    cover = json['cover'];
-    gender = int.parse(json['gender'].toString());
-    type = json['type'];
-    fcmToken = json['fcm_token'];
-    stripeKey = json['stripe_key'];
-    extraField = json['extra_field'];
-    status = int.parse(json['status'].toString());
-    createdAt = json['created_at'];
-    updatedAt = json['updated_at'];
+    id = int.tryParse(json['id']?.toString() ?? '') ?? 0;
+    firstName = json['first_name']?.toString();
+    lastName = json['last_name']?.toString();
+    email = json['email']?.toString();
+    countryCode = json['country_code']?.toString();
+    mobile = json['mobile']?.toString();
+    cover = json['cover']?.toString();
+    gender = int.tryParse(json['gender']?.toString() ?? '') ?? 1;
+    type = json['type']?.toString();
+    fcmToken = json['fcm_token']?.toString();
+    stripeKey = json['stripe_key']?.toString();
+    extraField = json['extra_field']?.toString();
+    preferredLanguage = json['preferred_language']?.toString();
+    preferredCountry = json['preferred_country']?.toString();
+    status = int.tryParse(json['status']?.toString() ?? '') ?? 1;
+    createdAt = json['created_at']?.toString();
+    updatedAt = json['updated_at']?.toString();
   }
 
   Map<String, dynamic> toJson() {
@@ -65,6 +71,8 @@ class ProfileModel {
     data['fcm_token'] = fcmToken;
     data['stripe_key'] = stripeKey;
     data['extra_field'] = extraField;
+    data['preferred_language'] = preferredLanguage;
+    data['preferred_country'] = preferredCountry;
     data['status'] = status;
     data['created_at'] = createdAt;
     data['updated_at'] = updatedAt;

@@ -150,4 +150,16 @@ class ApiBody {
     if (raw.startsWith('<')) return null;
     return null;
   }
+
+  /// Reads locale metadata returned on every localized API response.
+  static Map<String, dynamic>? localeMeta(dynamic body) {
+    final map = asMap(body);
+    if (map == null) return null;
+    if (map.containsKey('locale') ||
+        map.containsKey('is_rtl') ||
+        map.containsKey('direction')) {
+      return map;
+    }
+    return null;
+  }
 }

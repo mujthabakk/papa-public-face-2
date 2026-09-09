@@ -22,7 +22,7 @@ class _SelectedServicesScreenState extends State<SelectedServicesScreen> {
           backgroundColor: ThemeProvider.backgroundColor,
           appBar: EliteAppBar(
             showBack: true,
-            title: 'Wellness Services',
+            title: 'Wellness Services'.tr,
             onMore: () {},
           ),
           body: value.apiCalled == false
@@ -66,7 +66,7 @@ class _SelectedServicesScreenState extends State<SelectedServicesScreen> {
                 padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
                 child: SafeArea(
                   child: EliteGoldButton(
-                    label: 'BOOK NOW',
+                    label: 'BOOK NOW'.tr,
                     onTap: value.onCheckout,
                   ),
                 ),
@@ -107,11 +107,10 @@ class _SelectedServicesScreenState extends State<SelectedServicesScreen> {
               mainAxisAlignment: MainAxisAlignment.end,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Elevated Care',
+                Text('Elevated Care'.tr,
                     style: ThemeProvider.serif(
                         size: 26, color: ThemeProvider.gold)),
-                Text(
-                  'Precision-engineered treatments for the modern elite.',
+                Text('Precision-engineered treatments for the modern elite.'.tr,
                   style: ThemeProvider.sans(size: 12, color: Colors.white70),
                 ),
               ],

@@ -16,7 +16,7 @@ class QRViewExample extends StatelessWidget {
         backgroundColor: ThemeProvider.backgroundColor,
         appBar: AppBar(
           backgroundColor: ThemeProvider.backgroundColor,
-          title: Text('Scan QR Code',
+          title: Text('Scan QR Code'.tr,
               style: ThemeProvider.serif(size: 20, color: ThemeProvider.gold)),
           iconTheme: const IconThemeData(color: ThemeProvider.gold),
           actions: [
@@ -38,11 +38,10 @@ class QRViewExample extends StatelessWidget {
                 onDetect: (capture) => controller.handleQRCodeScan(capture),
               ),
             ),
-            const Padding(
-              padding: EdgeInsets.all(20.0),
-              child: Text(
-                'Scan QR Code For Shop Page',
-                style: TextStyle(fontSize: 16),
+            Padding(
+              padding: const EdgeInsets.all(20.0),
+              child: Text('Scan QR Code For Shop Page'.tr,
+                style: const TextStyle(fontSize: 16),
               ),
             ),
           ],

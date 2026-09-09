@@ -24,4 +24,27 @@ class Environments {
 
   /// Razorpay Key ID loaded from .env file (RAZORPAY_KEY)
   static String get razorpayKey => dotenv.env['RAZORPAY_KEY'] ?? '';
+
+  /// Safe image URL. Empty / null / base-only paths return '' (no Spaces 403).
+  static String mediaUrl(String? path) {
+    final raw = (path ?? '').trim();
+    if (raw.isEmpty ||
+        raw == 'null' ||
+        raw == 'undefined' ||
+        raw == '/') {
+      return '';
+    }
+    if (raw.startsWith('http://') || raw.startsWith('https://')) {
+      // Bare bucket root causes 403 — treat as missing.
+      final withoutSlash = raw.replaceAll(RegExp(r'/+$'), '');
+      final base = imageURL.replaceAll(RegExp(r'/+$'), '');
+      if (withoutSlash == base) return '';
+      return raw;
+    }
+    final cleaned = raw.startsWith('/') ? raw.substring(1) : raw;
+    if (cleaned.isEmpty) return '';
+    return '$imageURL$cleaned';
+  }
+
+  static bool hasMedia(String? path) => mediaUrl(path).isNotEmpty;
 }

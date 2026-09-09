@@ -1,28 +1,75 @@
 import 'dart:convert';
 import 'dart:io';
+import 'package:flutter/scheduler.dart';
+import 'package:flutter/widgets.dart';
 import 'package:get/get.dart';
 import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
 import 'package:flutter/foundation.dart';
 import 'package:pretty_http_logger/pretty_http_logger.dart';
+import 'package:salon_user/app/backend/api/api_response.dart';
+import 'package:salon_user/app/controller/languages_controller.dart';
+import 'package:salon_user/app/helper/locale_helper.dart';
+import 'package:salon_user/app/helper/shared_pref.dart';
+import 'package:salon_user/app/util/constant.dart';
 
 class ApiService extends GetxService {
   final String appBaseUrl;
+  final SharedPreferencesManager sharedPreferencesManager;
   static const String connectionIssue = 'Connection failed!';
   final int timeoutInSeconds = 30;
   static const int _maxLogChars = 8000;
   HttpWithMiddleware httpp = HttpWithMiddleware.build(middlewares: [
     HttpLogger(logLevel: LogLevel.NONE),
   ]);
-  ApiService({required this.appBaseUrl});
+
+  ApiService({
+    required this.appBaseUrl,
+    required this.sharedPreferencesManager,
+  });
+
+  String get _lang =>
+      sharedPreferencesManager.getString(LocaleHelper.prefLanguage) ??
+      AppConstants.defaultLanguageApp;
+
+  Map<String, String> get _localeHeaders => {
+        'X-App-Language': _lang,
+        'Accept-Language': _lang,
+      };
+
+  String _withLangQuery(String uri) {
+    if (uri.contains('lang=')) return uri;
+    final separator = uri.contains('?') ? '&' : '?';
+    return '$uri${separator}lang=$_lang';
+  }
+
+  /// Always set body lang to the same value as headers (never mix).
+  dynamic _withLangBody(dynamic body) {
+    if (body is Map) {
+      final copy = Map<String, dynamic>.from(body);
+      copy['lang'] = _lang;
+      return copy;
+    }
+    return body;
+  }
+
+  Map<String, String> _mergeHeaders(Map<String, String>? headers) {
+    return {
+      ..._localeHeaders,
+      if (headers != null) ...headers,
+    };
+  }
 
   Future<Response> getPublic(String uri) async {
-    final url = appBaseUrl + uri;
-    _logRequest('GET PUBLIC', url, uri, params: null);
+    final path = _withLangQuery(uri);
+    final url = appBaseUrl + path;
+    _logRequest('GET PUBLIC', url, path,
+        params: null, headers: _localeHeaders);
     try {
       http.Response response = await httpp
           .get(
             Uri.parse(url),
+            headers: _localeHeaders,
           )
           .timeout(Duration(seconds: timeoutInSeconds));
       return parseResponse(response, url);
@@ -63,14 +110,17 @@ class ApiService extends GetxService {
   }
 
   Future<Response> getPrivate(String uri, String token) async {
-    final url = appBaseUrl + uri;
-    _logRequest('GET PRIVATE', url, uri,
-        params: null, headers: {'Authorization': 'Bearer $token'});
+    final path = _withLangQuery(uri);
+    final url = appBaseUrl + path;
+    final headers = _mergeHeaders({
+      'Content-Type': 'application/json;',
+      'Authorization': 'Bearer $token',
+    });
+    _logRequest('GET PRIVATE', url, path, params: null, headers: headers);
     try {
-      http.Response response = await httpp.get(Uri.parse(url), headers: {
-        'Content-Type': 'application/json;',
-        'Authorization': 'Bearer $token'
-      }).timeout(Duration(seconds: timeoutInSeconds));
+      http.Response response = await httpp
+          .get(Uri.parse(url), headers: headers)
+          .timeout(Duration(seconds: timeoutInSeconds));
       return parseResponse(response, url);
     } catch (e) {
       _logError('GET PRIVATE', url, e);
@@ -82,14 +132,16 @@ class ApiService extends GetxService {
     String uri,
     List<MultipartBody> multipartBody,
   ) async {
-    final url = appBaseUrl + uri;
+    final path = _withLangQuery(uri);
+    final url = appBaseUrl + path;
     final files = multipartBody
         .map((e) => {'key': e.key, 'file': e.file.path})
         .toList();
-    _logRequest('UPLOAD', url, uri, params: {'files': files});
+    _logRequest('UPLOAD', url, path, params: {'files': files});
     try {
       http.MultipartRequest request =
           http.MultipartRequest('POST', Uri.parse(url));
+      request.headers.addAll(_localeHeaders);
       for (MultipartBody multipart in multipartBody) {
         File file = File(multipart.file.path);
         request.files.add(http.MultipartFile(
@@ -110,14 +162,19 @@ class ApiService extends GetxService {
 
   Future<Response> postPublic(String uri, dynamic body,
       {Map<String, String>? headers}) async {
+    final payload = _withLangBody(body);
     final url = appBaseUrl + uri;
-    _logRequest('POST PUBLIC', url, uri, params: body, headers: headers);
+    final mergedHeaders = _mergeHeaders({
+      'Content-Type': 'application/json',
+      if (headers != null) ...headers,
+    });
+    _logRequest('POST PUBLIC', url, uri, params: payload, headers: mergedHeaders);
     try {
       http.Response response = await httpp
           .post(
             Uri.parse(url),
-            headers: {"Content-Type": "application/json"},
-            body: jsonEncode(body),
+            headers: mergedHeaders,
+            body: jsonEncode(payload),
           )
           .timeout(Duration(seconds: timeoutInSeconds));
       return parseResponse(response, url);
@@ -132,16 +189,17 @@ class ApiService extends GetxService {
     dynamic body,
     String token,
   ) async {
+    final payload = _withLangBody(body);
     final url = appBaseUrl + uri;
-    _logRequest('POST PRIVATE', url, uri,
-        params: body, headers: {'Authorization': 'Bearer $token'});
+    final headers = _mergeHeaders({
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer $token',
+    });
+    _logRequest('POST PRIVATE', url, uri, params: payload, headers: headers);
     try {
-      http.Response response = await httpp.post(Uri.parse(url),
-          body: jsonEncode(body),
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': 'Bearer $token'
-          }).timeout(Duration(seconds: timeoutInSeconds));
+      http.Response response = await httpp
+          .post(Uri.parse(url), body: jsonEncode(payload), headers: headers)
+          .timeout(Duration(seconds: timeoutInSeconds));
       return parseResponse(response, url);
     } catch (e) {
       _logError('POST PRIVATE', url, e);
@@ -153,14 +211,17 @@ class ApiService extends GetxService {
     String uri,
     String token,
   ) async {
-    final url = appBaseUrl + uri;
-    _logRequest('POST LOGOUT', url, uri,
-        params: null, headers: {'Authorization': 'Bearer $token'});
+    final path = _withLangQuery(uri);
+    final url = appBaseUrl + path;
+    final headers = _mergeHeaders({
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer $token',
+    });
+    _logRequest('POST LOGOUT', url, path, params: null, headers: headers);
     try {
-      http.Response response = await httpp.post(Uri.parse(url), headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer $token'
-      }).timeout(Duration(seconds: timeoutInSeconds));
+      http.Response response = await httpp
+          .post(Uri.parse(url), headers: headers)
+          .timeout(Duration(seconds: timeoutInSeconds));
       return parseResponse(response, url);
     } catch (e) {
       _logError('POST LOGOUT', url, e);
@@ -200,7 +261,25 @@ class ApiService extends GetxService {
       response = const Response(statusCode: 0, statusText: connectionIssue);
     }
     _logResponse(uri, response);
+    _syncLocaleFromResponse(response.body);
     return response;
+  }
+
+  void _syncLocaleFromResponse(dynamic body) {
+    final meta = ApiBody.localeMeta(body);
+    if (meta == null) return;
+    if (!Get.isRegistered<LanguagesController>()) return;
+
+    void sync() {
+      if (!Get.isRegistered<LanguagesController>()) return;
+      Get.find<LanguagesController>().applyResponseLocale(meta);
+    }
+
+    if (SchedulerBinding.instance.schedulerPhase == SchedulerPhase.idle) {
+      sync();
+    } else {
+      WidgetsBinding.instance.addPostFrameCallback((_) => sync());
+    }
   }
 
   void _logRequest(

@@ -3,21 +3,25 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:razorpay_flutter/razorpay_flutter.dart';
 import 'package:salon_user/app/backend/api/handler.dart';
+import 'package:salon_user/app/backend/api/api_response.dart';
 import 'package:salon_user/app/backend/models/address_model.dart';
+import 'package:salon_user/app/backend/models/checkout_payment_model.dart';
 import 'package:salon_user/app/backend/models/coupons_model.dart';
 import 'package:salon_user/app/backend/models/payment_models.dart';
 import 'package:salon_user/app/backend/models/salon_details_model.dart';
+import 'package:salon_user/app/backend/models/pricing_model.dart';
 import 'package:salon_user/app/backend/parse/payment_parse.dart';
+import 'package:salon_user/app/backend/parse/pricing_parse.dart';
 import 'package:salon_user/app/controller/address_list_controller.dart';
 import 'package:salon_user/app/controller/coupon_controller.dart';
 import 'package:salon_user/app/controller/service_cart_controller.dart';
 import 'package:salon_user/app/controller/slot_controller.dart';
 import 'package:salon_user/app/controller/tabs_controller.dart';
-import 'package:salon_user/app/env.dart';
 import 'package:salon_user/app/helper/router.dart';
 import 'package:salon_user/app/util/constant.dart';
 import 'package:salon_user/app/util/theme.dart';
 import 'package:salon_user/app/util/toast.dart';
+import 'package:salon_user/app/view/upgrade_payment.dart';
 import 'package:geolocator/geolocator.dart';
 
 class PaymentController extends GetxController implements GetxService {
@@ -59,6 +63,10 @@ class PaymentController extends GetxController implements GetxService {
   double balance = 0.0;
   double walletDiscount = 0.0;
   double taxAmount = 0.0;
+  double taxableValue = 0.0;
+  bool taxInclusive = true;
+  bool pricingLoading = false;
+  PricingBookingFields? bookingFields;
   bool haveAddress = false;
 
   late CouponsModel _selectedCoupon = CouponsModel();
@@ -94,6 +102,11 @@ class PaymentController extends GetxController implements GetxService {
 
     currencySide = parser.getCurrencySide();
     currencySymbol = parser.getCurrencySymbol();
+
+    final cartCoupon = Get.find<ServiceCartController>().selectedCoupon;
+    if ((cartCoupon.code ?? '').isNotEmpty || (cartCoupon.id ?? 0) > 0) {
+      onSaveCoupon(cartCoupon);
+    }
 
     // Initialize Razorpay SDK
     _razorpay = Razorpay();
@@ -370,45 +383,82 @@ class PaymentController extends GetxController implements GetxService {
     if (appointmentsTo == 0) {
       _deliveryPrice = 0;
     }
-    taxAmount = Get.find<ServiceCartController>().totalPrice *
-        (Get.find<ServiceCartController>().orderTax / 100);
 
-    double totalPrice = Get.find<ServiceCartController>().totalPrice +
-        taxAmount +
-        Get.find<ServiceCartController>().serviceCharge +
-        _deliveryPrice;
-
+    _discount = 0;
     if (_selectedCoupon.discount != null && _selectedCoupon.discount != 0) {
       double percentage(numFirst, per) {
         return (numFirst / 100) * per;
       }
 
-      _discount = percentage(Get.find<ServiceCartController>().totalPrice,
-          _selectedCoupon.discount); // null
+      _discount = percentage(
+        Get.find<ServiceCartController>().totalPrice,
+        _selectedCoupon.discount,
+      );
 
-      if (_discount > _selectedCoupon.upto!) {
+      if (_discount > (_selectedCoupon.upto ?? _discount)) {
         _discount = _selectedCoupon.upto!;
       }
     }
-    walletDiscount = balance;
-    if (isWalletChecked == true) {
-      if (totalPrice <= walletDiscount) {
-        walletDiscount = totalPrice;
-        totalPrice = totalPrice - walletDiscount;
-      } else {
-        totalPrice = totalPrice - walletDiscount;
-      }
-    } else {
-      if (totalPrice <= discount) {
-        _discount = totalPrice;
-        totalPrice = totalPrice - discount;
-      } else {
-        totalPrice = totalPrice - discount;
-      }
+
+    walletDiscount = isWalletChecked ? balance : 0;
+    refreshPricingFromApi();
+  }
+
+  Future<void> refreshPricingFromApi() async {
+    if (!Get.isRegistered<PricingParser>()) {
+      _applyLocalPricingFallback();
+      update();
+      return;
     }
-    debugPrint('grand total $totalPrice');
-    _grandTotal = double.parse((totalPrice).toStringAsFixed(2));
+
+    pricingLoading = true;
     update();
+
+    final cart = Get.find<ServiceCartController>();
+    final servicesAmount = cart.totalPrice + cart.serviceChargeAmount;
+    final walletAmount = isWalletChecked ? walletDiscount : 0.0;
+
+    final result = await Get.find<PricingParser>().calculateAppointment(
+      servicesAmount: servicesAmount,
+      discount: discount,
+      distanceCost: deliveryPrice,
+      walletAmount: walletAmount,
+    );
+
+    pricingLoading = false;
+
+    if (result.success && result.data != null) {
+      final data = result.data!;
+      taxAmount = data.serviceTax;
+      taxableValue = data.taxableValue;
+      taxInclusive = data.taxInclusive;
+      bookingFields = data.bookingFields;
+      _grandTotal = data.grandTotal;
+    } else {
+      _applyLocalPricingFallback();
+    }
+    update();
+  }
+
+  void _applyLocalPricingFallback() {
+    final cart = Get.find<ServiceCartController>();
+    double totalPrice = cart.totalPrice +
+        cart.serviceChargeAmount +
+        _deliveryPrice;
+
+    if (!isWalletChecked) {
+      totalPrice -= discount;
+    } else if (totalPrice <= walletDiscount) {
+      walletDiscount = totalPrice;
+      totalPrice = 0;
+    } else {
+      totalPrice -= walletDiscount;
+    }
+
+    taxAmount = 0;
+    taxableValue = totalPrice;
+    bookingFields = null;
+    _grandTotal = double.parse(totalPrice.toStringAsFixed(2));
   }
 
   void updateStatus() {
@@ -548,193 +598,227 @@ class PaymentController extends GetxController implements GetxService {
       // cod
       //  Order API call
     } else if (paymentId == 5) {
-      // razorpay - native SDK
-      final int amountInPaise =
-          double.parse((grandTotal * 100).toStringAsFixed(0)).toInt();
-      final options = {
-        'key': Environments.razorpayKey,
-        'amount': amountInPaise,
-        'name': 'PapaBear',
-        'description': 'Appointment Booking',
-        'image':
-            'https://papa-bear.blr1.cdn.digitaloceanspaces.com/papalogo.png',
-        'prefill': {
-          'contact': parser.getPhone(),
-          'email': parser.getEmail(),
-          'name': parser.getName(),
-        },
-        'theme': {'color': '#000000'},
-        'retry': {'enabled': false},
-        'send_sms_hash': true,
-        'remember_customer': false,
-      };
-
-      Get.dialog(
-          SimpleDialog(
-            children: [
-              Row(
-                children: [
-                  const SizedBox(width: 30),
-                  const CircularProgressIndicator(
-                      color: ThemeProvider.appColor),
-                  const SizedBox(width: 30),
-                  SizedBox(
-                      child: Text('Opening Payment...'.tr,
-                          style: const TextStyle(fontFamily: 'bold'))),
-                ],
-              )
-            ],
-          ),
-          barrierDismissible: false);
-
-      // Give enough time for UI to settle and dialog to appear and then clear before the native sheet pops
-      Future.delayed(const Duration(milliseconds: 500), () {
-        //  Get.back(closeOverlays: true);
-        try {
-          _razorpay.open(options);
-        } catch (e) {
-          debugPrint('Razorpay open error: $e');
-          showToast('Could not open payment screen.');
-        }
-      });
+      _startCheckoutPayment();
     }
   }
 
-  Future<void> createOrder({String? transactionId}) async {
-    Get.dialog(
-      SimpleDialog(
-        children: [
-          Row(
-            children: [
-              const SizedBox(
-                width: 30,
-              ),
-              const CircularProgressIndicator(
-                color: ThemeProvider.appColor,
-              ),
-              const SizedBox(
-                width: 30,
-              ),
-              SizedBox(
-                  child: Text(
-                "Please wait".tr,
-                style: const TextStyle(fontFamily: 'bold'),
-              )),
-            ],
-          )
-        ],
-      ),
-      barrierDismissible: false,
+  Future<void> _startCheckoutPayment() async {
+    await refreshPricingFromApi();
+
+    _showProgressDialog('Please wait'.tr);
+
+    final appointmentId = await _createPendingAppointment();
+    if (Get.isDialogOpen ?? false) Get.back();
+    if (appointmentId == null) return;
+
+    _showProgressDialog('Opening Payment...'.tr);
+
+    final result = await parser.generateCheckoutPaymentUrl(
+      appointmentId: appointmentId,
+      amount: grandTotal,
+    );
+    if (Get.isDialogOpen ?? false) Get.back();
+
+    if (!result.success || result.data == null) {
+      showToast(result.message.isNotEmpty
+          ? result.message
+          : 'Unable to start payment.');
+      return;
+    }
+
+    final paymentData = result.data!;
+    if (paymentData.paymentUrl.isEmpty) {
+      showToast('Payment URL not available.');
+      return;
+    }
+
+    final verifyResult = await openUpgradePaymentWebView(
+      paymentUrl: paymentData.paymentUrl,
+      appointmentId: paymentData.appointmentId,
+      paymentLinkId: paymentData.paymentLinkId,
     );
 
-    var param = {
+    if (verifyResult is! CheckoutVerifyData || !verifyResult.isPaid) {
+      showToast('Payment not completed.');
+      return;
+    }
+
+    _showOrderSuccessDialog();
+  }
+
+  Future<int?> _createPendingAppointment() async {
+    final param = _buildOrderParams(status: 8, paid: 'PENDING');
+    debugPrint('Create Pending Appointment Params: $param');
+    final response = await parser.createAppoinments(param);
+
+    if (response.statusCode != 200) {
+      debugPrint(
+          'Pending Appointment Error: Status ${response.statusCode}, Body: ${response.bodyString}');
+      ApiChecker.checkApi(response);
+      showToast('Unable to create booking. Please try again.');
+      return null;
+    }
+
+    final map = ApiBody.asMap(response.body);
+    if (map == null || map['success'] != true) {
+      showToast(ApiBody.message(response) ?? 'Unable to create booking.');
+      return null;
+    }
+
+    final data = ApiBody.asObject(map['data']);
+    final appointmentId = ApiBody.asInt(
+      data?['appointment_id'] ?? data?['id'],
+    );
+    if (appointmentId <= 0) {
+      showToast('Appointment id missing from server.');
+      return null;
+    }
+    return appointmentId;
+  }
+
+  Map<String, dynamic> _buildOrderParams({
+    required int status,
+    String? paid,
+  }) {
+    final cart = Get.find<ServiceCartController>();
+    final orderTotal = bookingFields?.total ?? cart.totalPrice;
+    final orderTax = bookingFields?.serviceTax ?? taxAmount;
+    final orderGrandTotal = bookingFields?.grandTotal ?? grandTotal;
+
+    return {
       "uid": parser.getUID(),
       "freelancer_id": 0,
-      "salon_id": Get.find<ServiceCartController>().salonId.toString(),
+      "salon_id": cart.salonId.toString(),
       "specialist_id": Get.find<SlotController>().selectedSpecialist,
       "appointments_to": appointmentsTo,
       "address": appointmentsTo == 1 ? jsonEncode(addressInfo) : 'NA',
-      "items": jsonEncode(Get.find<ServiceCartController>().savedInCart),
+      "items": jsonEncode(cart.savedInCart),
       "coupon_id": selectedCoupon.code != null ? selectedCoupon.id : 0,
       "coupon": selectedCoupon.code != null ? jsonEncode(selectedCoupon) : 'NA',
       "discount": discount,
       "distance_cost": deliveryPrice,
-      "total": Get.find<ServiceCartController>().totalPrice,
-      "serviceTax": taxAmount,
-      "grand_total": grandTotal,
+      "total": orderTotal,
+      "serviceTax": orderTax,
+      "grand_total": orderGrandTotal,
       "pay_method": paymentId,
-      "paid": transactionId ?? "COD",
+      "paid": paid ?? "COD",
       "save_date": Get.find<SlotController>().savedDate,
       "slot": Get.find<SlotController>().selectedSlotIndex,
       'wallet_used': isWalletChecked == true && walletDiscount > 0 ? 1 : 0,
       'wallet_price':
           isWalletChecked == true && walletDiscount > 0 ? walletDiscount : 0,
       "notes": notesEditor.text.isNotEmpty ? notesEditor.text : 'NA',
-      "status": 0
+      "status": status,
     };
+  }
+
+  void _showProgressDialog(String message) {
+    Get.dialog(
+      SimpleDialog(
+        children: [
+          Row(
+            children: [
+              const SizedBox(width: 30),
+              const CircularProgressIndicator(color: ThemeProvider.appColor),
+              const SizedBox(width: 30),
+              SizedBox(
+                child: Text(
+                  message,
+                  style: const TextStyle(fontFamily: 'bold'),
+                ),
+              ),
+            ],
+          )
+        ],
+      ),
+      barrierDismissible: false,
+    );
+  }
+
+  void _showOrderSuccessDialog() {
+    Get.defaultDialog(
+      title: '',
+      contentPadding: const EdgeInsets.all(20),
+      content: SingleChildScrollView(
+        child: Column(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(100),
+                child: Image.asset(
+                  'assets/images/sure.gif',
+                  fit: BoxFit.cover,
+                  height: 60,
+                  width: 60,
+                ),
+              ),
+            ),
+            const SizedBox(height: 30),
+            Text(
+              'Thank You!'.tr,
+              style: const TextStyle(fontFamily: 'bold', fontSize: 18),
+            ),
+            const SizedBox(height: 10),
+            Text(
+              'For Your Appoinment'.tr,
+              style: const TextStyle(fontFamily: 'semi-bold', fontSize: 16),
+            ),
+            const SizedBox(height: 20),
+            Text(
+              'We look forward to serving you!\nPlease check your email for the appointment details'
+                  .tr,
+              textAlign: TextAlign.center,
+              style: const TextStyle(fontSize: 14),
+            ),
+            const SizedBox(height: 50),
+            ElevatedButton(
+              onPressed: () {
+                backOrders();
+              },
+              style: ElevatedButton.styleFrom(
+                foregroundColor: ThemeProvider.whiteColor,
+                backgroundColor: ThemeProvider.pink,
+                minimumSize: const Size.fromHeight(45),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(30),
+                ),
+              ),
+              child: Text(
+                'TRACK MY APPOINTMENT'.tr,
+                style: const TextStyle(
+                  color: ThemeProvider.whiteColor,
+                  fontSize: 14,
+                ),
+              ),
+            ),
+            TextButton(
+              onPressed: () {
+                backHome();
+              },
+              child: Text(
+                'BACK TO HOME'.tr,
+                style: const TextStyle(color: ThemeProvider.appColor),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> createOrder({String? transactionId}) async {
+    await refreshPricingFromApi();
+    _showProgressDialog('Please wait'.tr);
+
+    var param = _buildOrderParams(status: 0, paid: transactionId ?? 'COD');
     debugPrint('Create Order Params: $param');
     var response = await parser.createAppoinments(param);
     Get.back();
 
     if (response.statusCode == 200) {
       debugPrint('Order Create Success: ${response.bodyString}');
-      Get.defaultDialog(
-        title: '',
-        contentPadding: const EdgeInsets.all(20),
-        content: SingleChildScrollView(
-          child: Column(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(10),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(100),
-                  child: Image.asset(
-                    'assets/images/sure.gif',
-                    fit: BoxFit.cover,
-                    height: 60,
-                    width: 60,
-                  ),
-                ),
-              ),
-              const SizedBox(
-                height: 30,
-              ),
-              Text(
-                'Thank You!'.tr,
-                style: const TextStyle(fontFamily: 'bold', fontSize: 18),
-              ),
-              const SizedBox(
-                height: 10,
-              ),
-              Text(
-                'For Your Appoinment'.tr,
-                style: const TextStyle(fontFamily: 'semi-bold', fontSize: 16),
-              ),
-              const SizedBox(
-                height: 20,
-              ),
-              Text(
-                'We look forward to serving you!\nPlease check your email for the appointment details'
-                    .tr,
-                textAlign: TextAlign.center,
-                style: const TextStyle(fontSize: 14),
-              ),
-              const SizedBox(
-                height: 50,
-              ),
-              ElevatedButton(
-                onPressed: () {
-                  backOrders();
-                },
-                style: ElevatedButton.styleFrom(
-                  foregroundColor: ThemeProvider.whiteColor,
-                  backgroundColor: ThemeProvider.pink,
-                  minimumSize: const Size.fromHeight(45),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(30),
-                  ),
-                ),
-                child: Text(
-                  'TRACK MY APPOINTMENT'.tr,
-                  style: const TextStyle(
-                    color: ThemeProvider.whiteColor,
-                    fontSize: 14,
-                  ),
-                ),
-              ),
-              TextButton(
-                onPressed: () {
-                  backHome();
-                },
-                child: Text(
-                  'BACK TO HOME'.tr,
-                  style: const TextStyle(color: ThemeProvider.appColor),
-                ),
-              ),
-            ],
-          ),
-        ),
-      );
+      _showOrderSuccessDialog();
     } else {
       debugPrint(
           'Order Create Error: Status ${response.statusCode}, Body: ${response.bodyString}');

@@ -1,4 +1,3 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:salon_user/app/backend/api/handler.dart';
@@ -11,7 +10,7 @@ import 'package:salon_user/app/controller/product_order_controller.dart';
 import 'package:salon_user/app/helper/router.dart';
 import 'package:salon_user/app/util/constant.dart';
 import 'package:salon_user/app/util/theme.dart';
-import 'package:salon_user/app/util/toast.dart';
+import 'package:salon_user/app/view/widgets/elite_ui.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class ProductOrderDetailController extends GetxController
@@ -68,7 +67,7 @@ class ProductOrderDetailController extends GetxController
     // orderId = 18;
     debugPrint('order id --> $orderId');
     invoiceURL =
-        '${parser.apiService.appBaseUrl}${AppConstants.getProductInvoice}$orderId&token=${parser.getToken()}';
+        '${parser.apiService.appBaseUrl}${AppConstants.getProductOrderReceipt}$orderId&token=${parser.getToken()}';
     getAppointmentDetails();
   }
 
@@ -684,101 +683,83 @@ class ProductOrderDetailController extends GetxController
   }
 
   void onContactInfo(String name, String phone, String email, String uid) {
-    var context = Get.context as BuildContext;
-    showCupertinoModalPopup<void>(
-      context: context,
-      builder: (BuildContext context) => CupertinoActionSheet(
-        title: Text('Choose'.tr),
-        actions: <CupertinoActionSheetAction>[
-          CupertinoActionSheetAction(
-            child: Text(
-              'Chat'.tr,
-              style: const TextStyle(color: ThemeProvider.appColor),
-            ),
-            onPressed: () {
-              Navigator.pop(context);
-              Get.delete<ChatController>(force: true);
-              Get.toNamed(AppRouter.getChatRoutes(), arguments: [uid, name]);
-            },
-          ),
-          CupertinoActionSheetAction(
-            child: Text(
-              'Call'.tr,
-              style: const TextStyle(color: ThemeProvider.appColor),
-            ),
-            onPressed: () {
-              Navigator.pop(context);
-              makePhoneCall(phone);
-            },
-          ),
-          CupertinoActionSheetAction(
-            child: Text(
-              'Email'.tr,
-              style: const TextStyle(color: ThemeProvider.appColor),
-            ),
-            onPressed: () {
-              Navigator.pop(context);
-              onMail(email);
-            },
-          ),
-          CupertinoActionSheetAction(
-            child: Text(
-              'Cancel'.tr,
-              style: const TextStyle(fontFamily: 'bold', color: Colors.red),
-            ),
-            onPressed: () {
-              Navigator.pop(context);
-            },
-          ),
-        ],
-      ),
+    final context = Get.context as BuildContext;
+    showEliteBottomSheet(
+      context,
+      title: 'Contact'.tr,
+      actions: [
+        EliteSheetAction(
+          icon: Icons.chat_bubble_outline,
+          label: 'Chat'.tr,
+          onTap: () {
+            Navigator.pop(context);
+            Get.delete<ChatController>(force: true);
+            Get.toNamed(AppRouter.getChatRoutes(), arguments: [uid, name]);
+          },
+        ),
+        EliteSheetAction(
+          icon: Icons.phone_outlined,
+          label: 'Call'.tr,
+          onTap: () {
+            Navigator.pop(context);
+            makePhoneCall(phone);
+          },
+        ),
+        EliteSheetAction(
+          icon: Icons.email_outlined,
+          label: 'Email'.tr,
+          onTap: () {
+            Navigator.pop(context);
+            onMail(email);
+          },
+        ),
+        EliteSheetAction(
+          icon: Icons.close,
+          label: 'Close'.tr,
+          destructive: true,
+          onTap: () => Navigator.pop(context),
+        ),
+      ],
     );
   }
 
   void openHelpModal() {
-    var context = Get.context as BuildContext;
-    showCupertinoModalPopup<void>(
-      context: context,
-      builder: (BuildContext context) => CupertinoActionSheet(
-        title: Text('Choose'.tr),
-        actions: <CupertinoActionSheetAction>[
-          CupertinoActionSheetAction(
-            child: Text(
-              'Chat'.tr,
-              style: const TextStyle(color: ThemeProvider.appColor),
-            ),
-            onPressed: () {
-              Navigator.pop(context);
-              Get.delete<ChatController>(force: true);
-              Get.toNamed(AppRouter.getChatRoutes(), arguments: [
-                parser.getAdminId().toString(),
-                parser.getAdminName()
-              ]);
-            },
-          ),
-          CupertinoActionSheetAction(
-            child: Text(
-              'Complaints'.tr,
-              style: const TextStyle(color: ThemeProvider.appColor),
-            ),
-            onPressed: () {
-              Navigator.pop(context);
-              Get.delete<ComplaintsController>(force: true);
-              Get.toNamed(AppRouter.getComplaintsRoutes(),
-                  arguments: [orderId, 'products']);
-            },
-          ),
-          CupertinoActionSheetAction(
-            child: Text(
-              'Cancel'.tr,
-              style: const TextStyle(fontFamily: 'bold', color: Colors.red),
-            ),
-            onPressed: () {
-              Navigator.pop(context);
-            },
-          ),
-        ],
-      ),
+    final context = Get.context as BuildContext;
+    showEliteBottomSheet(
+      context,
+      title: 'Choose'.tr,
+      actions: [
+        EliteSheetAction(
+          icon: Icons.chat_bubble_outline,
+          label: 'Chat'.tr,
+          onTap: () {
+            Navigator.pop(context);
+            Get.delete<ChatController>(force: true);
+            Get.toNamed(AppRouter.getChatRoutes(), arguments: [
+              parser.getAdminId().toString(),
+              parser.getAdminName(),
+            ]);
+          },
+        ),
+        EliteSheetAction(
+          icon: Icons.report_problem_outlined,
+          label: 'Complaints'.tr,
+          onTap: () {
+            Navigator.pop(context);
+            Get.delete<ComplaintsController>(force: true);
+            Get.toNamed(
+              AppRouter.getComplaintsRoutes(),
+              arguments: [orderId, 'products'],
+            );
+          },
+        ),
+        EliteSheetAction(
+          icon: Icons.close,
+          label: 'Close'.tr,
+          destructive: true,
+          onTap: () => Navigator.pop(context),
+        ),
+      ],
     );
   }
 }

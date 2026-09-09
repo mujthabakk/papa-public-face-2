@@ -121,7 +121,7 @@ class _TopPackagesScreenState extends State<TopPackagesScreen> {
                       text: TextSpan(
                         children: [
                           TextSpan(
-                            text: ' \$ 130 '.tr,
+                            text: ' \$ 130 ',
                             style: const TextStyle(
                                 fontSize: 12,
                                 color: ThemeProvider.blackColor,
@@ -187,7 +187,7 @@ class _TopPackagesScreenState extends State<TopPackagesScreen> {
                             ),
                           ),
                           TextSpan(
-                            text: ' 11'.tr,
+                            text: ' 11',
                             style: const TextStyle(
                                 fontSize: 10, color: ThemeProvider.blackColor),
                           ),
@@ -216,7 +216,7 @@ class _TopPackagesScreenState extends State<TopPackagesScreen> {
                         ),
                       ),
                       TextSpan(
-                        text: ' \$ 100 '.tr,
+                        text: ' \$ 100 ',
                         style: const TextStyle(
                             fontSize: 15,
                             color: ThemeProvider.appColor,

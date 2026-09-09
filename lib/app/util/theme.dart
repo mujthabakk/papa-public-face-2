@@ -61,6 +61,21 @@ class ThemeProvider {
       fontStyle: style,
     );
   }
+
+  /// Standard currency / amount style (not decorative serif).
+  static TextStyle price({
+    double size = 16,
+    FontWeight weight = FontWeight.w600,
+    Color color = whiteColor,
+    double? letterSpacing,
+  }) {
+    return GoogleFonts.montserrat(
+      fontSize: size,
+      fontWeight: weight,
+      color: color,
+      letterSpacing: letterSpacing,
+    );
+  }
 }
 
 TextTheme txtTheme = Typography.whiteMountainView.copyWith(

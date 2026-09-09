@@ -1,9 +1,11 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:salon_user/app/backend/models/salon_social_model.dart';
 import 'package:salon_user/app/controller/product_cart_controller.dart';
 import 'package:salon_user/app/controller/service_cart_controller.dart';
 import 'package:salon_user/app/controller/tabs_controller.dart';
+import 'package:salon_user/app/env.dart';
 import 'package:salon_user/app/helper/router.dart';
 import 'package:salon_user/app/util/theme.dart';
 
@@ -12,6 +14,10 @@ class EliteAppBar extends StatelessWidget implements PreferredSizeWidget {
   final VoidCallback? onSearch;
   final VoidCallback? onMore;
   final VoidCallback? onFavorite;
+  final VoidCallback? onLanguage;
+  final VoidCallback? onCountry;
+  final VoidCallback? onNotification;
+  final int notificationCount;
   final bool isFavorite;
   final bool showBack;
   final String? title;
@@ -23,6 +29,10 @@ class EliteAppBar extends StatelessWidget implements PreferredSizeWidget {
     this.onSearch,
     this.onMore,
     this.onFavorite,
+    this.onLanguage,
+    this.onCountry,
+    this.onNotification,
+    this.notificationCount = 0,
     this.isFavorite = false,
     this.showBack = false,
     this.title,
@@ -34,70 +44,113 @@ class EliteAppBar extends StatelessWidget implements PreferredSizeWidget {
 
   @override
   Widget build(BuildContext context) {
-    return AppBar(
-      backgroundColor: ThemeProvider.backgroundColor,
-      elevation: 0,
-      centerTitle: true,
-      automaticallyImplyLeading: false,
-      leadingWidth: leadingLabel != null ? 110 : 56,
-      leading: leadingLabel != null
-          ? TextButton.icon(
-              onPressed: () => Get.back(),
-              icon: const Icon(Icons.arrow_back_ios_new,
-                  color: ThemeProvider.gold, size: 16),
-              label: Text(
-                leadingLabel!,
-                style: ThemeProvider.sans(
-                  size: 11,
-                  weight: FontWeight.w700,
-                  color: ThemeProvider.gold,
-                  letterSpacing: 0.8,
+    // Force LTR so icons keep English positions (menu left / actions right).
+    // Translated title text still follows app locale via .tr callers.
+    return Directionality(
+      textDirection: TextDirection.ltr,
+      child: AppBar(
+        backgroundColor: ThemeProvider.backgroundColor,
+        elevation: 0,
+        centerTitle: true,
+        automaticallyImplyLeading: false,
+        leadingWidth: leadingLabel != null ? 110 : 56,
+        leading: leadingLabel != null
+            ? TextButton.icon(
+                onPressed: () => Get.back(),
+                icon: const Icon(Icons.arrow_back_ios_new,
+                    color: ThemeProvider.gold, size: 16),
+                label: Text(
+                  leadingLabel!,
+                  style: ThemeProvider.sans(
+                    size: 11,
+                    weight: FontWeight.w700,
+                    color: ThemeProvider.gold,
+                    letterSpacing: 0.8,
+                  ),
                 ),
+              )
+            : IconButton(
+                icon: Icon(
+                  showBack ? Icons.arrow_back_ios_new : Icons.menu,
+                  color: ThemeProvider.gold,
+                  size: 22,
+                ),
+                onPressed: showBack
+                    ? () => Get.back()
+                    : (onMenu ??
+                        () {
+                          Scaffold.maybeOf(context)?.openDrawer();
+                        }),
               ),
-            )
-          : IconButton(
+        title: Text(
+          title ?? 'PAPA BEAR',
+          style: ThemeProvider.serif(
+            size: 20,
+            weight: FontWeight.w700,
+            color: ThemeProvider.gold,
+            letterSpacing: 2.4,
+          ),
+        ),
+        actions: [
+          if (onFavorite != null)
+            IconButton(
               icon: Icon(
-                showBack ? Icons.arrow_back_ios_new : Icons.menu,
+                isFavorite ? Icons.favorite : Icons.favorite_border,
                 color: ThemeProvider.gold,
                 size: 22,
               ),
-              onPressed: showBack
-                  ? () => Get.back()
-                  : (onMenu ??
-                      () {
-                        Scaffold.maybeOf(context)?.openDrawer();
-                      }),
+              onPressed: onFavorite,
             ),
-      title: Text(
-        title ?? 'PAPA BEAR',
-        style: ThemeProvider.serif(
-          size: 20,
-          weight: FontWeight.w700,
-          color: ThemeProvider.gold,
-          letterSpacing: 2.4,
-        ),
+          if (onSearch != null)
+            IconButton(
+              icon:
+                  const Icon(Icons.search, color: ThemeProvider.gold, size: 22),
+              onPressed: onSearch,
+            ),
+          if (onNotification != null)
+            IconButton(
+              tooltip: 'Notifications'.tr,
+              onPressed: onNotification,
+              icon: Badge(
+                isLabelVisible: notificationCount > 0,
+                backgroundColor: ThemeProvider.redColor,
+                label: Text(
+                  notificationCount > 99 ? '99+' : '$notificationCount',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 9,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                child: const Icon(
+                  Icons.notifications_none_rounded,
+                  color: ThemeProvider.gold,
+                  size: 24,
+                ),
+              ),
+            ),
+          if (onLanguage != null)
+            IconButton(
+              tooltip: 'Language'.tr,
+              icon: const Icon(Icons.translate,
+                  color: ThemeProvider.gold, size: 22),
+              onPressed: onLanguage,
+            ),
+          if (onCountry != null)
+            IconButton(
+              tooltip: 'Country/Region'.tr,
+              icon: const Icon(Icons.public,
+                  color: ThemeProvider.gold, size: 22),
+              onPressed: onCountry,
+            ),
+          if (onMore != null)
+            IconButton(
+              icon: const Icon(Icons.more_vert,
+                  color: ThemeProvider.gold, size: 22),
+              onPressed: onMore,
+            ),
+        ],
       ),
-      actions: [
-        if (onFavorite != null)
-          IconButton(
-            icon: Icon(
-              isFavorite ? Icons.favorite : Icons.favorite_border,
-              color: ThemeProvider.gold,
-              size: 22,
-            ),
-            onPressed: onFavorite,
-          ),
-        if (onSearch != null)
-          IconButton(
-            icon: const Icon(Icons.search, color: ThemeProvider.gold, size: 22),
-            onPressed: onSearch,
-          ),
-        if (onMore != null)
-          IconButton(
-            icon: const Icon(Icons.more_vert, color: ThemeProvider.gold, size: 22),
-            onPressed: onMore,
-          ),
-      ],
     );
   }
 }
@@ -160,7 +213,7 @@ class EliteSectionHeader extends StatelessWidget {
   const EliteSectionHeader({
     Key? key,
     required this.title,
-    this.action = 'SEE ALL',
+    this.action = 'VIEW ALL',
     this.onAction,
     this.goldTitle = false,
   }) : super(key: key);
@@ -216,10 +269,36 @@ class EliteNetworkImage extends StatelessWidget {
     this.radius,
   }) : super(key: key);
 
+  bool get _isValidUrl {
+    final resolved = Environments.mediaUrl(url);
+    if (resolved.isEmpty) return false;
+    final uri = Uri.tryParse(resolved);
+    if (uri == null || !uri.hasScheme || uri.host.isEmpty) return false;
+    // Need a real object key after the host (not just bucket root).
+    final path = uri.path.replaceAll('/', '');
+    return path.isNotEmpty;
+  }
+
+  Widget _placeholder() {
+    return Image.asset(
+      'assets/images/notfound.png',
+      fit: fit,
+      width: width,
+      height: height,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    if (!_isValidUrl) {
+      final child = _placeholder();
+      if (radius == null) return child;
+      return ClipRRect(borderRadius: radius!, child: child);
+    }
+
+    final resolved = Environments.mediaUrl(url);
     final image = CachedNetworkImage(
-      imageUrl: url,
+      imageUrl: resolved,
       width: width,
       height: height,
       fit: fit,
@@ -232,12 +311,7 @@ class EliteNetworkImage extends StatelessWidget {
           ),
         ),
       ),
-      errorWidget: (context, url, error) => Image.asset(
-        'assets/images/notfound.png',
-        fit: fit,
-        width: width,
-        height: height,
-      ),
+      errorWidget: (context, url, error) => _placeholder(),
     );
     if (radius == null) return image;
     return ClipRRect(borderRadius: radius!, child: image);
@@ -392,8 +466,7 @@ class EliteCartFab extends StatelessWidget {
                             color: ThemeProvider.redColor,
                             shape: BoxShape.circle,
                           ),
-                          child: Text(
-                            '$count',
+                          child: Text('$count',
                             textAlign: TextAlign.center,
                             style: ThemeProvider.sans(
                               size: 9,
@@ -426,12 +499,12 @@ class EliteBottomNav extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const items = [
-      (Icons.home_outlined, 'Home', 0),
-      (Icons.location_on_outlined, 'Nearby', 1),
-      (Icons.qr_code_2, 'Scan', 2),
-      (Icons.grid_view_outlined, 'Categories', 3),
-      (Icons.person_outline, 'Profile', 5),
+    final items = [
+      (Icons.home_outlined, 'Home'.tr, 0),
+      (Icons.location_on_outlined, 'Nearby'.tr, 1),
+      (Icons.qr_code_2, 'Scan'.tr, 2),
+      (Icons.grid_view_outlined, 'Categories'.tr, 3),
+      (Icons.person_outline, 'Profile'.tr, 5),
     ];
 
     return Container(
@@ -615,8 +688,7 @@ class EliteQtyStepper extends StatelessWidget {
             onPressed: onMinus,
             icon: const Icon(Icons.remove, size: 16, color: ThemeProvider.gold),
           ),
-          Text(
-            '$quantity',
+          Text('$quantity',
             style: ThemeProvider.serif(size: 16, color: ThemeProvider.gold),
           ),
           IconButton(
@@ -648,6 +720,355 @@ class EliteApiUnavailable extends StatelessWidget {
         style: ThemeProvider.sans(
           size: 13,
           color: ThemeProvider.greyColor,
+        ),
+      ),
+    );
+  }
+}
+
+class EliteSheetAction {
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+  final bool destructive;
+
+  const EliteSheetAction({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+    this.destructive = false,
+  });
+}
+
+void showEliteBottomSheet(
+  BuildContext context, {
+  required String title,
+  required List<EliteSheetAction> actions,
+}) {
+  showModalBottomSheet(
+    context: context,
+    backgroundColor: ThemeProvider.surface,
+    barrierColor: Colors.black54,
+    shape: const RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+    ),
+    builder: (ctx) => SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(8, 0, 8, 12),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              margin: const EdgeInsets.only(top: 10, bottom: 12),
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: ThemeProvider.greyColor.withValues(alpha: 0.35),
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            Text(
+              title,
+              style: ThemeProvider.serif(size: 18, color: ThemeProvider.gold),
+            ),
+            const SizedBox(height: 16),
+            const Divider(color: Color(0xFF2A2A2A), height: 1),
+            ...actions.map((action) {
+              final iconColor = action.destructive
+                  ? ThemeProvider.logoutRose
+                  : ThemeProvider.gold;
+              final textColor =
+                  action.destructive ? ThemeProvider.logoutRose : Colors.white;
+              return Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: action.onTap,
+                  borderRadius: BorderRadius.circular(12),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 14,
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(action.icon, color: iconColor, size: 22),
+                        const SizedBox(width: 14),
+                        Text(
+                          action.label,
+                          style: ThemeProvider.sans(
+                            size: 15,
+                            weight: FontWeight.w500,
+                            color: textColor,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            }),
+          ],
+        ),
+      ),
+    ),
+  );
+}
+
+class EliteLoginPromptCard extends StatelessWidget {
+  final String message;
+  final VoidCallback? onTap;
+
+  const EliteLoginPromptCard({
+    Key? key,
+    required this.message,
+    this.onTap,
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return EliteCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            message,
+            style: ThemeProvider.sans(size: 13, color: Colors.white70),
+          ),
+          const SizedBox(height: 12),
+          EliteGoldButton(
+            label: 'Sign In / Sign Up'.tr,
+            onTap: () {
+              if (onTap != null) {
+                onTap!();
+                return;
+              }
+              Get.toNamed(AppRouter.getLoginRoute());
+            },
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class EliteConnectSection extends StatelessWidget {
+  final SalonSocialLinks links;
+  final VoidCallback onCall;
+  final VoidCallback onChat;
+  final VoidCallback onWebsite;
+  final VoidCallback onInstagram;
+  final VoidCallback onYoutube;
+  final VoidCallback onFacebook;
+  final VoidCallback onWhatsapp;
+  final VoidCallback onTwitter;
+  final VoidCallback onLinkedin;
+  /// When false, Call/Chat/social are hidden and a login CTA is shown.
+  final bool isAuthenticated;
+  final VoidCallback? onLoginRequired;
+
+  const EliteConnectSection({
+    Key? key,
+    required this.links,
+    required this.onCall,
+    required this.onChat,
+    required this.onWebsite,
+    required this.onInstagram,
+    required this.onYoutube,
+    required this.onFacebook,
+    required this.onWhatsapp,
+    required this.onTwitter,
+    required this.onLinkedin,
+    this.isAuthenticated = true,
+    this.onLoginRequired,
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    if (!isAuthenticated) {
+      return Padding(
+        padding: const EdgeInsets.only(bottom: 18),
+        child: EliteLoginPromptCard(
+          message: 'Opps, Please Login or Register first!'.tr,
+          onTap: onLoginRequired,
+        ),
+      );
+    }
+
+    if (!links.hasConnectActions) return const SizedBox.shrink();
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 18),
+      child: EliteCard(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            EliteSectionBar(title: 'Connect'.tr),
+            Row(
+              children: [
+                Expanded(
+                  child: _action(
+                    icon: Icons.phone_outlined,
+                    label: 'Call'.tr,
+                    enabled: links.canCall,
+                    onTap: onCall,
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: _action(
+                    icon: Icons.chat_bubble_outline,
+                    label: 'Chat'.tr,
+                    enabled: links.canChat,
+                    onTap: onChat,
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: _action(
+                    icon: Icons.language,
+                    label: 'Website'.tr,
+                    enabled: links.canWebsite,
+                    onTap: onWebsite,
+                  ),
+                ),
+              ],
+            ),
+            if (links.hasAnySocial) ...[
+              const SizedBox(height: 14),
+              Text('Social Media'.tr,
+                style: ThemeProvider.sans(
+                  size: 11,
+                  color: ThemeProvider.greyColor,
+                  letterSpacing: 0.8,
+                ),
+              ),
+              const SizedBox(height: 10),
+              Wrap(
+                spacing: 10,
+                runSpacing: 10,
+                children: [
+                  _social(
+                    icon: Icons.camera_alt_outlined,
+                    label: 'Instagram'.tr,
+                    enabled: links.hasInstagram,
+                    onTap: onInstagram,
+                  ),
+                  _social(
+                    icon: Icons.play_circle_outline,
+                    label: 'YouTube'.tr,
+                    enabled: links.hasYoutube,
+                    onTap: onYoutube,
+                  ),
+                  _social(
+                    icon: Icons.facebook_outlined,
+                    label: 'Facebook'.tr,
+                    enabled: links.hasFacebook,
+                    onTap: onFacebook,
+                  ),
+                  _social(
+                    icon: Icons.chat_outlined,
+                    label: 'WhatsApp'.tr,
+                    enabled: links.hasWhatsapp,
+                    onTap: onWhatsapp,
+                  ),
+                  _social(
+                    icon: Icons.alternate_email,
+                    label: 'Twitter'.tr,
+                    enabled: links.hasTwitter,
+                    onTap: onTwitter,
+                  ),
+                  _social(
+                    icon: Icons.business_center_outlined,
+                    label: 'LinkedIn'.tr,
+                    enabled: links.hasLinkedin,
+                    onTap: onLinkedin,
+                  ),
+                ],
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _action({
+    required IconData icon,
+    required String label,
+    required bool enabled,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        decoration: BoxDecoration(
+          color: const Color(0xFF121212),
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(
+            color: enabled
+                ? ThemeProvider.gold.withValues(alpha: 0.45)
+                : const Color(0xFF2A2A2A),
+          ),
+        ),
+        child: Column(
+          children: [
+            Icon(
+              icon,
+              color: enabled ? ThemeProvider.gold : ThemeProvider.greyColor,
+              size: 20,
+            ),
+            const SizedBox(height: 6),
+            Text(
+              label,
+              style: ThemeProvider.sans(
+                size: 11,
+                weight: FontWeight.w600,
+                color: enabled ? Colors.white : ThemeProvider.greyColor,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _social({
+    required IconData icon,
+    required String label,
+    required bool enabled,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: const Color(0xFF121212),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: enabled
+                ? ThemeProvider.gold.withValues(alpha: 0.35)
+                : const Color(0xFF2A2A2A),
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              icon,
+              size: 16,
+              color: enabled ? ThemeProvider.gold : ThemeProvider.greyColor,
+            ),
+            const SizedBox(width: 6),
+            Text(
+              label,
+              style: ThemeProvider.sans(
+                size: 11,
+                color: enabled ? Colors.white70 : ThemeProvider.greyColor,
+              ),
+            ),
+          ],
         ),
       ),
     );

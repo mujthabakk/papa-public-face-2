@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:salon_user/app/controller/languages_controller.dart';
+import 'package:salon_user/app/controller/common_notification_controller.dart';
 import 'package:salon_user/app/controller/near_controller.dart';
 import 'package:salon_user/app/controller/top_specialist_controller.dart';
 import 'package:salon_user/app/controller/unified_search_controller.dart';
@@ -24,19 +26,23 @@ class _NearScreenState extends State<NearScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return GetBuilder<NearController>(
-      builder: (value) {
-        return Scaffold(
-          key: _scaffoldKey,
-          backgroundColor: ThemeProvider.backgroundColor,
-          drawer: const SideMenuScreen(),
-          body: value.apiCalled == false
-              ? const Center(
-                  child: CircularProgressIndicator(color: ThemeProvider.gold),
-                )
-              : value.haveData == true
-                  ? _content(value)
-                  : _empty(),
+    return GetBuilder<LanguagesController>(
+      builder: (_) {
+        return GetBuilder<NearController>(
+          builder: (value) {
+            return Scaffold(
+              key: _scaffoldKey,
+              backgroundColor: ThemeProvider.backgroundColor,
+              drawer: const SideMenuScreen(),
+              body: value.apiCalled == false
+                  ? const Center(
+                      child: CircularProgressIndicator(color: ThemeProvider.gold),
+                    )
+                  : value.haveData == true
+                      ? _content(value)
+                      : _empty(),
+            );
+          },
         );
       },
     );
@@ -55,12 +61,17 @@ class _NearScreenState extends State<NearScreen> {
       children: [
         SafeArea(
           bottom: false,
-          child: EliteAppBar(
-            onMenu: () => _scaffoldKey.currentState?.openDrawer(),
+          child: GetBuilder<CommonNotificationController>(
+            builder: (notify) => EliteAppBar(
+              onMenu: () => _scaffoldKey.currentState?.openDrawer(),
+              onNotification: () =>
+                  Get.toNamed(AppRouter.getNotificatinRoutes()),
+              notificationCount: notify.unreadCount,
+            ),
           ),
         ),
         EliteSearchBar(
-          hint: 'Search services...'.tr,
+          hint: 'Search shops, freelancers...'.tr,
           onTap: () {
             Get.delete<UnifiedSearchController>(force: true);
             Get.toNamed(AppRouter.getSearchRoutes());
@@ -72,11 +83,11 @@ class _NearScreenState extends State<NearScreen> {
           padding: const EdgeInsets.symmetric(horizontal: 16),
           child: Row(
             children: [
-              _chipBtn('Map', 0),
+              _chipBtn('Map'.tr, 0),
               const SizedBox(width: 8),
-              _chipBtn('Open Now', 1),
+              _chipBtn('Open Now'.tr, 1),
               const SizedBox(width: 8),
-              _chipBtn('Top Rated', 2),
+              _chipBtn('Top Rated'.tr, 2),
             ],
           ),
         ),
@@ -111,7 +122,7 @@ class _NearScreenState extends State<NearScreen> {
               if (value.individualList.isNotEmpty) ...[
                 EliteSectionHeader(
                   title: 'TOP FREELANCERS'.tr,
-                  action: 'VIEW ALL >',
+                  action: 'VIEW ALL >'.tr,
                   goldTitle: true,
                   onAction: () {
                     Get.delete<TopSpecialistController>(force: true);
@@ -268,7 +279,7 @@ class _NearScreenState extends State<NearScreen> {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      '${(item.distance ?? 0).toStringAsFixed(1)} mi away',
+                      '${(item.distance ?? 0).toStringAsFixed(1)} ${'mi away'.tr}',
                       style: ThemeProvider.sans(
                         size: 11,
                         color: ThemeProvider.gold,
@@ -292,12 +303,12 @@ class _NearScreenState extends State<NearScreen> {
               ),
               const SizedBox(width: 6),
               Text(
-                'OPEN NOW',
+                'OPEN NOW'.tr,
                 style: ThemeProvider.sans(size: 11, color: Colors.white70),
               ),
               const Spacer(),
               EliteGoldButton(
-                label: 'BOOK NOW',
+                label: 'BOOK NOW'.tr,
                 icon: Icons.calendar_today,
                 onTap: () => value.onServices(item.uid as int),
               ),

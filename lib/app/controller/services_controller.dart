@@ -462,44 +462,112 @@ class ServicesController extends GetxController
     Get.toNamed(AppRouter.getPackagesDetailsRoutes(), arguments: [id, name]);
   }
 
-  Future<void> openWebsite() async {
-    final website = salonDetails.website;
-    if (website != null && website != 'NA' && website.isNotEmpty) {
-      String urlString = website;
-      // Ensure the URL has a valid scheme
-      if (!urlString.startsWith('http://') &&
-          !urlString.startsWith('https://')) {
-        urlString = 'http://$urlString';
+  Future<void> openExternalUrl(String? raw, {String? missingMessage}) async {
+    if (!_validUrl(raw)) {
+      showToast(missingMessage ?? 'Link not available'.tr);
+      return;
+    }
+    var urlString = raw!.trim();
+    if (!urlString.startsWith('http://') && !urlString.startsWith('https://')) {
+      urlString = 'https://$urlString';
+    }
+    try {
+      final url = Uri.parse(urlString);
+      if (await canLaunchUrl(url)) {
+        await launchUrl(url, mode: LaunchMode.externalApplication);
+      } else {
+        showToast('Could not open link'.tr);
       }
-      try {
-        final url = Uri.parse(urlString);
-        if (await canLaunchUrl(url)) {
-          await launchUrl(
-            url,
-            mode: LaunchMode.externalApplication,
-          );
-        } else {
-          showToast('Could not launch website'.tr);
-        }
-      } catch (e) {
-        showToast('Invalid website URL'.tr);
-      }
-    } else {
-      showToast('No Website Found'.tr);
+    } catch (_) {
+      showToast('Invalid link'.tr);
     }
   }
 
+  bool _validUrl(String? value) =>
+      value != null && value.isNotEmpty && value != 'NA';
+
+  Future<void> openWebsite() async {
+    final website =
+        salonDetails.contactLinks.website ?? salonDetails.website;
+    await openExternalUrl(website, missingMessage: 'No Website Found'.tr);
+  }
+
+  Future<void> openInstagram() async {
+    await openExternalUrl(
+      salonDetails.contactLinks.instagram,
+      missingMessage: 'Instagram link not available'.tr,
+    );
+  }
+
+  Future<void> openYoutube() async {
+    await openExternalUrl(
+      salonDetails.contactLinks.youtube,
+      missingMessage: 'YouTube link not available'.tr,
+    );
+  }
+
+  Future<void> openFacebook() async {
+    await openExternalUrl(
+      salonDetails.contactLinks.facebook,
+      missingMessage: 'Facebook link not available'.tr,
+    );
+  }
+
+  Future<void> openWhatsapp() async {
+    final raw = salonDetails.contactLinks.whatsapp;
+    if (raw == null || raw.isEmpty || raw == 'NA') {
+      showToast('WhatsApp not available'.tr);
+      return;
+    }
+    if (raw.contains('http') || raw.contains('wa.me')) {
+      await openExternalUrl(raw);
+      return;
+    }
+    final digits = raw.replaceAll(RegExp(r'[^\d+]'), '');
+    final uri = Uri.parse('https://wa.me/$digits');
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    } else {
+      showToast('WhatsApp not available'.tr);
+    }
+  }
+
+  Future<void> openTwitter() async {
+    await openExternalUrl(
+      salonDetails.contactLinks.twitter,
+      missingMessage: 'Twitter link not available'.tr,
+    );
+  }
+
+  Future<void> openLinkedin() async {
+    await openExternalUrl(
+      salonDetails.contactLinks.linkedin,
+      missingMessage: 'LinkedIn link not available'.tr,
+    );
+  }
+
   Future<void> callSalon() async {
-    // if (isPremium) {
-    //   final Uri launchUri = Uri(
-    //     scheme: 'tel',
-    //     path: salonDetails.mobile.toString(),
-    //   );
-    //   await launchUrl(launchUri);
-    // } else {
-    //   showToast('Feature not available for this business'.tr);
-    // }
-    showToast('Feature not available right now'.tr);
+    if (parser.isLogin() != true) {
+      Get.delete<LoginController>(force: true);
+      Get.toNamed(AppRouter.getLoginRoute());
+      return;
+    }
+    if (!salonDetails.contactLinks.callEnabled) {
+      showToast('Call not available for this shop'.tr);
+      return;
+    }
+    final mobile =
+        salonDetails.contactLinks.phone ?? salonDetails.mobile?.toString();
+    if (mobile == null || mobile.isEmpty || mobile == 'NA') {
+      showToast('Phone number not available'.tr);
+      return;
+    }
+    final uri = Uri(scheme: 'tel', path: mobile);
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri);
+    } else {
+      showToast('Could not start call'.tr);
+    }
   }
 
   Future<void> openMap() async {
@@ -532,18 +600,20 @@ class ServicesController extends GetxController
   }
 
   void onChat() {
-    debugPrint('on chat');
-    // if (parser.isLogin() == true) {
-    //   Get.delete<ChatController>(force: true);
-    //   Get.toNamed(AppRouter.getChatRoutes(), arguments: [
-    //     salonDetails.uid.toString(),
-    //     salonDetails.name.toString()
-    //   ]);
-    // } else {
-    //   Get.delete<LoginController>(force: true);
-    //   Get.toNamed(AppRouter.getLoginRoute());
-    // }
-    showToast('Feature not available right now'.tr);
+    if (!salonDetails.contactLinks.chatEnabled) {
+      showToast('Chat not available for this shop'.tr);
+      return;
+    }
+    if (parser.isLogin() != true) {
+      Get.delete<LoginController>(force: true);
+      Get.toNamed(AppRouter.getLoginRoute());
+      return;
+    }
+    Get.delete<ChatController>(force: true);
+    Get.toNamed(AppRouter.getChatRoutes(), arguments: [
+      salonDetails.uid.toString(),
+      salonDetails.name.toString(),
+    ]);
   }
 
   void onCheckout() {

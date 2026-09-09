@@ -92,8 +92,7 @@ class TimedOfferScreen extends StatelessWidget {
                                     crossAxisAlignment:
                                         CrossAxisAlignment.start,
                                     children: [
-                                      Text(
-                                        'COUPON CODE',
+                                      Text('COUPON CODE'.tr,
                                         style: ThemeProvider.sans(
                                           size: 10,
                                           color: ThemeProvider.greyColor,
@@ -116,8 +115,7 @@ class TimedOfferScreen extends StatelessWidget {
                                           value.copyCode(value.couponRow!)
                                       : null,
                                   icon: const Icon(Icons.copy, size: 14),
-                                  label: Text(
-                                    'Copy Code',
+                                  label: Text('Copy Code'.tr,
                                     style: ThemeProvider.sans(
                                         size: 11, weight: FontWeight.w600),
                                   ),
@@ -204,8 +202,7 @@ class TimedOfferScreen extends StatelessWidget {
             ),
             if (row.services.isNotEmpty) ...[
               const SizedBox(height: 12),
-              Text(
-                'SERVICES',
+              Text('SERVICES'.tr,
                 style: ThemeProvider.sans(
                   size: 10,
                   color: ThemeProvider.greyColor,
@@ -281,7 +278,7 @@ class TimedOfferScreen extends StatelessWidget {
               const SizedBox(height: 8),
             ],
             EliteGoldButton(
-              label: 'BOOK NOW',
+              label: 'BOOK NOW'.tr,
               enabled: row.isScheduleActive,
               onTap: () => value.bookRow(row),
             ),

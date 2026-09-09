@@ -35,7 +35,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
           backgroundColor: ThemeProvider.backgroundColor,
           appBar: EliteAppBar(
             showBack: true,
-            title: 'Products',
+            title: 'Products'.tr,
             onMore: value.onSortBy,
           ),
           body: value.apiCalled == false
@@ -99,7 +99,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
                       padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
                       child: SafeArea(
                         child: EliteGoldButton(
-                          label: 'VIEW CART',
+                          label: 'VIEW CART'.tr,
                           onTap: value.onCart,
                         ),
                       ),

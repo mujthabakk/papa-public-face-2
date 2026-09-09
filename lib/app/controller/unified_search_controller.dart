@@ -37,6 +37,29 @@ class UnifiedSearchController extends GetxController implements GetxService {
   List<SearchIndividualModel> _individualList = <SearchIndividualModel>[];
   List<SearchIndividualModel> get individualList => _individualList;
 
+  /// Frontend name filter over shop / freelancer results.
+  List<SalonModel> get filteredSalonList {
+    final q = searchValue.trim().toLowerCase();
+    if (q.isEmpty) return _salonList;
+    return _salonList.where((s) {
+      final name = (s.name ?? '').toLowerCase();
+      final service = (s.serviceName ?? '').toLowerCase();
+      final address = (s.address ?? '').toLowerCase();
+      return name.contains(q) || service.contains(q) || address.contains(q);
+    }).toList();
+  }
+
+  List<SearchIndividualModel> get filteredIndividualList {
+    final q = searchValue.trim().toLowerCase();
+    if (q.isEmpty) return _individualList;
+    return _individualList.where((s) {
+      final name = (s.name ?? '').toLowerCase();
+      final service = (s.serviceName ?? '').toLowerCase();
+      final address = (s.address ?? '').toLowerCase();
+      return name.contains(q) || service.contains(q) || address.contains(q);
+    }).toList();
+  }
+
   List<BannerModel> _bannerList = <BannerModel>[];
   List<BannerModel> get bannerList => _bannerList;
 
@@ -150,6 +173,43 @@ class UnifiedSearchController extends GetxController implements GetxService {
     update();
   }
 
+  searchProducts(
+    BuildContext context,
+    String query,
+  ) {
+    searchValue = query.trim();
+
+    if (isCategoryMode) {
+      if (!(isFemale || isKid || isMale || isFamily)) {
+        FocusManager.instance.primaryFocus?.unfocus();
+        genderDialog(context);
+        return;
+      }
+      if (searchValue.isEmpty) {
+        getSearchResultInit();
+        return;
+      }
+      getSearchResult(searchValue);
+      return;
+    }
+
+    // General mode: shop / freelancer name search
+    if (!(isFemale || isKid || isMale || isFamily)) {
+      isMale = true;
+      genderId = 1;
+      selectedGender.value = Gender.male;
+    }
+    if (searchValue.isEmpty) {
+      _salonList = [];
+      _individualList = [];
+      hasSearched = false;
+      isEmpty = true.obs;
+      update();
+      return;
+    }
+    getSearchResult(searchValue);
+  }
+
   void toggleChip(int index) {
     isSelected[index] = !isSelected[index];
     if (isSelected[index]) {
@@ -238,53 +298,91 @@ class UnifiedSearchController extends GetxController implements GetxService {
   }
 
   Future<List<String>> fetchAutoCompleteServices(String keyword) async {
+    final query = keyword.trim();
+    if (query.isEmpty) return [];
+
+    final suggestions = <String>{};
+
+    // Local suggestions from already-loaded shop / freelancer names.
+    for (final s in _salonList) {
+      final name = (s.name ?? '').trim();
+      if (name.isNotEmpty &&
+          name.toLowerCase().contains(query.toLowerCase())) {
+        suggestions.add(name);
+      }
+    }
+    for (final s in _individualList) {
+      final name = (s.name ?? '').trim();
+      if (name.isNotEmpty &&
+          name.toLowerCase().contains(query.toLowerCase())) {
+        suggestions.add(name);
+      }
+    }
+
     try {
       final response = await http
-          .get(Uri.parse('${AppConstants.fetchAutoCompleteServices}$keyword'));
+          .get(Uri.parse('${AppConstants.fetchAutoCompleteServices}$query'));
       if (response.statusCode == 200) {
         final decoded = jsonDecode(response.body);
-        if (decoded is! List) return [];
-        return decoded
-            .map((item) => item.toString())
-            .where((item) =>
-                item.toLowerCase().startsWith(keyword.toLowerCase()))
-            .toList();
+        if (decoded is List) {
+          for (final item in decoded) {
+            final text = item.toString().trim();
+            if (text.isNotEmpty &&
+                text.toLowerCase().contains(query.toLowerCase())) {
+              suggestions.add(text);
+            }
+          }
+        }
       }
     } catch (e) {
       debugPrint('Autocomplete failed: $e');
     }
-    return [];
-  }
 
-  searchProducts(
-    BuildContext context,
-    String query,
-  ) {
-    if (isCategoryMode) {
-      // Category mode: Allow search without gender initially
-      if (isFemale || isKid || isMale || isFamily) {
-        getSearchResult(query);
-      } else {
-        FocusManager.instance.primaryFocus?.unfocus();
-        genderDialog(context);
-      }
-    } else {
-      // General mode: Require gender and non-empty query
-      searchValue = query;
-      if (isFemale || isKid || isMale || isFamily) {
-        if (query.isNotEmpty && query != '') {
-          getSearchResult(query);
-        } else {
-          _salonList = [];
-          _individualList = [];
-          isEmpty = true.obs;
-          update();
+    // Also pull live shop/freelancer name matches from search API.
+    try {
+      final response = await parser.getSearchResult({
+        "category": '',
+        "rating": '',
+        "gender": genderId,
+        "distance_from": '0',
+        "distance_to": '200',
+        "price_start": '0',
+        "price_end": '70000',
+        "price_sort": selectedSortOption.value,
+        "lat": parser.getLat(),
+        "lng": parser.getLng(),
+        "param": query,
+        "facilities": '',
+      });
+      final map = ApiBody.asMap(response.body);
+      if (map != null) {
+        for (final data in ApiBody.asItemList(map['partners'] ?? map['salon'],
+            keys: const ['partners', 'salon', 'salons', 'data'])) {
+          final item = ApiBody.asObject(data);
+          final name = item?['name']?.toString().trim() ?? '';
+          if (name.isNotEmpty &&
+              name.toLowerCase().contains(query.toLowerCase())) {
+            suggestions.add(name);
+          }
         }
-      } else {
-        FocusManager.instance.primaryFocus?.unfocus();
-        genderDialog(context);
+        for (final data in ApiBody.asItemList(
+            map['freelancers'] ?? map['individual'],
+            keys: const ['freelancers', 'individual', 'individuals', 'data'])) {
+          final item = ApiBody.asObject(data);
+          final name = item?['name']?.toString().trim() ?? '';
+          if (name.isNotEmpty &&
+              name.toLowerCase().contains(query.toLowerCase())) {
+            suggestions.add(name);
+          }
+        }
       }
+    } catch (e) {
+      debugPrint('Name autocomplete failed: $e');
     }
+
+    final list = suggestions.toList()
+      ..sort((a, b) => a.toLowerCase().compareTo(b.toLowerCase()));
+    return list.take(12).toList();
   }
 
   void getSearchResult(String query) async {

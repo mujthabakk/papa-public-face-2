@@ -23,7 +23,7 @@ class _AppointmentDetailScreenState extends State<AppointmentDetailScreen> {
           backgroundColor: ThemeProvider.backgroundColor,
           appBar: EliteAppBar(
             showBack: true,
-            title: 'Invoice',
+            title: 'Invoice'.tr,
             onMore: value.openHelpModal,
           ),
           body: value.apiCalled != true
@@ -51,8 +51,16 @@ class _AppointmentDetailScreenState extends State<AppointmentDetailScreen> {
   }
 
   Widget _successHeader(AppointmentDetailController value) {
-    final paid = value.appointmentInfo.status != 5 &&
-        value.appointmentInfo.status != 6;
+    final cancelled = value.appointmentInfo.status == 5 ||
+        value.appointmentInfo.status == 6;
+    final paid = value.isPaid;
+    final title = cancelled
+        ? value.orderStatus.toUpperCase()
+        : paid
+            ? 'PAYMENT SUCCESSFUL'
+            : value.showPayNow
+                ? 'PAYMENT PENDING'
+                : value.orderStatus.toUpperCase();
     return Column(
       children: [
         Container(
@@ -77,7 +85,11 @@ class _AppointmentDetailScreenState extends State<AppointmentDetailScreen> {
                 shape: BoxShape.circle,
               ),
               child: Icon(
-                paid ? Icons.check : Icons.close,
+                cancelled
+                    ? Icons.close
+                    : paid
+                        ? Icons.check
+                        : Icons.payments_outlined,
                 color: Colors.black,
                 size: 24,
               ),
@@ -86,7 +98,7 @@ class _AppointmentDetailScreenState extends State<AppointmentDetailScreen> {
         ),
         const SizedBox(height: 14),
         Text(
-          paid ? 'PAYMENT SUCCESSFUL' : value.orderStatus.toUpperCase(),
+          title,
           style: ThemeProvider.sans(
             size: 11,
             weight: FontWeight.w700,
@@ -97,8 +109,21 @@ class _AppointmentDetailScreenState extends State<AppointmentDetailScreen> {
         const SizedBox(height: 8),
         Text(
           _money(value.grandTotal, value),
-          style: ThemeProvider.serif(size: 36, color: ThemeProvider.gold),
+          style: ThemeProvider.price(
+              size: 32, weight: FontWeight.w700, color: ThemeProvider.gold),
         ),
+        if (value.paymentOptions?.message.isNotEmpty == true &&
+            !value.isPaid) ...[
+          const SizedBox(height: 10),
+          Text(
+            value.paymentOptions!.message,
+            textAlign: TextAlign.center,
+            style: ThemeProvider.sans(
+              size: 12,
+              color: ThemeProvider.greyColor,
+            ),
+          ),
+        ],
       ],
     );
   }
@@ -112,8 +137,7 @@ class _AppointmentDetailScreenState extends State<AppointmentDetailScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'TRANSACTION DETAILS',
+          Text('TRANSACTION DETAILS'.tr,
             style: ThemeProvider.sans(
               size: 11,
               weight: FontWeight.w700,
@@ -140,8 +164,7 @@ class _AppointmentDetailScreenState extends State<AppointmentDetailScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'ITEMIZED RECEIPT',
+          Text('ITEMIZED RECEIPT'.tr,
             style: ThemeProvider.sans(
               size: 11,
               weight: FontWeight.w700,
@@ -209,11 +232,16 @@ class _AppointmentDetailScreenState extends State<AppointmentDetailScreen> {
           ),
           Row(
             children: [
-              Text('Total Paid', style: ThemeProvider.serif(size: 20)),
+              Text('Total Paid'.tr,
+                  style: ThemeProvider.sans(
+                      size: 16, weight: FontWeight.w600)),
               const Spacer(),
               Text(
                 _money(value.grandTotal, value),
-                style: ThemeProvider.serif(size: 20, color: ThemeProvider.gold),
+                style: ThemeProvider.price(
+                    size: 18,
+                    weight: FontWeight.w700,
+                    color: ThemeProvider.gold),
               ),
             ],
           ),
@@ -286,14 +314,34 @@ class _AppointmentDetailScreenState extends State<AppointmentDetailScreen> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
+            if (value.showPayNow) ...[
+              EliteGoldButton(
+                label: value.payingNow ? 'PLEASE WAIT...' : 'PAY NOW',
+                icon: Icons.payment,
+                enabled: !value.payingNow,
+                onTap: value.onPayNow,
+              ),
+              const SizedBox(height: 10),
+            ],
+            if (value.showCodHint) ...[
+              Text(
+                'Or pay by cash (COD) at the shop'.tr,
+                textAlign: TextAlign.center,
+                style: ThemeProvider.sans(
+                  size: 12,
+                  color: ThemeProvider.greyColor,
+                ),
+              ),
+              const SizedBox(height: 10),
+            ],
             EliteGoldButton(
-              label: 'DOWNLOAD RECEIPT',
+              label: 'DOWNLOAD RECEIPT'.tr,
               icon: Icons.download,
               onTap: value.launchInBrowser,
             ),
             const SizedBox(height: 10),
             EliteGoldButton(
-              label: 'BACK TO HOME',
+              label: 'BACK TO HOME'.tr,
               outlined: true,
               icon: Icons.home_outlined,
               onTap: () {
@@ -304,8 +352,7 @@ class _AppointmentDetailScreenState extends State<AppointmentDetailScreen> {
               const SizedBox(height: 10),
               TextButton(
                 onPressed: () => value.onUpdateAppointmentStatus(5),
-                child: Text(
-                  'CANCEL APPOINTMENT',
+                child: Text('CANCEL APPOINTMENT'.tr,
                   style: ThemeProvider.sans(
                     size: 12,
                     weight: FontWeight.w700,
@@ -320,8 +367,7 @@ class _AppointmentDetailScreenState extends State<AppointmentDetailScreen> {
               TextButton(
                 onPressed: () => value
                     .onAddReview(value.appointmentInfo.freelancerId as int),
-                child: Text(
-                  'ADD REVIEW',
+                child: Text('ADD REVIEW'.tr,
                   style: ThemeProvider.sans(
                     size: 12,
                     weight: FontWeight.w700,

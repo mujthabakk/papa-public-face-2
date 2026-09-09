@@ -30,22 +30,14 @@ class _NotificationScreenState extends State<NotificationScreen> {
                   color: ThemeProvider.gold, size: 20),
               onPressed: () => Get.back(),
             ),
-            title: Text(
-              'Notifications',
+            title: Text('Notifications'.tr,
               style: ThemeProvider.serif(size: 22, color: ThemeProvider.gold),
             ),
             centerTitle: true,
             actions: [
               TextButton(
-                onPressed: () {
-                  for (final n in controller.notificationList) {
-                    if (n.status.toLowerCase() == 'unread') {
-                      controller.readNotifications(n.id.toString());
-                    }
-                  }
-                },
-                child: Text(
-                  'CLEAR ALL',
+                onPressed: () => controller.markAllRead(),
+                child: Text('CLEAR ALL'.tr,
                   style: ThemeProvider.sans(
                     size: 11,
                     weight: FontWeight.w700,
@@ -65,7 +57,10 @@ class _NotificationScreenState extends State<NotificationScreen> {
                   padding: const EdgeInsets.symmetric(horizontal: 16),
                   children: [
                     _chip('All'),
-                    _chip('Unread'),
+                    _chip(
+                      'Unread',
+                      badge: Get.find<CommonNotificationController>().unreadCount,
+                    ),
                     _chip('Offers'),
                     _chip('Alerts'),
                   ],
@@ -120,9 +115,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
   List<NotificationItem> _filtered(List<NotificationItem> all) {
     switch (_filter) {
       case 'Unread':
-        return all
-            .where((n) => n.status.toLowerCase() == 'unread')
-            .toList();
+        return all.where((n) => n.isUnread).toList();
       case 'Offers':
         return all
             .where((n) =>
@@ -157,12 +150,35 @@ class _NotificationScreenState extends State<NotificationScreen> {
     return 'EARLIER';
   }
 
-  Widget _chip(String label) {
+  Widget _chip(String label, {int badge = 0}) {
     final selected = _filter == label;
     return Padding(
       padding: const EdgeInsets.only(right: 8),
       child: ChoiceChip(
-        label: Text(label),
+        label: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(label),
+            if (badge > 0) ...[
+              const SizedBox(width: 6),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+                decoration: BoxDecoration(
+                  color: selected ? Colors.black : ThemeProvider.gold,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Text(
+                  '$badge',
+                  style: ThemeProvider.sans(
+                    size: 10,
+                    weight: FontWeight.w700,
+                    color: selected ? ThemeProvider.gold : Colors.black,
+                  ),
+                ),
+              ),
+            ],
+          ],
+        ),
         selected: selected,
         onSelected: (_) => setState(() => _filter = label),
         selectedColor: ThemeProvider.gold,
@@ -181,13 +197,18 @@ class _NotificationScreenState extends State<NotificationScreen> {
   }
 
   Widget _card(CommonNotificationController controller, NotificationItem n) {
-    final unread = n.status.toLowerCase() == 'unread';
+    final unread = n.isUnread;
     final type = n.type.toLowerCase();
     final isAppointment = type.contains('appointment');
     final isOffer = type.contains('promo') ||
         type.contains('offer') ||
         n.title.toLowerCase().contains('offer');
-    return Container(
+    return InkWell(
+      onTap: () {
+        if (n.isUnread) controller.readNotifications(n.id);
+      },
+      borderRadius: BorderRadius.circular(14),
+      child: Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
         color: ThemeProvider.surface,
@@ -268,7 +289,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
                   Expanded(
                     child: OutlinedButton(
                       onPressed: () {
-                        controller.readNotifications(n.id.toString());
+                        controller.readNotifications(n.id);
                         if (n.data.appointmentId != null) {
                           controller.onAppointment(n.data.appointmentId!);
                         }
@@ -281,7 +302,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
                           borderRadius: BorderRadius.circular(8),
                         ),
                       ),
-                      child: Text('Reschedule',
+                      child: Text('Reschedule'.tr,
                           style: ThemeProvider.sans(
                               size: 12, weight: FontWeight.w600)),
                     ),
@@ -290,7 +311,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
                   Expanded(
                     child: ElevatedButton(
                       onPressed: () {
-                        controller.readNotifications(n.id.toString());
+                        controller.readNotifications(n.id);
                         if (n.data.appointmentId != null) {
                           controller.onAppointment(n.data.appointmentId!);
                         }
@@ -304,7 +325,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
                           borderRadius: BorderRadius.circular(8),
                         ),
                       ),
-                      child: Text('Confirm',
+                      child: Text('Confirm'.tr,
                           style: ThemeProvider.sans(
                               size: 12, weight: FontWeight.w700)),
                     ),
@@ -329,6 +350,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
           ],
         ),
       ),
+    ),
     );
   }
 

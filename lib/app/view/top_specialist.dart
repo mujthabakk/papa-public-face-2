@@ -27,9 +27,9 @@ class _TopSpecialistScreenState extends State<TopSpecialistScreen> {
         }
         return Scaffold(
           backgroundColor: ThemeProvider.backgroundColor,
-          appBar: const EliteAppBar(
+          appBar: EliteAppBar(
             showBack: true,
-            title: 'Wellness Experts',
+            title: 'Wellness Experts'.tr,
           ),
           body: value.apiCalled == false
               ? Padding(
@@ -214,8 +214,7 @@ class _TopSpecialistScreenState extends State<TopSpecialistScreen> {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    'Starting at',
+                  Text('Starting at'.tr,
                     style: ThemeProvider.sans(
                       size: 11,
                       color: ThemeProvider.greyColor,
@@ -233,7 +232,7 @@ class _TopSpecialistScreenState extends State<TopSpecialistScreen> {
               ),
               const Spacer(),
               EliteGoldButton(
-                label: 'BOOK NOW',
+                label: 'BOOK NOW'.tr,
                 onTap: () => value.onSpecialist(item.uid as int),
               ),
             ],

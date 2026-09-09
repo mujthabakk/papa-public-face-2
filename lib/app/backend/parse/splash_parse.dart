@@ -14,6 +14,15 @@ class SplashParser {
     return sharedPreferencesManager.getBool('welcome');
   }
 
+  /// True when the user already picked a usable location (skip choose-location).
+  bool hasSavedLocation() {
+    final lat = sharedPreferencesManager.getDouble('lat') ?? 0.0;
+    final lng = sharedPreferencesManager.getDouble('lng') ?? 0.0;
+    final address =
+        (sharedPreferencesManager.getString('address') ?? '').trim();
+    return lat != 0.0 && lng != 0.0 && address.isNotEmpty;
+  }
+
   Future<bool> initAppSettings() {
     return Future.value(true);
   }
@@ -24,6 +33,13 @@ class SplashParser {
 
   Future<Response> getAppSettings() async {
     return apiService.getPublic(AppConstants.getAppSettings);
+  }
+
+  Future<Response> getAppSettingsByLanguage(String lang) async {
+    return apiService.postPublic(
+      AppConstants.getAppSettingsByLanguageId,
+      {'lang': lang},
+    );
   }
 
   String getLanguagesCode() {

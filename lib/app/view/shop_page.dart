@@ -3,10 +3,12 @@ import 'package:get/get.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:salon_user/app/backend/models/packages_model.dart';
 import 'package:salon_user/app/backend/models/services_model.dart';
+import 'package:salon_user/app/controller/login_controller.dart';
 import 'package:salon_user/app/controller/service_cart_controller.dart';
 import 'package:salon_user/app/controller/services_controller.dart';
 import 'package:salon_user/app/env.dart';
 import 'package:salon_user/app/helper/map_style.dart';
+import 'package:salon_user/app/helper/router.dart';
 import 'package:salon_user/app/util/theme.dart';
 import 'package:salon_user/app/view/imageviewer.dart';
 import 'package:salon_user/app/view/widgets/elite_ui.dart';
@@ -164,19 +166,21 @@ class _ServicesScreenState extends State<ServicesScreen> {
                         size: 28, weight: FontWeight.w700),
                   ),
                   const SizedBox(height: 8),
-                  Wrap(
-                    spacing: 14,
-                    runSpacing: 6,
-                    children: [
-                      if ((value.salonDetails.address ?? '').isNotEmpty)
-                        _meta(Icons.location_on, value.salonDetails.address ?? ''),
-                      _meta(
-                        Icons.star,
-                        '${(value.salonDetails.rating ?? 0).toStringAsFixed(1)} (${value.salonDetails.totalRating ?? 0} Reviews)',
-                      ),
-                    ],
-                  ),
-                  if (until.isNotEmpty) ...[
+                  if (value.parser.isLogin())
+                    Wrap(
+                      spacing: 14,
+                      runSpacing: 6,
+                      children: [
+                        if ((value.salonDetails.address ?? '').isNotEmpty)
+                          _meta(Icons.location_on,
+                              value.salonDetails.address ?? ''),
+                        _meta(
+                          Icons.star,
+                          '${(value.salonDetails.rating ?? 0).toStringAsFixed(1)} (${value.salonDetails.totalRating ?? 0} Reviews)',
+                        ),
+                      ],
+                    ),
+                  if (value.parser.isLogin() && until.isNotEmpty) ...[
                     const SizedBox(height: 8),
                     _meta(Icons.access_time, 'Open until $until',
                         color: ThemeProvider.gold),
@@ -216,34 +220,48 @@ class _ServicesScreenState extends State<ServicesScreen> {
   }
 
   Widget _body(ServicesController value) {
+    final loggedIn = value.parser.isLogin();
+    void goLogin() {
+      Get.delete<LoginController>(force: true);
+      Get.toNamed(AppRouter.getLoginRoute());
+    }
+
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          EliteCard(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'About the Sanctuary',
-                  style: ThemeProvider.serif(
-                      size: 20, color: ThemeProvider.gold),
-                ),
-                const SizedBox(height: 10),
-                (value.salonDetails.about ?? '').isEmpty ||
-                        value.salonDetails.about == 'NA'
-                    ? const EliteApiUnavailable()
-                    : Text(
-                        value.salonDetails.about ?? '',
-                        style: ThemeProvider.sans(
-                          size: 13,
-                          color: Colors.white70,
-                        ).copyWith(height: 1.55),
-                      ),
-              ],
+          if (loggedIn)
+            EliteCard(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('About the Sanctuary'.tr,
+                    style: ThemeProvider.serif(
+                        size: 20, color: ThemeProvider.gold),
+                  ),
+                  const SizedBox(height: 10),
+                  (value.salonDetails.about ?? '').isEmpty ||
+                          value.salonDetails.about == 'NA'
+                      ? const EliteApiUnavailable()
+                      : Text(
+                          value.salonDetails.about ?? '',
+                          style: ThemeProvider.sans(
+                            size: 13,
+                            color: Colors.white70,
+                          ).copyWith(height: 1.55),
+                        ),
+                ],
+              ),
+            )
+          else
+            Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: EliteLoginPromptCard(
+                message: 'Opps, Please Login or Register first!'.tr,
+                onTap: goLogin,
+              ),
             ),
-          ),
           if (value.categoriesList.isNotEmpty ||
               value.servicesList.isNotEmpty)
             ..._serviceSections(value)
@@ -253,16 +271,30 @@ class _ServicesScreenState extends State<ServicesScreen> {
             _packages(value)
           else
             const EliteApiUnavailable(),
-          _location(value),
-          if (value.gallery.isNotEmpty)
+          if (loggedIn) _location(value),
+          if (loggedIn)
+            EliteConnectSection(
+              links: value.salonDetails.contactLinks,
+              isAuthenticated: true,
+              onCall: value.callSalon,
+              onChat: value.onChat,
+              onWebsite: value.openWebsite,
+              onInstagram: value.openInstagram,
+              onYoutube: value.openYoutube,
+              onFacebook: value.openFacebook,
+              onWhatsapp: value.openWhatsapp,
+              onTwitter: value.openTwitter,
+              onLinkedin: value.openLinkedin,
+            ),
+          if (loggedIn && value.gallery.isNotEmpty)
             _gallery(value)
-          else
+          else if (loggedIn)
             const EliteApiUnavailable(),
-          if (value.specialistList.isNotEmpty)
+          if (loggedIn && value.specialistList.isNotEmpty)
             _specialists(value)
-          else
+          else if (loggedIn)
             const EliteApiUnavailable(),
-          _reviews(value),
+          if (loggedIn) _reviews(value),
         ],
       ),
     );
@@ -334,8 +366,10 @@ class _ServicesScreenState extends State<ServicesScreen> {
                   value.currencySymbol,
                   (service.discount ?? 0) > 0 ? service.off : service.price,
                 ),
-                style: ThemeProvider.serif(
-                    size: 20, color: ThemeProvider.gold),
+                style: ThemeProvider.price(
+                    size: 18,
+                    weight: FontWeight.w700,
+                    color: ThemeProvider.gold),
               ),
             ],
           ),
@@ -396,7 +430,7 @@ class _ServicesScreenState extends State<ServicesScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const EliteSectionBar(title: 'Combo Packages'),
+        EliteSectionBar(title: 'Combo Packages'.tr),
         ...value.packagesList.map((p) => _packageCard(value, p)),
       ],
     );
@@ -462,8 +496,10 @@ class _ServicesScreenState extends State<ServicesScreen> {
                             (package.discount ?? 0) > 0
                                 ? package.off
                                 : package.price),
-                        style: ThemeProvider.serif(
-                            size: 18, color: ThemeProvider.gold),
+                        style: ThemeProvider.price(
+                            size: 16,
+                            weight: FontWeight.w700,
+                            color: ThemeProvider.gold),
                       ),
                       if ((package.discount ?? 0) > 0) ...[
                         const SizedBox(width: 8),
@@ -478,7 +514,7 @@ class _ServicesScreenState extends State<ServicesScreen> {
                       ],
                       const Spacer(),
                       EliteGoldButton(
-                        label: 'Book Bundle',
+                        label: 'Book Bundle'.tr,
                         onTap: () => value.onPackagesDetails(
                             package.id as int, package.name.toString()),
                       ),
@@ -516,7 +552,7 @@ class _ServicesScreenState extends State<ServicesScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const EliteSectionBar(title: 'Location & Hours'),
+          EliteSectionBar(title: 'Location & Hours'.tr),
           ClipRRect(
             borderRadius: BorderRadius.circular(12),
             child: SizedBox(
@@ -588,7 +624,7 @@ class _ServicesScreenState extends State<ServicesScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const EliteSectionBar(title: 'Gallery'),
+        EliteSectionBar(title: 'Gallery'.tr),
         SizedBox(
           height: 90,
           child: ListView.separated(
@@ -619,7 +655,7 @@ class _ServicesScreenState extends State<ServicesScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         EliteSectionBar(
-          title: 'Practitioners',
+          title: 'Practitioners'.tr,
           trailing: '${value.specialistList.length}',
         ),
         SizedBox(
@@ -669,7 +705,7 @@ class _ServicesScreenState extends State<ServicesScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         EliteSectionBar(
-          title: 'Reviews',
+          title: 'Reviews'.tr,
           trailing: '${value.ownerReviewsList.length}',
         ),
         if (value.ownerReviewsList.isEmpty)

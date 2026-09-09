@@ -8,7 +8,9 @@ import 'package:salon_user/app/backend/models/address_model.dart';
 import 'package:salon_user/app/backend/models/coupons_model.dart';
 import 'package:salon_user/app/backend/models/individual_info_model.dart';
 import 'package:salon_user/app/backend/models/payment_models.dart';
+import 'package:salon_user/app/backend/models/pricing_model.dart';
 import 'package:salon_user/app/backend/parse/individual_payment_parse.dart';
+import 'package:salon_user/app/backend/parse/pricing_parse.dart';
 import 'package:salon_user/app/controller/address_list_controller.dart';
 import 'package:salon_user/app/controller/coupon_controller.dart';
 import 'package:salon_user/app/controller/individual_slot_controller.dart';
@@ -57,6 +59,9 @@ class IndividualPaymentController extends GetxController
   double balance = 0.0;
   double walletDiscount = 0.0;
   double taxAmount = 0.0;
+  double taxableValue = 0.0;
+  bool taxInclusive = true;
+  PricingBookingFields? bookingFields;
 
   bool haveAddress = false;
 
@@ -277,44 +282,71 @@ class IndividualPaymentController extends GetxController
   }
 
   void calculateAllCharge() {
-    taxAmount = Get.find<ServiceCartController>().totalPrice *
-        (Get.find<ServiceCartController>().orderTax / 100);
-
-    double totalPrice = Get.find<ServiceCartController>().totalPrice +
-        taxAmount +
-        //  Get.find<ServiceCartController>().orderTax +
-        deliveryPrice;
+    _discount = 0;
     if (_selectedCoupon.discount != null && _selectedCoupon.discount != 0) {
       double percentage(numFirst, per) {
         return (numFirst / 100) * per;
       }
 
-      _discount = percentage(Get.find<ServiceCartController>().totalPrice,
-          _selectedCoupon.discount); // null
+      _discount = percentage(
+        Get.find<ServiceCartController>().totalPrice,
+        _selectedCoupon.discount,
+      );
 
-      if (_discount > _selectedCoupon.upto!) {
+      if (_discount > (_selectedCoupon.upto ?? _discount)) {
         _discount = _selectedCoupon.upto!;
       }
     }
-    walletDiscount = balance;
-    if (isWalletChecked == true) {
-      if (totalPrice <= walletDiscount) {
-        walletDiscount = totalPrice;
-        totalPrice = totalPrice - walletDiscount;
-      } else {
-        totalPrice = totalPrice - walletDiscount;
-      }
-    } else {
-      if (totalPrice <= discount) {
-        _discount = totalPrice;
-        totalPrice = totalPrice - discount;
-      } else {
-        totalPrice = totalPrice - discount;
-      }
+
+    walletDiscount = isWalletChecked ? balance : 0;
+    refreshPricingFromApi();
+  }
+
+  Future<void> refreshPricingFromApi() async {
+    if (!Get.isRegistered<PricingParser>()) {
+      _applyLocalPricingFallback();
+      update();
+      return;
     }
-    debugPrint('grand total $totalPrice');
-    _grandTotal = double.parse((totalPrice).toStringAsFixed(2));
+
+    final cart = Get.find<ServiceCartController>();
+    final result = await Get.find<PricingParser>().calculateAppointment(
+      servicesAmount: cart.totalPrice,
+      discount: discount,
+      distanceCost: deliveryPrice,
+      walletAmount: isWalletChecked ? walletDiscount : 0,
+    );
+
+    if (result.success && result.data != null) {
+      final data = result.data!;
+      taxAmount = data.serviceTax;
+      taxableValue = data.taxableValue;
+      taxInclusive = data.taxInclusive;
+      bookingFields = data.bookingFields;
+      _grandTotal = data.grandTotal;
+    } else {
+      _applyLocalPricingFallback();
+    }
     update();
+  }
+
+  void _applyLocalPricingFallback() {
+    double totalPrice =
+        Get.find<ServiceCartController>().totalPrice + deliveryPrice;
+
+    if (!isWalletChecked) {
+      totalPrice -= discount;
+    } else if (totalPrice <= walletDiscount) {
+      walletDiscount = totalPrice;
+      totalPrice = 0;
+    } else {
+      totalPrice -= walletDiscount;
+    }
+
+    taxAmount = 0;
+    taxableValue = totalPrice;
+    bookingFields = null;
+    _grandTotal = double.parse(totalPrice.toStringAsFixed(2));
   }
 
   Future<void> getPaymentMethods() async {
@@ -544,6 +576,7 @@ class IndividualPaymentController extends GetxController
   }
 
   Future<void> createOrder({String? transactionId}) async {
+    await refreshPricingFromApi();
     Get.dialog(
         SimpleDialog(
           children: [
@@ -569,21 +602,26 @@ class IndividualPaymentController extends GetxController
         ),
         barrierDismissible: false);
 
+    final cart = Get.find<ServiceCartController>();
+    final orderTotal = bookingFields?.total ?? cart.totalPrice;
+    final orderTax = bookingFields?.serviceTax ?? taxAmount;
+    final orderGrandTotal = bookingFields?.grandTotal ?? grandTotal;
+
     var param = {
       "uid": parser.getUID(),
-      "freelancer_id": Get.find<ServiceCartController>().salonId,
+      "freelancer_id": cart.salonId,
       "salon_id": 0,
       "specialist_id": 0,
       "appointments_to": 1,
       "address": jsonEncode(addressInfo),
-      "items": jsonEncode(Get.find<ServiceCartController>().savedInCart),
+      "items": jsonEncode(cart.savedInCart),
       "coupon_id": selectedCoupon.code != null ? selectedCoupon.id : 0,
       "coupon": selectedCoupon.code != null ? jsonEncode(selectedCoupon) : 'NA',
       "discount": discount,
       "distance_cost": deliveryPrice,
-      "total": Get.find<ServiceCartController>().totalPrice,
-      "serviceTax": Get.find<ServiceCartController>().taxAmount,
-      "grand_total": grandTotal,
+      "total": orderTotal,
+      "serviceTax": orderTax,
+      "grand_total": orderGrandTotal,
       "pay_method": paymentId,
       "paid": transactionId ?? "COD",
       "save_date": Get.find<IndividualSlotController>().savedDate,

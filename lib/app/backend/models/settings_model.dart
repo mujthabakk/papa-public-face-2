@@ -9,6 +9,8 @@ class SettingsModel {
   String? zip;
   String? country;
   double? tax;
+  bool? taxInclusive;
+  String? taxMode;
   double? deliveryCharge;
   String? currencySymbol;
   String? currencySide;
@@ -88,8 +90,12 @@ class SettingsModel {
     state = json['state'];
     zip = json['zip'];
     country = json['country'];
-    tax = double.parse(json['tax'].toString());
-    deliveryCharge = double.parse(json['delivery_charge'].toString());
+    tax = double.tryParse(json['tax']?.toString() ?? '') ?? 0;
+    taxInclusive = json['tax_inclusive'] == 1 ||
+        json['tax_inclusive'] == true ||
+        json['tax_inclusive']?.toString() == '1';
+    taxMode = json['tax_mode']?.toString() ?? 'inclusive';
+    deliveryCharge = double.tryParse(json['delivery_charge']?.toString() ?? '') ?? 0;
     currencySymbol = json['currencySymbol'];
     currencySide = json['currencySide'];
     currencyCode = json['currencyCode'];
@@ -131,6 +137,8 @@ class SettingsModel {
     data['zip'] = zip;
     data['country'] = country;
     data['tax'] = tax;
+    data['tax_inclusive'] = taxInclusive == true ? 1 : 0;
+    data['tax_mode'] = taxMode;
     data['delivery_charge'] = deliveryCharge;
     data['currencySymbol'] = currencySymbol;
     data['currencySide'] = currencySide;

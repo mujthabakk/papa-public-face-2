@@ -7,6 +7,7 @@ import 'package:salon_user/app/controller/app_pages_controller.dart';
 import 'package:salon_user/app/controller/chat_controller.dart';
 import 'package:salon_user/app/controller/edit_profile_controller.dart';
 import 'package:salon_user/app/controller/login_controller.dart';
+import 'package:salon_user/app/controller/payment_socket_controller.dart';
 import 'package:salon_user/app/controller/product_cart_controller.dart';
 import 'package:salon_user/app/controller/product_order_controller.dart';
 import 'package:salon_user/app/controller/refer_and_earn_controller.dart';
@@ -391,6 +392,9 @@ class AccountController extends GetxController implements GetxService {
     // Get.back();
     if (response.statusCode == 200) {
       parser.clearAccount();
+      if (Get.isRegistered<PaymentSocketController>()) {
+        Get.find<PaymentSocketController>().stopListening();
+      }
       Get.find<ServiceCartController>().clearCart();
       Get.find<ProductCartController>().clearCart();
       Get.find<TabsController>().updateCartValue();

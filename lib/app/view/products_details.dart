@@ -23,7 +23,7 @@ class _ProductsDetailsScreenState extends State<ProductsDetailsScreen> {
           backgroundColor: ThemeProvider.backgroundColor,
           appBar: EliteAppBar(
             showBack: true,
-            title: 'Product Details',
+            title: 'Product Details'.tr,
             onMore: () {},
           ),
           body: value.apiCalled == false
@@ -90,8 +90,7 @@ class _ProductsDetailsScreenState extends State<ProductsDetailsScreen> {
                       ),
                     ),
                     const SizedBox(height: 18),
-                    Text(
-                      'QUANTITY',
+                    Text('QUANTITY'.tr,
                       style: ThemeProvider.sans(
                         size: 10,
                         color: ThemeProvider.greyColor,
@@ -120,7 +119,7 @@ class _ProductsDetailsScreenState extends State<ProductsDetailsScreen> {
                     Center(
                       child: Column(
                         children: [
-                          Text('The Science of Radiance',
+                          Text('The Science of Radiance'.tr,
                               style: ThemeProvider.serif(size: 20)),
                           const SizedBox(height: 6),
                           Container(
@@ -154,7 +153,7 @@ class _ProductsDetailsScreenState extends State<ProductsDetailsScreen> {
                     ],
                     if (value.relatedList.isNotEmpty) ...[
                       const SizedBox(height: 18),
-                      const EliteSectionBar(title: 'You May Also Like'),
+                      EliteSectionBar(title: 'You May Also Like'.tr),
                       SizedBox(
                         height: 180,
                         child: ListView.separated(

@@ -111,11 +111,10 @@ class ProductCartController extends GetxController implements GetxService {
     _totalPrice = double.parse((_totalPrice).toStringAsFixed(2));
     // double totalPrice = _totalPrice + serviceCharge;
     double totalPrice = _totalPrice;
-    taxAmount = _totalPrice * (orderTax / 100);
-    taxAmount = taxAmount.toPrecision(2);
+    taxAmount = 0;
 
     _grandTotal = double.parse(
-        (totalPrice + taxAmount + shippingMethod).toStringAsFixed(2));
+        (totalPrice + shippingMethod).toStringAsFixed(2));
     //_grandTotal = double.parse((totalPrice).toStringAsFixed(2));
     update();
   }

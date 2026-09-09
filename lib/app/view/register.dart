@@ -41,7 +41,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     return GetBuilder<RegisterController>(builder: (value) {
       return Scaffold(
         backgroundColor: ThemeProvider.backgroundColor,
-        appBar: const EliteAppBar(showBack: true, title: 'Create Account'),
+        appBar: EliteAppBar(showBack: true, title: 'Create Account'.tr),
         body: ListView(
           padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
           children: [
@@ -136,7 +136,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       ..onTap = () =>
                           value.onAppPages('Terms & Conditions'.tr, '3'),
                   ),
-                  TextSpan(text: ' and '.tr),
+                  TextSpan(text: ' ${'and'.tr} '),
                   TextSpan(
                     text: 'Privacy Policy'.tr,
                     style: ThemeProvider.sans(
@@ -149,7 +149,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
               ),
             ),
             const SizedBox(height: 20),
-            EliteGoldButton(label: 'CREATE ACCOUNT', onTap: value.onRegister),
+            EliteGoldButton(label: 'CREATE ACCOUNT'.tr, onTap: value.onRegister),
           ],
         ),
       );

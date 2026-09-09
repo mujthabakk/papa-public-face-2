@@ -2,11 +2,15 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:salon_user/app/backend/api/handler.dart';
+import 'package:salon_user/app/backend/api/api_response.dart';
 import 'package:salon_user/app/backend/models/language_model.dart';
 import 'package:salon_user/app/backend/models/settings_model.dart';
 import 'package:salon_user/app/backend/models/support_model.dart';
+import 'package:salon_user/app/backend/parse/pricing_parse.dart';
 import 'package:salon_user/app/backend/parse/splash_parse.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:salon_user/app/controller/languages_controller.dart';
+import 'package:salon_user/app/helper/locale_helper.dart';
 
 class SplashController extends GetxController implements GetxService {
   final SplashParser parser;
@@ -33,52 +37,116 @@ class SplashController extends GetxController implements GetxService {
     return parser.initAppSettings();
   }
 
+  /// Loads app settings.
+  /// Language API may omit `support` — merge with getDefault so splash
+  /// does not falsely show Connection Failed.
   Future<bool> getConfigData() async {
-    Response response = await parser.getAppSettings();
+    final lang = parser.getLanguagesCode();
     bool isSuccess = false;
-    if (response.statusCode == 200) {
-      Map<String, dynamic> myMap = Map<String, dynamic>.from(response.body);
-      if (myMap['data'] != null) {
-        dynamic body = myMap["data"];
-        if (body['settings'] != null && body['support'] != null) {
-          SettingsModel appSettingsInfo =
-              SettingsModel.fromJson(body['settings']);
 
-          _settingsModel = appSettingsInfo;
+    try {
+      final langResponse = await parser.getAppSettingsByLanguage(lang);
+      final defaultResponse = await parser.getAppSettings();
 
-          SupportModel supportModelInfo =
-              SupportModel.fromJson(body['support']);
-          _supportModel = supportModelInfo;
-          parser.saveBasicInfo(
-              appSettingsInfo.currencyCode,
-              appSettingsInfo.currencySide,
-              appSettingsInfo.currencySymbol,
-              appSettingsInfo.smsName,
-              appSettingsInfo.userVerifyWith,
-              appSettingsInfo.userLogin,
-              appSettingsInfo.email,
-              appSettingsInfo.name,
-              // appSettingsInfo.deliveryType,
-              0,
-              appSettingsInfo.deliveryCharge,
-              appSettingsInfo.tax,
-              appSettingsInfo.logo,
-              '${supportModelInfo.firstName!} ${supportModelInfo.lastName!}',
-              supportModelInfo.id,
-              appSettingsInfo.mobile.toString(),
-              appSettingsInfo.allowDistance,
-              appSettingsInfo.serviceCharge);
-          isSuccess = true;
-        } else {
-          isSuccess = false;
+      final langMap = ApiBody.asMap(langResponse.body);
+      final defaultMap = ApiBody.asMap(defaultResponse.body);
+
+      Map<String, dynamic>? settingsJson;
+      Map<String, dynamic>? supportJson;
+      Map<String, String> uiStrings = {};
+
+      void absorb(Map<String, dynamic>? map) {
+        if (map == null) return;
+        final data = ApiBody.asObject(map['data']);
+        if (data == null) return;
+        final settings = ApiBody.asObject(data['settings']);
+        final support = ApiBody.asObject(data['support']);
+        if (settings != null) settingsJson = settings;
+        if (support != null) supportJson = support;
+
+        final rawUi = data['ui_strings'] ?? data['strings'];
+        if (rawUi is Map) {
+          rawUi.forEach((key, value) {
+            final text = value?.toString() ?? '';
+            if (text.isNotEmpty) uiStrings[key.toString()] = text;
+          });
         }
       }
-    } else {
-      ApiChecker.checkApi(response);
+
+      // Prefer language settings; fill missing support from default.
+      absorb(langMap);
+      absorb(defaultMap);
+
+      if (settingsJson == null) {
+        debugPrint('Splash: settings missing from both language + default APIs');
+        if (defaultResponse.statusCode != 200 &&
+            langResponse.statusCode != 200) {
+          ApiChecker.checkApi(
+            defaultResponse.statusCode != 0
+                ? defaultResponse
+                : langResponse,
+          );
+        }
+        update();
+        return false;
+      }
+
+      supportJson ??= {
+        'id': 0,
+        'first_name': 'Support',
+        'last_name': '',
+      };
+
+      final appSettingsInfo = SettingsModel.fromJson(settingsJson!);
+      _settingsModel = appSettingsInfo;
+
+      final supportModelInfo = SupportModel.fromJson(supportJson!);
+      _supportModel = supportModelInfo;
+
+      parser.saveBasicInfo(
+        appSettingsInfo.currencyCode,
+        appSettingsInfo.currencySide,
+        appSettingsInfo.currencySymbol,
+        appSettingsInfo.smsName,
+        appSettingsInfo.userVerifyWith,
+        appSettingsInfo.userLogin,
+        appSettingsInfo.email,
+        appSettingsInfo.name,
+        0,
+        appSettingsInfo.deliveryCharge,
+        appSettingsInfo.tax,
+        appSettingsInfo.logo,
+        '${supportModelInfo.firstName ?? ''} ${supportModelInfo.lastName ?? ''}'
+            .trim(),
+        supportModelInfo.id,
+        appSettingsInfo.mobile?.toString() ?? '',
+        appSettingsInfo.allowDistance,
+        appSettingsInfo.serviceCharge,
+      );
+
+      if (uiStrings.isNotEmpty) {
+        LocaleHelper.applyUiStrings(lang, uiStrings);
+      }
+
+      isSuccess = true;
+      unawaited(_loadTaxSettings());
+    } catch (e, st) {
+      debugPrint('Splash getConfigData error: $e\n$st');
       isSuccess = false;
     }
+
     update();
     return isSuccess;
+  }
+
+  Future<void> _loadTaxSettings() async {
+    if (!Get.isRegistered<PricingParser>()) return;
+    await Get.find<PricingParser>().fetchTaxSettings();
+  }
+
+  Future<void> initLocale() async {
+    if (!Get.isRegistered<LanguagesController>()) return;
+    await Get.find<LanguagesController>().initLocale();
   }
 
   String getLanguageCode() {

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:salon_user/app/controller/languages_controller.dart';
 import 'package:salon_user/app/controller/product_cart_controller.dart';
 import 'package:salon_user/app/controller/service_cart_controller.dart';
 import 'package:salon_user/app/helper/init.dart';
@@ -34,24 +35,41 @@ class MyApp extends StatelessWidget {
   const MyApp({Key? key}) : super(key: key);
   @override
   Widget build(BuildContext context) {
-    Get.find<ServiceCartController>().getCart();
-    Get.find<ProductCartController>().getCart();
+    if (Get.isRegistered<ServiceCartController>()) {
+      Get.find<ServiceCartController>().getCart();
+    }
+    if (Get.isRegistered<ProductCartController>()) {
+      Get.find<ProductCartController>().getCart();
+    }
     return ScreenUtilInit(
       designSize: const Size(360, 690),
       minTextAdapt: true,
       splitScreenMode: true,
       builder: (context, child) {
-        return GetMaterialApp(
-          theme: dark,
-          title: AppConstants.appName,
-          color: ThemeProvider.gold,
-          debugShowCheckedModeBanner: false,
-          navigatorKey: Get.key,
-          initialRoute: AppRouter.splash,
-          getPages: AppRouter.routes,
-          defaultTransition: Transition.native,
-          translations: LocaleString(),
-          locale: const Locale('en', 'US'),
+        return GetBuilder<LanguagesController>(
+          builder: (localeCtrl) {
+            return GetMaterialApp(
+              theme: dark,
+              title: AppConstants.appName,
+              color: ThemeProvider.gold,
+              debugShowCheckedModeBanner: false,
+              navigatorKey: Get.key,
+              initialRoute: AppRouter.splash,
+              getPages: AppRouter.routes,
+              defaultTransition: Transition.native,
+              translations: LocaleString(),
+              locale: localeCtrl.appLocale,
+              fallbackLocale: const Locale('en', 'US'),
+              builder: (context, child) {
+                // Keep English layout positions (menu left, actions right).
+                // Only locale/text changes with preferred_language.
+                return Directionality(
+                  textDirection: TextDirection.ltr,
+                  child: child ?? const SizedBox.shrink(),
+                );
+              },
+            );
+          },
         );
       },
     );

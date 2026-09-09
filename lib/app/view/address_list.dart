@@ -20,7 +20,7 @@ class _AddressListScreenState extends State<AddressListScreen> {
           backgroundColor: ThemeProvider.backgroundColor,
           appBar: EliteAppBar(
             showBack: true,
-            title: 'Select Address',
+            title: 'Select Address'.tr,
             onMore: value.onNewAddress,
           ),
           body: value.apiCalled == false
@@ -66,14 +66,14 @@ class _AddressListScreenState extends State<AddressListScreen> {
                       children: [
                         Expanded(
                           child: EliteGoldButton(
-                            label: 'SAVE',
+                            label: 'SAVE'.tr,
                             onTap: value.saveAndClose,
                           ),
                         ),
                         const SizedBox(width: 10),
                         Expanded(
                           child: EliteGoldButton(
-                            label: 'CANCEL',
+                            label: 'CANCEL'.tr,
                             outlined: true,
                             onTap: () => Get.back(),
                           ),

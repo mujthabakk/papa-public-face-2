@@ -30,8 +30,10 @@ Future<void> checkAndShowSpinWinDialog() async {
   if (!Get.isRegistered<SpinnerParser>()) return;
   final parser = Get.find<SpinnerParser>();
   if (!parser.isLoggedIn()) return;
+  if (!parser.shouldAutoShowSpinPopup()) return;
   final status = await parser.fetchStatus();
   if (status?.hasAccess != true) return;
+  parser.markSpinPopupShownToday();
   showSpinWinDialog(initialStatus: status);
 }
 
@@ -300,8 +302,7 @@ class _SpinWinDialogState extends State<SpinWinDialog>
                   child: const Icon(Icons.close, color: Colors.white70, size: 20),
                 ),
               ),
-              Text(
-                'SPIN & WIN',
+              Text('SPIN & WIN'.tr,
                 style: ThemeProvider.serif(
                   size: 26,
                   weight: FontWeight.w700,
@@ -309,8 +310,7 @@ class _SpinWinDialogState extends State<SpinWinDialog>
                 ),
               ),
               const SizedBox(height: 4),
-              Text(
-                'Spin daily for cash rewards.',
+              Text('Spin daily for cash rewards.'.tr,
                 textAlign: TextAlign.center,
                 style: ThemeProvider.sans(
                   size: 12,
@@ -351,8 +351,7 @@ class _SpinWinDialogState extends State<SpinWinDialog>
               else if (!showWheel)
                 Padding(
                   padding: const EdgeInsets.symmetric(vertical: 40),
-                  child: Text(
-                    'Spinner is unavailable.',
+                  child: Text('Spinner is unavailable.'.tr,
                     style: ThemeProvider.sans(
                       size: 13,
                       color: ThemeProvider.greyColor,

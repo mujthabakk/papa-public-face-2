@@ -39,10 +39,9 @@ class _IndividualCategoriesScreenState
                   child: CircularProgressIndicator(color: ThemeProvider.gold),
                 )
               : value.servicesList.isEmpty
-                  ? const Center(
-                      child: Text(
-                        'API is not available',
-                        style: TextStyle(color: ThemeProvider.greyColor),
+                  ? Center(
+                      child: Text('API is not available'.tr,
+                        style: const TextStyle(color: ThemeProvider.greyColor),
                       ),
                     )
               : SingleChildScrollView(
