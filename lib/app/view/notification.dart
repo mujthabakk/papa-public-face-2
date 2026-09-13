@@ -37,7 +37,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
             actions: [
               TextButton(
                 onPressed: () => controller.markAllRead(),
-                child: Text('CLEAR ALL'.tr,
+                child: Text('READ ALL'.tr,
                   style: ThemeProvider.sans(
                     size: 11,
                     weight: FontWeight.w700,
@@ -205,7 +205,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
         n.title.toLowerCase().contains('offer');
     return InkWell(
       onTap: () {
-        if (n.isUnread) controller.readNotifications(n.id);
+        controller.openNotification(n);
       },
       borderRadius: BorderRadius.circular(14),
       child: Container(
@@ -289,7 +289,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
                   Expanded(
                     child: OutlinedButton(
                       onPressed: () {
-                        controller.readNotifications(n.id);
+                        controller.openNotification(n);
                         if (n.data.appointmentId != null) {
                           controller.onAppointment(n.data.appointmentId!);
                         }
@@ -311,7 +311,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
                   Expanded(
                     child: ElevatedButton(
                       onPressed: () {
-                        controller.readNotifications(n.id);
+                        controller.openNotification(n);
                         if (n.data.appointmentId != null) {
                           controller.onAppointment(n.data.appointmentId!);
                         }

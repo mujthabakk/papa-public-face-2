@@ -96,9 +96,11 @@ class SettingsModel {
         json['tax_inclusive']?.toString() == '1';
     taxMode = json['tax_mode']?.toString() ?? 'inclusive';
     deliveryCharge = double.tryParse(json['delivery_charge']?.toString() ?? '') ?? 0;
-    currencySymbol = json['currencySymbol'];
-    currencySide = json['currencySide'];
-    currencyCode = json['currencyCode'];
+    currencySymbol = json['currencySymbol'] ?? json['currency_symbol'];
+    currencySide = json['currencySide'] ?? json['currency_side'];
+    currencyCode = json['currencyCode'] ??
+        json['currency_code'] ??
+        json['currency'];
     appDirection = json['appDirection'];
     logo = json['logo'];
     smsName = json['sms_name'];

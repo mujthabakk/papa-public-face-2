@@ -12,7 +12,7 @@ class TabsBinding extends Bindings {
   void dependencies() {
     Get.lazyPut(() => TabsController(parser: Get.find()));
     Get.lazyPut(() => HomeController(parser: Get.find()));
-    Get.put(CategoriesController(parser: Get.find()), permanent: true);
+    Get.lazyPut(() => CategoriesController(parser: Get.find()));
     Get.lazyPut(() => NearController(parser: Get.find()));
     Get.lazyPut(() => BookingController(parser: Get.find()));
     Get.lazyPut(() => AccountController(parser: Get.find()));

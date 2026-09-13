@@ -45,8 +45,12 @@ class SplashController extends GetxController implements GetxService {
     bool isSuccess = false;
 
     try {
-      final langResponse = await parser.getAppSettingsByLanguage(lang);
-      final defaultResponse = await parser.getAppSettings();
+      final results = await Future.wait([
+        parser.getAppSettingsByLanguage(lang),
+        parser.getAppSettings(),
+      ]);
+      final langResponse = results[0];
+      final defaultResponse = results[1];
 
       final langMap = ApiBody.asMap(langResponse.body);
       final defaultMap = ApiBody.asMap(defaultResponse.body);

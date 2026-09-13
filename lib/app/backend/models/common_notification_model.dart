@@ -106,34 +106,68 @@ class NotificationItem {
 class NotificationData {
   final int? appointmentId;
   final int? orderId;
+  final int? bookId;
   final String businessName;
   final String customerName;
   final num price;
   final String date;
   final String status;
+  final String paymentUrl;
+  final bool showPopup;
+  final bool isPaid;
+  final String action;
+  final Map<String, dynamic> extra;
 
   NotificationData({
     this.appointmentId,
     this.orderId,
+    this.bookId,
     required this.businessName,
     required this.price,
     required this.customerName,
     required this.date,
     required this.status,
+    this.paymentUrl = '',
+    this.showPopup = false,
+    this.isPaid = false,
+    this.action = '',
+    this.extra = const {},
   });
 
+  int get payBookId =>
+      (bookId ?? 0) > 0 ? bookId! : (appointmentId ?? 0);
+
   factory NotificationData.fromJson(Map<String, dynamic> json) {
-    String rawDate = json['date']?.toString() ?? '';
+    String rawDate = json['date']?.toString() ?? json['created_at']?.toString() ?? '';
     String formattedDate =
         rawDate.contains(' ') ? rawDate.split(' ').first : rawDate;
+    final bookId = int.tryParse(
+          json['book_id']?.toString() ?? json['appointment_id']?.toString() ?? '',
+        ) ??
+        0;
+    final appointmentId = int.tryParse(
+          json['appointment_id']?.toString() ?? json['book_id']?.toString() ?? '',
+        ) ??
+        0;
     return NotificationData(
-      appointmentId: int.tryParse(json['appointment_id']?.toString() ?? ''),
+      appointmentId: appointmentId > 0 ? appointmentId : null,
+      bookId: bookId > 0 ? bookId : null,
       orderId: int.tryParse(json['order_id']?.toString() ?? ''),
       businessName: json['business_name']?.toString() ?? '',
       customerName: json['customer']?.toString() ?? '',
-      price: num.tryParse(json['price']?.toString() ?? '') ?? 0,
+      price: num.tryParse(
+            json['price']?.toString() ?? json['amount']?.toString() ?? '',
+          ) ??
+          0,
       date: formattedDate,
       status: json['status']?.toString() ?? '',
+      paymentUrl: (json['payment_url'] ?? json['checkout_url'] ?? '')
+          .toString(),
+      showPopup: json['show_popup'] == true ||
+          json['show_popup']?.toString() == '1',
+      isPaid: json['is_paid'] == true || json['is_paid']?.toString() == '1',
+      action: json['action']?.toString() ?? '',
+      extra: Map<String, dynamic>.from(json),
     );
   }
 }

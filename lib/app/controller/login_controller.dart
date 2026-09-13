@@ -9,6 +9,8 @@ import 'package:salon_user/app/controller/categories_controller.dart';
 import 'package:salon_user/app/controller/home_controller.dart';
 import 'package:salon_user/app/controller/languages_controller.dart';
 import 'package:salon_user/app/controller/near_controller.dart';
+import 'package:salon_user/app/controller/payment_socket_controller.dart';
+import 'package:salon_user/app/controller/splash_controller.dart';
 import 'package:salon_user/app/controller/tabs_controller.dart';
 import 'package:salon_user/app/helper/router.dart';
 import 'package:salon_user/app/util/constant.dart';
@@ -161,6 +163,9 @@ class LoginController extends GetxController implements GetxService {
       };
     }
     await locale.applyPreferredFromUser(source, reloadUi: true);
+    if (Get.isRegistered<SplashController>()) {
+      await Get.find<SplashController>().getConfigData();
+    }
   }
 
   void onNavigate() {
@@ -172,6 +177,12 @@ class LoginController extends GetxController implements GetxService {
     Get.delete<BookingController>(force: true);
     Get.delete<AccountController>(force: true);
     Get.offAndToNamed(AppRouter.getTabsBarRoute());
+    // Keep customer payment socket open after login (uid handshake).
+    Future.microtask(() {
+      if (Get.isRegistered<PaymentSocketController>()) {
+        Get.find<PaymentSocketController>().startListening();
+      }
+    });
   }
 
   Future<void> loginWithPhonePassword() async {

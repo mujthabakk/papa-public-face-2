@@ -124,6 +124,7 @@ import 'package:salon_user/app/view/top_products.dart';
 import 'package:salon_user/app/view/top_specialist.dart';
 import 'package:salon_user/app/view/wallet.dart';
 import 'package:salon_user/app/view/welcome.dart';
+import 'package:salon_user/app/view/after_payment.dart';
 
 class AppRouter {
   static const String initial = '/';
@@ -147,6 +148,7 @@ class AppRouter {
   static const String appointmentDetailRoutes = '/appointment_detail';
   static const String addressRoutes = '/address';
   static const String walletRoutes = '/wallet';
+  static const String afterPaymentRoutes = '/afterpayment';
   static const String referAndEarnRoutes = '/referAndEarn';
   static const String languagesRoutes = '/languages';
   static const String accountChatRoutes = '/account_chat';
@@ -244,6 +246,7 @@ class AppRouter {
   static String getSelectedServicesRoutes() => selectedServicesRoutes;
   static String getPackagesDetailsRoutes() => packagesDetailsRoutes;
   static String getCouponRoutes() => couponRoutes;
+  static String getAfterPaymentRoutes() => afterPaymentRoutes;
   static String getTimedOfferRoutes() => timedOfferRoutes;
   static String getSlotRoutes() => slotRoutes;
   static String getRescheduleSlotRoutes() => rescheduleslotRoutes;
@@ -546,6 +549,8 @@ class AppRouter {
         page: () => const ComplaintScreen(),
         binding: ComplaintsBinding(),
         fullscreenDialog: true),
+    GetPage(
+        name: afterPaymentRoutes, page: () => const AfterPaymentScreen()),
     // GetPage(
     //     name: qrcode,
     //     page: () => const LiveDecodePage(),

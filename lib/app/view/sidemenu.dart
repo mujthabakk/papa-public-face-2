@@ -121,6 +121,11 @@ class _SideMenuScreenState extends State<SideMenuScreen> {
                         Navigator.pop(context);
                         Get.find<TabsController>().updateTabId(4);
                       }),
+                    if (value.parser.haveLoggedIn())
+                      _item(Icons.payments_outlined, 'After Payment', () {
+                        Navigator.pop(context);
+                        Get.toNamed(AppRouter.getAfterPaymentRoutes());
+                      }),
                     _item(Icons.grid_view_outlined, 'Categories', () {
                       Navigator.pop(context);
                       Get.find<TabsController>().updateTabId(3);

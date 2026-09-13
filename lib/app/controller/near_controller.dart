@@ -19,6 +19,7 @@ const double cameraBearing = 30;
 class NearController extends GetxController implements GetxService {
   final NearParser parser;
   bool apiCalled = false;
+  bool _loading = false;
 
   List<SalonModel> _salonList = <SalonModel>[];
   List<SalonModel> get salonList => _salonList;
@@ -27,7 +28,12 @@ class NearController extends GetxController implements GetxService {
   List<IndividualModel> get individualList => _individualList;
 
   final Set<Marker> markers = {};
-  late CameraPosition initialCameraPosition;
+  CameraPosition initialCameraPosition = const CameraPosition(
+    zoom: cameraZoom,
+    tilt: cameraTilt,
+    bearing: cameraBearing,
+    target: LatLng(25.2048, 55.2708),
+  );
   final Completer<GoogleMapController> googleMapsController = Completer();
 
   bool haveData = false;
@@ -37,11 +43,12 @@ class NearController extends GetxController implements GetxService {
   @override
   void onInit() {
     super.onInit();
-
     getHomeData();
   }
 
   Future<void> getHomeData() async {
+    if (_loading) return;
+    _loading = true;
     var param = {"lat": parser.getLat(), "lng": parser.getLng()};
     _salonList = [];
     _individualList = [];
@@ -60,68 +67,86 @@ class NearController extends GetxController implements GetxService {
         }
       }
 
+      haveData = salonList.isNotEmpty || individualList.isNotEmpty;
+      _buildMarkers();
+      apiCalled = true;
+      update();
+
+      final extras = <Future<void>>[];
       if (_salonList.isEmpty) {
-        try {
-          final top = await parser.getTopSalon(param);
-          _parseSalons(ApiBody.asList(top.body));
-        } catch (e) {
-          debugPrint('near top salon: $e');
-        }
+        extras.add(() async {
+          try {
+            final top = await parser.getTopSalon(param);
+            _parseSalons(ApiBody.asList(top.body));
+          } catch (e) {
+            debugPrint('near top salon: $e');
+          }
+        }());
       }
       if (_individualList.isEmpty) {
-        try {
-          final top = await parser.getTopFreelancer(param);
-          _parseIndividuals(ApiBody.asList(top.body));
-        } catch (e) {
-          debugPrint('near top freelancer: $e');
-        }
+        extras.add(() async {
+          try {
+            final top = await parser.getTopFreelancer(param);
+            _parseIndividuals(ApiBody.asList(top.body));
+          } catch (e) {
+            debugPrint('near top freelancer: $e');
+          }
+        }());
       }
-
-      var destPosition = LatLng(parser.getLat(), parser.getLng());
-      initialCameraPosition = CameraPosition(
-          zoom: cameraZoom,
-          tilt: cameraTilt,
-          bearing: cameraBearing,
-          target: destPosition);
-
-      for (var element in _salonList) {
-        final lat = element.salonLat ?? 0;
-        final lng = element.salonLng ?? 0;
-        if (lat == 0 && lng == 0) continue;
-        markers.add(Marker(
-          markerId: MarkerId('${element.id}salon'),
-          position: LatLng(lat, lng),
-          infoWindow: InfoWindow(
-            title: element.name,
-            snippet: element.address,
-          ),
-          icon: BitmapDescriptor.defaultMarker,
-        ));
+      if (extras.isNotEmpty) {
+        await Future.wait(extras);
+        haveData = salonList.isNotEmpty || individualList.isNotEmpty;
+        _buildMarkers();
+        update();
       }
-
-      for (var element in _individualList) {
-        final lat = element.lat ?? 0;
-        final lng = element.lng ?? 0;
-        if (lat == 0 && lng == 0) continue;
-        markers.add(Marker(
-          markerId: MarkerId('${element.uid}freelancer'),
-          position: LatLng(lat, lng),
-          infoWindow: InfoWindow(
-            title:
-                '${element.userInfo?.firstName ?? ''} ${element.userInfo?.lastName ?? ''}'
-                    .trim(),
-          ),
-          icon: BitmapDescriptor.defaultMarker,
-        ));
-      }
-
-      haveData = salonList.isNotEmpty || individualList.isNotEmpty;
     } catch (e, st) {
       debugPrint('near getHomeData error: $e\n$st');
       haveData = false;
-    } finally {
       apiCalled = true;
       update();
+    } finally {
+      _loading = false;
+    }
+  }
+
+  void _buildMarkers() {
+    markers.clear();
+    var destPosition = LatLng(parser.getLat(), parser.getLng());
+    initialCameraPosition = CameraPosition(
+        zoom: cameraZoom,
+        tilt: cameraTilt,
+        bearing: cameraBearing,
+        target: destPosition);
+
+    for (var element in _salonList) {
+      final lat = element.salonLat ?? 0;
+      final lng = element.salonLng ?? 0;
+      if (lat == 0 && lng == 0) continue;
+      markers.add(Marker(
+        markerId: MarkerId('${element.id}salon'),
+        position: LatLng(lat, lng),
+        infoWindow: InfoWindow(
+          title: element.name,
+          snippet: element.address,
+        ),
+        icon: BitmapDescriptor.defaultMarker,
+      ));
+    }
+
+    for (var element in _individualList) {
+      final lat = element.lat ?? 0;
+      final lng = element.lng ?? 0;
+      if (lat == 0 && lng == 0) continue;
+      markers.add(Marker(
+        markerId: MarkerId('${element.uid}freelancer'),
+        position: LatLng(lat, lng),
+        infoWindow: InfoWindow(
+          title:
+              '${element.userInfo?.firstName ?? ''} ${element.userInfo?.lastName ?? ''}'
+                  .trim(),
+        ),
+        icon: BitmapDescriptor.defaultMarker,
+      ));
     }
   }
 

@@ -157,6 +157,30 @@ class PaymentParser {
     return _parsePaymentOptions(response);
   }
 
+  /// Complete-service payload for the logged-in user. Send uid only.
+  Future<List<Map<String, dynamic>>> getCompleteServiceNotification() async {
+    final uid = getUidInt();
+    if (uid == null) return [];
+    final response = await apiService.postPrivate(
+      AppConstants.paymentsGetCompleteServiceNotification,
+      {'uid': uid},
+      getToken(),
+    );
+    final map = ApiBody.asMap(response.body);
+    if (map == null || map['success'] != true) return [];
+    final data = map['data'];
+    if (data is List) {
+      return data
+          .whereType<Map>()
+          .map((e) => Map<String, dynamic>.from(e))
+          .toList();
+    }
+    if (data is Map) {
+      return [Map<String, dynamic>.from(data)];
+    }
+    return [];
+  }
+
   ({bool success, String message, PaymentOptionsModel? data})
       _parsePaymentOptions(Response response) {
     final map = ApiBody.asMap(response.body);

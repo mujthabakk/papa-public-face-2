@@ -6,6 +6,7 @@ import 'package:salon_user/app/backend/api/handler.dart';
 import 'package:salon_user/app/backend/models/common_notification_model.dart';
 import 'package:salon_user/app/backend/parse/common_notification_parse..dart';
 import 'package:salon_user/app/controller/appointment_detail_controller.dart';
+import 'package:salon_user/app/controller/payment_socket_controller.dart';
 import 'package:salon_user/app/controller/product_order_detail_controller.dart';
 import 'package:salon_user/app/helper/router.dart';
 import 'package:salon_user/app/util/theme.dart';
@@ -61,7 +62,12 @@ class CommonNotificationController extends GetxController
 
   void showNotificationDialog(
       BuildContext context, NotificationItem notification) {
-    // Opening detail = mark as read
+    openNotification(notification);
+    final type = notification.type.toLowerCase();
+    final isPayNotice = notification.data.showPopup ||
+        type.contains('payment') ||
+        notification.data.action == 'pay_now';
+    if (isPayNotice) return;
     if (notification.isUnread) {
       readNotifications(notification.id);
     }
@@ -228,6 +234,22 @@ class CommonNotificationController extends GetxController
     );
   }
 
+  /// Open a notification: mark read, then pull complete-service payload
+  /// when the socket may have been missed (background).
+  void openNotification(NotificationItem notification) {
+    if (notification.isUnread) {
+      readNotifications(notification.id);
+    }
+    final bookId = notification.data.payBookId;
+    if (bookId <= 0) return;
+    if (!Get.isRegistered<PaymentSocketController>()) return;
+    final pay = Get.find<PaymentSocketController>();
+    pay.watchBookId(bookId, fetchNow: false);
+    pay.fetchCompleteServiceNotification(
+      fallback: notification.data.extra,
+    );
+  }
+
   void onProductDetail(int id) {
     Get.delete<ProductOrderDetailController>(force: true);
     Get.toNamed(AppRouter.getProductOrderDetail(), arguments: [id]);
@@ -261,12 +283,21 @@ class CommonNotificationController extends GetxController
               notificationResponse.data.reversed.toList();
           debugPrint(
               'Notifications loaded: ${_notificationList.length}, unread=$unreadCount');
+          if (Get.isRegistered<PaymentSocketController>()) {
+            final pay = Get.find<PaymentSocketController>();
+            for (final n in _notificationList) {
+              final id = n.data.payBookId;
+              if (id > 0 && n.data.showPopup && !n.data.isPaid) {
+                pay.watchBookId(id, fetchNow: false);
+              }
+            }
+          }
         }
       } else {
         ApiChecker.checkApi(response);
       }
     } finally {
-      apiCalled = false;
+      apiCalled = true;
       _loading = false;
       safeUpdate();
     }

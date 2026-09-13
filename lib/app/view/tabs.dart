@@ -71,11 +71,7 @@ class _TabScreenState extends State<TabScreen> {
             tabId: value.tabId,
             onSelect: value.updateTabId,
           ),
-          body: TabBarView(
-            physics: const NeverScrollableScrollPhysics(),
-            controller: value.tabController,
-            children: pages,
-          ),
+          body: pages[value.tabId],
         ),
       );
         });

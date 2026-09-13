@@ -158,6 +158,9 @@ class AppointmentDetailController extends GetxController
       update();
       await loadPaymentOptions();
       await _listenPaymentSocket();
+      if (Get.isRegistered<PaymentSocketController>()) {
+        Get.find<PaymentSocketController>().watchBookId(appointmentId);
+      }
     } else {
       ApiChecker.checkApi(response);
     }

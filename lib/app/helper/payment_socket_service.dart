@@ -8,20 +8,23 @@ import 'package:salon_user/app/util/constant.dart';
 typedef PaymentPopupCallback = void Function(Map<String, dynamic> payload);
 typedef PaymentCompletedCallback = void Function(Map<String, dynamic> payload);
 
-/// Public-app listener on the per-customer channel `payment-status-<uid>`.
-/// Cluster ap2 → ws-ap2.pusher.com (never api-ap2.pusher.com). Binds two
-/// events: `pay-now-popup` (owner marked the service completed — show the
-/// Pay Now modal) and `payment-completed` (customer actually paid).
+/// Public customer listener (never partner).
+/// Handshake: POST socketConfig `{ uid }` → `data.channel` is
+/// `payment-status-<uid>` (e.g. payment-status-1617). Events are also
+/// published on shared `payment-status`, so both are subscribed.
+///
+/// Binds:
+///   pay-now-popup     → owner completed service → Pay Now modal
+///   payment-completed → pay/cash cleared → mark paid only if is_paid == true
 class PaymentSocketService {
   PusherChannelsFlutter? _pusher;
-  String? _channel;
+  final Set<String> _channels = {};
   String _payNowEvent = AppConstants.paymentPusherPayNowEvent;
   String _completedEvent = AppConstants.paymentPusherEvent;
   int _uid = 0;
   PaymentPopupCallback? _onPayNowPopup;
   PaymentCompletedCallback? _onCompleted;
   bool _listening = false;
-  bool _handling = false;
 
   bool get isListening => _listening;
 
@@ -41,9 +44,6 @@ class PaymentSocketService {
     _onPayNowPopup = onPayNowPopup;
     _onCompleted = onCompleted;
     _uid = uid;
-    // NOTE: cfg.event is the payment-completed event; the backend's generic
-    // `event` field is the pay-now-popup event, not this one — see
-    // PaymentSocketConfig.fromJson.
     _payNowEvent = cfg.payNowEvent.isNotEmpty
         ? cfg.payNowEvent
         : AppConstants.paymentPusherPayNowEvent;
@@ -70,30 +70,29 @@ class PaymentSocketService {
         onSubscriptionError: (message, error) {
           debugPrint('PaymentSocket subscribe error: $message $error');
         },
-        // Must be dynamic — PusherChannelsFlutter expects ((dynamic) => dynamic)?
+        // Must be (dynamic) — plugin type is ((dynamic) => dynamic)?
         onEvent: (dynamic event) => _onRawEvent(event),
       );
     } catch (e) {
       debugPrint('PaymentSocket init reuse: $e');
     }
 
-    if (_channel != null && _channel!.isNotEmpty) {
+    await _unsubscribeAll();
+
+    final uidChannel = _sanitizeChannel(cfg.channel, uid: _uid);
+    final shared = AppConstants.paymentPusherChannel;
+    _channels.add(uidChannel);
+    _channels.add(shared);
+
+    for (final channel in _channels) {
       try {
-        await _pusher!.unsubscribe(channelName: _channel!);
-      } catch (_) {}
-    }
-
-    // Trust the real per-customer channel from the backend, e.g.
-    // `payment-status-1617`. Only fall back if it's an unresolved template.
-    _channel = _sanitizeChannel(cfg.channel, uid: _uid);
-
-    try {
-      await _pusher!.subscribe(
-        channelName: _channel!,
-        onEvent: (dynamic event) => _onRawEvent(event),
-      );
-    } catch (e) {
-      debugPrint('PaymentSocket subscribe failed: $e');
+        await _pusher!.subscribe(
+          channelName: channel,
+          onEvent: (dynamic event) => _onRawEvent(event),
+        );
+      } catch (e) {
+        debugPrint('PaymentSocket subscribe failed ($channel): $e');
+      }
     }
 
     try {
@@ -115,7 +114,8 @@ class PaymentSocketService {
     _listening = true;
     debugPrint(
       'PaymentSocket: listening uid=$_uid cluster=${cfg.cluster} '
-      'channel=$_channel events=$_payNowEvent,$_completedEvent',
+      'channels=${_channels.join(',')} '
+      'events=$_payNowEvent,$_completedEvent',
     );
   }
 
@@ -131,7 +131,9 @@ class PaymentSocketService {
       _dispatch(PusherEvent(
         eventName: name,
         data: data,
-        channelName: _channel ?? AppConstants.paymentPusherChannel,
+        channelName: _channels.isNotEmpty
+            ? _channels.first
+            : AppConstants.paymentPusherChannel,
       ));
     } catch (e) {
       debugPrint('PaymentSocket raw event error: $e');
@@ -142,7 +144,7 @@ class PaymentSocketService {
     final rawName = event.eventName;
     if (rawName.startsWith('pusher:')) return;
 
-    final name = rawName.startsWith('.') ? rawName.substring(1) : rawName;
+    final name = _strip(rawName);
     final isPayNow = name == _strip(_payNowEvent);
     final isCompleted = name == _strip(_completedEvent);
 
@@ -152,33 +154,28 @@ class PaymentSocketService {
     if (event.data == null) return;
 
     try {
-      // Backend: data is a JSON String → jsonDecode(event.data)
       final Map<String, dynamic> data = _parsePayload(event.data!);
       final eventUid = data['uid']?.toString() ?? '';
 
-      // Public app: only own uid
-      if (_uid != 0 &&
-          eventUid.isNotEmpty &&
-          eventUid != _uid.toString()) {
+      if (_uid != 0 && eventUid.isNotEmpty && eventUid != _uid.toString()) {
         debugPrint(
             'PaymentSocket ignore: uid mismatch event=$eventUid me=$_uid');
         return;
       }
 
-      if (_handling) return;
-      _handling = true;
-      Future.delayed(const Duration(milliseconds: 500), () {
-        _handling = false;
-      });
-
       if (isPayNow) {
         debugPrint('PaymentSocket: pay-now-popup accepted uid=$eventUid');
         _onPayNowPopup?.call(data);
-      } else {
-        debugPrint('PaymentSocket: payment-completed accepted uid=$eventUid '
-            'is_paid=${data['is_paid']}');
-        _onCompleted?.call(data);
+        return;
       }
+
+      final paid = data['is_paid'] == true ||
+          data['is_paid']?.toString() == '1' ||
+          data['is_paid']?.toString().toLowerCase() == 'true';
+      debugPrint(
+          'PaymentSocket: payment-completed uid=$eventUid is_paid=$paid');
+      if (!paid) return;
+      _onCompleted?.call(data);
     } catch (e) {
       debugPrint('PaymentSocket parse error: $e');
     }
@@ -211,8 +208,7 @@ class PaymentSocketService {
     return <String, dynamic>{};
   }
 
-  /// The real channel is per-customer, e.g. `payment-status-1617` — only
-  /// reject it when it's an unresolved template like `payment-status-{uid}`.
+  /// Trust `payment-status-1617`. Only rewrite unresolved `{uid}` templates.
   static String _sanitizeChannel(String channel, {required int uid}) {
     final c = channel.trim();
     if (c.isEmpty || c.contains('{')) {
@@ -232,7 +228,8 @@ class PaymentSocketService {
           input.channel.isNotEmpty ? input.channel : d.channel,
           uid: _uid),
       event: input.event.isNotEmpty ? input.event : d.event,
-      payNowEvent: input.payNowEvent.isNotEmpty ? input.payNowEvent : d.payNowEvent,
+      payNowEvent:
+          input.payNowEvent.isNotEmpty ? input.payNowEvent : d.payNowEvent,
       driver: input.driver,
       wsUrl: input.wsUrl.isNotEmpty ? input.wsUrl : d.wsUrl,
       wsHost: input.wsHost.isNotEmpty ? input.wsHost : d.wsHost,
@@ -242,14 +239,19 @@ class PaymentSocketService {
     );
   }
 
+  Future<void> _unsubscribeAll() async {
+    for (final channel in _channels) {
+      try {
+        await _pusher?.unsubscribe(channelName: channel);
+      } catch (_) {}
+    }
+    _channels.clear();
+  }
+
   Future<void> stop() async {
-    try {
-      if (_pusher != null && _channel != null) {
-        await _pusher!.unsubscribe(channelName: _channel!);
-      }
-    } catch (_) {}
+    await _unsubscribeAll();
     _listening = false;
-    _channel = null;
     _onCompleted = null;
+    _onPayNowPopup = null;
   }
 }

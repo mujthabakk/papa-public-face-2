@@ -140,6 +140,9 @@ class _AccountScreenState extends State<AccountScreen> {
                         () {
                       Get.find<TabsController>().updateTabId(4);
                     }),
+                    _row(Icons.payments_outlined, 'After Payment'.tr, () {
+                      Get.toNamed(AppRouter.getAfterPaymentRoutes());
+                    }),
                     _row(Icons.history, 'My History'.tr, value.onProductOrder),
                   ]),
                   _section('OFFERS & REWARDS'.tr, [

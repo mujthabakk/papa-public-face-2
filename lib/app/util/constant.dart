@@ -152,6 +152,8 @@ class AppConstants {
   static const String paymentsGetPaymentStatus =
       'api/v1/payments/getPaymentStatus';
   static const String paymentsSocketConfig = 'api/v1/payments/socketConfig';
+  static const String paymentsGetCompleteServiceNotification =
+      'api/v1/payments/getCompleteServiceNotification';
   // Partner-only (do NOT call from public app): payments/markCashPaid
 
   /// Pusher payment realtime (ws-ap2.pusher.com — never api-ap2.pusher.com)

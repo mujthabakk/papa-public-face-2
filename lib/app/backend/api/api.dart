@@ -32,22 +32,41 @@ class ApiService extends GetxService {
       sharedPreferencesManager.getString(LocaleHelper.prefLanguage) ??
       AppConstants.defaultLanguageApp;
 
+  int? get _uidInt {
+    final raw = sharedPreferencesManager.getString('uid');
+    if (raw == null || raw.isEmpty) return null;
+    return int.tryParse(raw);
+  }
+
   Map<String, String> get _localeHeaders => {
         'X-App-Language': _lang,
         'Accept-Language': _lang,
       };
 
   String _withLangQuery(String uri) {
-    if (uri.contains('lang=')) return uri;
-    final separator = uri.contains('?') ? '&' : '?';
-    return '$uri${separator}lang=$_lang';
+    var path = uri;
+    if (!path.contains('lang=')) {
+      final separator = path.contains('?') ? '&' : '?';
+      path = '$path${separator}lang=$_lang';
+    }
+    final uid = _uidInt;
+    if (uid != null && uid > 0 && !path.contains('uid=')) {
+      final separator = path.contains('?') ? '&' : '?';
+      path = '$path${separator}uid=$uid';
+    }
+    return path;
   }
 
   /// Always set body lang to the same value as headers (never mix).
+  /// Logged-in uid is required so backend can apply preferred_country currency.
   dynamic _withLangBody(dynamic body) {
     if (body is Map) {
       final copy = Map<String, dynamic>.from(body);
       copy['lang'] = _lang;
+      final uid = _uidInt;
+      if (uid != null && uid > 0) {
+        copy['uid'] = uid;
+      }
       return copy;
     }
     return body;
@@ -262,7 +281,45 @@ class ApiService extends GetxService {
     }
     _logResponse(uri, response);
     _syncLocaleFromResponse(response.body);
+    _syncCurrencyFromResponse(response.body);
     return response;
+  }
+
+  void _syncCurrencyFromResponse(dynamic body) {
+    if (body is! Map) return;
+    void absorb(Map src) {
+      final codeRaw =
+          (src['currencyCode'] ?? src['currency_code'] ?? src['currency'])
+              ?.toString()
+              .trim();
+      final symbolRaw =
+          (src['currencySymbol'] ?? src['currency_symbol'])?.toString().trim();
+      final sideRaw =
+          (src['currencySide'] ?? src['currency_side'])?.toString().trim();
+      if (codeRaw != null &&
+          codeRaw.isNotEmpty &&
+          RegExp(r'^[A-Za-z]{3}$').hasMatch(codeRaw)) {
+        sharedPreferencesManager.putString(
+            'currencyCode', codeRaw.toUpperCase());
+      }
+      if (symbolRaw != null &&
+          symbolRaw.isNotEmpty &&
+          symbolRaw.length <= 8 &&
+          double.tryParse(symbolRaw) == null) {
+        sharedPreferencesManager.putString('currencySymbol', symbolRaw);
+      }
+      if (sideRaw == 'left' || sideRaw == 'right') {
+        sharedPreferencesManager.putString('currencySide', sideRaw!);
+      }
+    }
+
+    absorb(body);
+    final data = body['data'];
+    if (data is Map) {
+      absorb(data);
+      final settings = data['settings'];
+      if (settings is Map) absorb(settings);
+    }
   }
 
   void _syncLocaleFromResponse(dynamic body) {
@@ -289,6 +346,7 @@ class ApiService extends GetxService {
     dynamic params,
     Map<String, String>? headers,
   }) {
+    if (_quietApi(path) || _quietApi(url)) return;
     final buffer = StringBuffer()
       ..writeln('')
       ..writeln('┌────────────── API REQUEST ──────────────')
@@ -305,6 +363,7 @@ class ApiService extends GetxService {
   }
 
   void _logResponse(String url, Response response) {
+    if (_quietApi(url)) return;
     final model = response.body;
     final buffer = StringBuffer()
       ..writeln('')
@@ -317,6 +376,7 @@ class ApiService extends GetxService {
   }
 
   void _logError(String method, String url, Object error) {
+    if (_quietApi(url)) return;
     _print(
       '\n┌────────────── API ERROR ────────────────\n'
       '│ Method   : $method\n'
@@ -325,6 +385,10 @@ class ApiService extends GetxService {
       '│ Error    : $error\n'
       '└─────────────────────────────────────────',
     );
+  }
+
+  bool _quietApi(String pathOrUrl) {
+    return pathOrUrl.contains(AppConstants.paymentsGetCompleteServiceNotification);
   }
 
   void _print(String message) {

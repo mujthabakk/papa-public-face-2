@@ -40,18 +40,24 @@ class _SplashScreenState extends State<SplashScreen> {
   void _routing() {
     Future(() async {
       try {
-        await Get.find<SplashController>().initLocale();
+        final splash = Get.find<SplashController>();
+        final configFuture = splash.getConfigData();
+        unawaited(splash.initLocale());
+        final isSuccess = await configFuture;
+        if (!mounted) return;
+        if (isSuccess) {
+          splash.parser.saveWelcome(true);
+          if (splash.parser.hasSavedLocation()) {
+            Get.offNamed(AppRouter.getTabsBarRoute());
+          } else {
+            Get.offNamed(AppRouter.getChooseLocationRoutes());
+          }
+        } else {
+          Get.toNamed(AppRouter.getErrorRoutes());
+        }
       } catch (e) {
-        debugPrint('Splash initLocale failed (continuing): $e');
-      }
-      final isSuccess = await Get.find<SplashController>().getConfigData();
-      if (!mounted) return;
-      if (isSuccess) {
-        // Always start with the location pick screen (map flow).
-        // Language / country stay on Profile only — not on this screen.
-        Get.find<SplashController>().parser.saveWelcome(true);
-        Get.offNamed(AppRouter.getChooseLocationRoutes());
-      } else {
+        debugPrint('Splash routing failed: $e');
+        if (!mounted) return;
         Get.toNamed(AppRouter.getErrorRoutes());
       }
     });

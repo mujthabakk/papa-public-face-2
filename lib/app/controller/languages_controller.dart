@@ -10,6 +10,7 @@ import 'package:salon_user/app/backend/parse/languages_parse.dart';
 import 'package:salon_user/app/controller/account_controller.dart';
 import 'package:salon_user/app/controller/home_controller.dart';
 import 'package:salon_user/app/controller/near_controller.dart';
+import 'package:salon_user/app/controller/splash_controller.dart';
 import 'package:salon_user/app/controller/tabs_controller.dart';
 import 'package:salon_user/app/helper/locale_helper.dart';
 import 'package:salon_user/app/util/constant.dart';
@@ -123,12 +124,12 @@ class LanguagesController extends GetxController implements GetxService {
     await parser.saveUserPreference(
       userId: uid,
       language: languageCode,
-      country: countryCode,
+      country: countryName.isNotEmpty ? countryName : countryCode,
     );
     final profile = await parser.updateProfileLocale(
       uid: uid,
       language: languageCode,
-      country: countryCode,
+      country: countryName.isNotEmpty ? countryName : countryCode,
     );
     if (profile != null) {
       await applyPreferredFromUser(profile, reloadUi: false);
@@ -403,8 +404,27 @@ class LanguagesController extends GetxController implements GetxService {
     safeUpdate();
     _notifyAppUi();
 
-    unawaited(_savePreferenceToServer());
+    await _savePreferenceToServer();
+    await _reloadCurrencyAfterCountryChange();
     unawaited(loadPicker(country: code));
+  }
+
+  Future<void> _reloadCurrencyAfterCountryChange() async {
+    try {
+      if (Get.isRegistered<SplashController>()) {
+        await Get.find<SplashController>().getConfigData();
+      }
+      await parser.fetchConfig(lang: languageCode, country: countryCode);
+    } catch (e) {
+      debugPrint('reload currency after country failed: $e');
+    }
+    if (Get.isRegistered<HomeController>()) {
+      final home = Get.find<HomeController>();
+      home.currencySide = home.parser.getCurrencySide();
+      home.currencySymbol = home.parser.getCurrencySymbol();
+      await home.getHomeData();
+    }
+    _notifyAppUi();
   }
 
   void _applyLocalLanguage(String code, {required bool persist}) {

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -88,6 +90,11 @@ class HomeController extends GetxController implements GetxService {
       "lng": parser.getLng(),
     };
 
+    final timedFuture = parser.getTimedOffersHome();
+    Response response = await parser.getHomeData(param);
+    currencySide = parser.getCurrencySide();
+    currencySymbol = parser.getCurrencySymbol();
+
     _salonList = [];
     _categoriesList = [];
     _individualList = [];
@@ -97,8 +104,6 @@ class HomeController extends GetxController implements GetxService {
     _timedOffers = [];
     _topPartners = [];
 
-    final timedFuture = parser.getTimedOffersHome();
-    Response response = await parser.getHomeData(param);
     final map = ApiBody.asMap(response.body);
     if (map != null) {
       final nested = map['data'];
@@ -116,11 +121,22 @@ class HomeController extends GetxController implements GetxService {
       debugPrint('getHomeData status ${response.statusCode}');
     }
 
-    await _loadTimedOffersFrom(await timedFuture);
+    haveData = _salonList.isNotEmpty || _individualList.isNotEmpty;
+    apiCalled = true;
+    update();
+
+    unawaited(_finishHomeExtras(timedFuture));
+  }
+
+  Future<void> _finishHomeExtras(Future<Response> timedFuture) async {
+    try {
+      await _loadTimedOffersFrom(await timedFuture);
+    } catch (e) {
+      debugPrint('timedOffers extra: $e');
+    }
     await _fillMissingHomeSections();
     checkCartData();
     haveData = _salonList.isNotEmpty || _individualList.isNotEmpty;
-    apiCalled = true;
     update();
   }
 

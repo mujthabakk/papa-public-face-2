@@ -184,12 +184,21 @@ class LanguagesParser {
     required String language,
     required String country,
   }) async {
-    final response =
-        await apiService.postPublic(AppConstants.saveUserPreference, {
-      'user_id': userId,
-      'language': language,
+    final uid = int.tryParse(userId) ?? userId;
+    final payload = <String, dynamic>{
+      'uid': uid,
+      'user_id': uid,
       'country': country,
-    });
+      'language': language,
+    };
+    final token = sharedPreferencesManager.getString('token') ?? '';
+    final response = token.isNotEmpty
+        ? await apiService.postPrivate(
+            AppConstants.saveUserPreference,
+            payload,
+            token,
+          )
+        : await apiService.postPublic(AppConstants.saveUserPreference, payload);
     final map = ApiBody.asMap(response.body);
     return response.statusCode == 200 && map?['success'] == true;
   }
