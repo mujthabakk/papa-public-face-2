@@ -14,6 +14,7 @@ class TimedOfferController extends GetxController implements GetxService {
   final HomeParser parser;
 
   bool apiCalled = false;
+  bool showAllCampaigns = false;
   int campaignId = 0;
   String campaignCode = '';
   String campaignName = '';
@@ -28,11 +29,15 @@ class TimedOfferController extends GetxController implements GetxService {
   void onInit() {
     super.onInit();
     final args = Get.arguments;
-    if (args is List && args.isNotEmpty) {
+    if (args is List && args.isNotEmpty && '${args[0]}' == 'all') {
+      showAllCampaigns = true;
+    } else if (args is List && args.isNotEmpty) {
       campaignId = int.tryParse('${args[0]}') ?? 0;
       if (args.length > 1) campaignCode = args[1]?.toString() ?? '';
       if (args.length > 2) campaignName = args[2]?.toString() ?? '';
       if (args.length > 3) campaignImage = args[3]?.toString() ?? '';
+    } else {
+      showAllCampaigns = true;
     }
     loadCampaign();
   }
@@ -42,30 +47,32 @@ class TimedOfferController extends GetxController implements GetxService {
     update();
     _rows = [];
     try {
-      var response = await parser.getTimedOffersAll(
-        id: campaignId > 0 ? campaignId : null,
-        code: campaignCode.isNotEmpty ? campaignCode : null,
-      );
-      _rows = _parseRows(response.body);
-      if (_rows.isEmpty) {
-        response = await parser.postTimedOffersAll({
-          if (campaignId > 0) 'id': campaignId,
-          if (campaignCode.isNotEmpty) 'code': campaignCode,
-        });
+      if (showAllCampaigns) {
+        var response = await parser.getTimedOffersAll();
         _rows = _parseRows(response.body);
-      }
-      if (_rows.isEmpty) {
-        response = await parser.getTimedOffersAll();
+        if (_rows.isEmpty) {
+          response = await parser.postTimedOffersAll({});
+          _rows = _parseRows(response.body);
+        }
+      } else {
+        var response = await parser.getTimedOffersAll(
+          id: campaignId > 0 ? campaignId : null,
+          code: campaignCode.isNotEmpty ? campaignCode : null,
+        );
         _rows = _parseRows(response.body);
-      }
-      if (campaignId > 0 || campaignCode.isNotEmpty) {
-        final filtered = _rows.where((row) {
-          final idMatch = campaignId <= 0 || row.id == campaignId;
-          final codeMatch = campaignCode.isEmpty ||
-              (row.code ?? '').toLowerCase() == campaignCode.toLowerCase();
-          return idMatch && codeMatch;
-        }).toList();
-        if (filtered.isNotEmpty) _rows = filtered;
+        if (_rows.isEmpty) {
+          response = await parser.postTimedOffersAll({
+            if (campaignId > 0) 'id': campaignId,
+            if (campaignCode.isNotEmpty) 'code': campaignCode,
+          });
+          _rows = _parseRows(response.body);
+        }
+        if (_rows.isEmpty) {
+          response = await parser.getTimedOffersAll();
+          _rows = _parseRows(response.body);
+        }
+        // Keep the API list as returned. Partner rows can share id=1
+        // but use a different coupon (e.g. Style N Care / TEST123).
       }
     } catch (e) {
       debugPrint('timed offer getAll: $e');
@@ -76,14 +83,66 @@ class TimedOfferController extends GetxController implements GetxService {
 
   List<TimedOfferRow> _parseRows(dynamic body) {
     final list = <TimedOfferRow>[];
-    for (final item in ApiBody.asList(body)) {
+    final items = ApiBody.asList(
+      body,
+      keys: const [
+        'data',
+        'timed_offers',
+        'campaigns',
+        'offers',
+        'items',
+        'result',
+        'list',
+      ],
+    );
+    for (final item in items) {
       try {
+        if (item is Map &&
+            (item['rows'] is List ||
+                item['partners'] is List ||
+                item['items'] is List)) {
+          final nested = item['rows'] ?? item['partners'] ?? item['items'];
+          if (nested is List) {
+            for (final child in nested) {
+              if (child is! Map) continue;
+              final merged = Map<String, dynamic>.from(item);
+              merged.remove('rows');
+              merged.remove('partners');
+              merged.remove('items');
+              if (child.containsKey('partner') || child.containsKey('services')) {
+                merged.addAll(Map<String, dynamic>.from(child));
+              } else {
+                merged['partner'] = child;
+              }
+              list.add(TimedOfferRow.fromJson(merged));
+            }
+            continue;
+          }
+        }
         list.add(TimedOfferRow.fromJson(item));
       } catch (e) {
         debugPrint('Skip timed offer row: $e');
       }
     }
     return list;
+  }
+
+  List<List<TimedOfferRow>> get campaignGroups {
+    final groups = <String, List<TimedOfferRow>>{};
+    final order = <String>[];
+    for (final row in _rows) {
+      final key = [
+        (row.name ?? '').trim().toLowerCase(),
+        row.startTime ?? '',
+        row.endTime ?? '',
+      ].join('|');
+      if (!groups.containsKey(key)) {
+        groups[key] = [];
+        order.add(key);
+      }
+      groups[key]!.add(row);
+    }
+    return [for (final key in order) groups[key]!];
   }
 
   TimedOfferRow? get header {
@@ -95,7 +154,7 @@ class TimedOfferController extends GetxController implements GetxService {
   }
 
   List<TimedOfferRow> get bookableRows =>
-      _rows.where((r) => r.hasServices).toList();
+      _rows.where((r) => r.hasPartner).toList();
 
   TimedOfferRow? get couponRow {
     for (final row in _rows) {
@@ -112,7 +171,7 @@ class TimedOfferController extends GetxController implements GetxService {
       return;
     }
     if (row.displayCode.isEmpty) {
-      showToast('API is not available'.tr);
+      showToast('Data is not available'.tr);
       return;
     }
     Clipboard.setData(ClipboardData(text: row.displayCode));

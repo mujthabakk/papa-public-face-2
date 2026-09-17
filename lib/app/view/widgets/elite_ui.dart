@@ -6,6 +6,7 @@ import 'package:salon_user/app/controller/product_cart_controller.dart';
 import 'package:salon_user/app/controller/service_cart_controller.dart';
 import 'package:salon_user/app/controller/tabs_controller.dart';
 import 'package:salon_user/app/env.dart';
+import 'package:salon_user/app/helper/locale_helper.dart';
 import 'package:salon_user/app/helper/router.dart';
 import 'package:salon_user/app/util/theme.dart';
 
@@ -503,7 +504,7 @@ class EliteBottomNav extends StatelessWidget {
       (Icons.home_outlined, 'Home'.tr, 0),
       (Icons.location_on_outlined, 'Nearby'.tr, 1),
       (Icons.qr_code_2, 'Scan'.tr, 2),
-      (Icons.grid_view_outlined, 'Categories'.tr, 3),
+      (Icons.shopping_bag_outlined, 'Products'.tr, 3),
       (Icons.person_outline, 'Profile'.tr, 5),
     ];
 
@@ -580,9 +581,11 @@ class EliteBottomNav extends StatelessWidget {
   }
 }
 
-String elitePrice(String side, String symbol, num? amount, {int digits = 0}) {
-  final v = (amount ?? 0).toStringAsFixed(digits);
-  return side == 'left' ? '$symbol$v' : '$v$symbol';
+String elitePrice(String side, String symbol, num? amount, {int digits = 2}) {
+  if (AppCurrency.symbol.trim().isEmpty) {
+    AppCurrency.apply(symbol: symbol, side: side);
+  }
+  return AppCurrency.format(amount, digits: digits);
 }
 
 class EliteCard extends StatelessWidget {
@@ -702,25 +705,67 @@ class EliteQtyStepper extends StatelessWidget {
   }
 }
 
+double eliteSafeRating(num? rating, {num? reviews}) {
+  final value = (rating ?? 0).toDouble();
+  final count = (reviews ?? 0).toInt();
+  if (count <= 0 || value <= 0 || value > 5) return 0;
+  return value;
+}
+
 class EliteApiUnavailable extends StatelessWidget {
   final double minHeight;
+  final String? title;
+  final String? subtitle;
+  final IconData? icon;
 
-  const EliteApiUnavailable({Key? key, this.minHeight = 72}) : super(key: key);
+  const EliteApiUnavailable({
+    Key? key,
+    this.minHeight = 72,
+    this.title,
+    this.subtitle,
+    this.icon,
+  }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
+    final heading = title ?? 'Data is not available';
+    final detail = subtitle ??
+        (title == null ? 'Please try again later.' : null);
     return Container(
       constraints: BoxConstraints(minHeight: minHeight),
       width: double.infinity,
       alignment: Alignment.center,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
-      child: Text(
-        'API is not available'.tr,
-        textAlign: TextAlign.center,
-        style: ThemeProvider.sans(
-          size: 13,
-          color: ThemeProvider.greyColor,
-        ),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 22),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            icon ?? Icons.inbox_outlined,
+            size: 36,
+            color: ThemeProvider.gold.withValues(alpha: 0.75),
+          ),
+          const SizedBox(height: 10),
+          Text(
+            heading.tr,
+            textAlign: TextAlign.center,
+            style: ThemeProvider.sans(
+              size: 14,
+              weight: FontWeight.w600,
+              color: Colors.white70,
+            ),
+          ),
+          if (detail != null && detail.isNotEmpty) ...[
+            const SizedBox(height: 6),
+            Text(
+              detail.tr,
+              textAlign: TextAlign.center,
+              style: ThemeProvider.sans(
+                size: 12,
+                color: ThemeProvider.greyColor,
+              ),
+            ),
+          ],
+        ],
       ),
     );
   }
@@ -933,8 +978,7 @@ class EliteConnectSection extends StatelessWidget {
                 ),
               ],
             ),
-            if (links.hasAnySocial) ...[
-              const SizedBox(height: 14),
+            const SizedBox(height: 14),
               Text('Social Media'.tr,
                 style: ThemeProvider.sans(
                   size: 11,
@@ -985,7 +1029,6 @@ class EliteConnectSection extends StatelessWidget {
                   ),
                 ],
               ),
-            ],
           ],
         ),
       ),
@@ -1039,36 +1082,30 @@ class EliteConnectSection extends StatelessWidget {
     required bool enabled,
     required VoidCallback onTap,
   }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        decoration: BoxDecoration(
-          color: const Color(0xFF121212),
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: enabled
-                ? ThemeProvider.gold.withValues(alpha: 0.35)
-                : const Color(0xFF2A2A2A),
+    return Opacity(
+      opacity: enabled ? 1 : 0.32,
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          decoration: BoxDecoration(
+            color: const Color(0xFF121212),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: ThemeProvider.gold.withValues(alpha: 0.35),
+            ),
           ),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              icon,
-              size: 16,
-              color: enabled ? ThemeProvider.gold : ThemeProvider.greyColor,
-            ),
-            const SizedBox(width: 6),
-            Text(
-              label,
-              style: ThemeProvider.sans(
-                size: 11,
-                color: enabled ? Colors.white70 : ThemeProvider.greyColor,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, size: 16, color: ThemeProvider.gold),
+              const SizedBox(width: 6),
+              Text(
+                label,
+                style: ThemeProvider.sans(size: 11, color: Colors.white70),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

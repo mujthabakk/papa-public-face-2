@@ -127,7 +127,7 @@ class _UnifiedSearchScreenState extends State<UnifiedSearchScreen> {
                       decoration: InputDecoration(
                         prefixIcon: const Icon(Icons.search,
                             color: ThemeProvider.gold, size: 18),
-                        hintText: 'Search shops, freelancers...'.tr,
+                        hintText: 'Search shops, freelancers, services...'.tr,
                         hintStyle: ThemeProvider.sans(
                             size: 13, color: ThemeProvider.greyColor),
                         filled: true,
@@ -193,6 +193,12 @@ class _UnifiedSearchScreenState extends State<UnifiedSearchScreen> {
                   selected: value.tabID.value == 1,
                   onTap: () => value.updateTabID(1),
                 ),
+                const SizedBox(width: 4),
+                _modeButton(
+                  label: 'Services'.tr,
+                  selected: value.tabID.value == 2,
+                  onTap: () => value.updateTabID(2),
+                ),
               ],
             ),
           ),
@@ -206,17 +212,12 @@ class _UnifiedSearchScreenState extends State<UnifiedSearchScreen> {
                   ? _resultList(
                       banners: value.bannerList,
                       searched: value.hasSearched,
-                      empty: value.isEmptySearchSalon ||
-                          value.filteredSalonList.isEmpty,
+                      empty: value.filteredSalonList.isEmpty,
                       children: value.filteredSalonList
                           .map((s) => _resultCard(
                                 cover: s.cover,
                                 title: s.name ?? '',
-                                subtitle: (s.serviceName != null &&
-                                        s.serviceName!.isNotEmpty &&
-                                        s.serviceName != s.name)
-                                    ? s.serviceName!
-                                    : 'Shop'.tr,
+                                subtitle: 'Shop'.tr,
                                 address: s.address,
                                 distance: s.distance,
                                 duration: s.duration,
@@ -231,34 +232,58 @@ class _UnifiedSearchScreenState extends State<UnifiedSearchScreen> {
                           .toList(),
                       onBanner: value.onBanner,
                     )
-                  : _resultList(
-                      banners: value.bannerList,
-                      searched: value.hasSearched,
-                      empty: value.isEmptySearchFreelancer ||
-                          value.filteredIndividualList.isEmpty,
-                      children: value.filteredIndividualList
-                          .map((s) => _resultCard(
-                                cover: s.cover,
-                                title: s.name ?? '',
-                                subtitle: (s.serviceName != null &&
-                                        s.serviceName!.isNotEmpty &&
-                                        s.serviceName != s.name)
-                                    ? s.serviceName!
-                                    : 'Freelancer'.tr,
-                                address: s.address,
-                                distance: s.distance,
-                                duration: s.duration,
-                                gender: s.gender,
-                                rating: s.rating,
-                                reviews: s.reviewCount ?? s.totalRating,
-                                price: s.price,
-                                offer: s.off,
-                                discount: s.discount,
-                                onTap: () => value.onSpecialist(s.uid ?? 0),
-                              ))
-                          .toList(),
-                      onBanner: value.onBanner,
-                    ),
+                  : value.tabID.value == 1
+                      ? _resultList(
+                          banners: value.bannerList,
+                          searched: value.hasSearched,
+                          empty: value.filteredIndividualList.isEmpty,
+                          children: value.filteredIndividualList
+                              .map((s) => _resultCard(
+                                    cover: s.cover,
+                                    title: s.name ?? '',
+                                    subtitle: 'Freelancer'.tr,
+                                    address: s.address,
+                                    distance: s.distance,
+                                    duration: s.duration,
+                                    gender: s.gender,
+                                    rating: s.rating,
+                                    reviews: s.reviewCount ?? s.totalRating,
+                                    price: s.price,
+                                    offer: s.off,
+                                    discount: s.discount,
+                                    onTap: () =>
+                                        value.onSpecialist(s.uid ?? 0),
+                                  ))
+                              .toList(),
+                          onBanner: value.onBanner,
+                        )
+                      : _resultList(
+                          banners: value.bannerList,
+                          searched: value.hasSearched,
+                          empty: value.filteredServiceList.isEmpty,
+                          children: value.filteredServiceList
+                              .map((s) => _resultCard(
+                                    cover: s.cover,
+                                    title: (s.serviceName ?? '').isNotEmpty
+                                        ? s.serviceName!
+                                        : (s.name ?? ''),
+                                    subtitle: (s.name ?? '').isNotEmpty
+                                        ? s.name!
+                                        : 'Service'.tr,
+                                    address: s.address,
+                                    distance: s.distance,
+                                    duration: s.duration,
+                                    gender: s.gender,
+                                    rating: s.rating,
+                                    reviews: s.reviewCount ?? s.totalRating,
+                                    price: s.price,
+                                    offer: s.off,
+                                    discount: s.discount,
+                                    onTap: () => value.onServiceResult(s),
+                                  ))
+                              .toList(),
+                          onBanner: value.onBanner,
+                        ),
         ),
       ],
     );
@@ -282,7 +307,7 @@ class _UnifiedSearchScreenState extends State<UnifiedSearchScreen> {
           child: Text(
             label,
             style: ThemeProvider.sans(
-              size: 13,
+              size: 11,
               weight: FontWeight.w700,
               color: selected ? ThemeProvider.blackColor : Colors.white70,
             ),
@@ -423,7 +448,7 @@ class _UnifiedSearchScreenState extends State<UnifiedSearchScreen> {
                           size: 13, color: ThemeProvider.gold),
                       const SizedBox(width: 2),
                       Text(
-                        '${(distance ?? 0).toStringAsFixed(1)} KM',
+                        '${(distance ?? 0).toStringAsFixed(1)} ${'km away'.tr}',
                         style: ThemeProvider.sans(
                             size: 11, color: ThemeProvider.greyColor),
                       ),
@@ -475,7 +500,7 @@ class _UnifiedSearchScreenState extends State<UnifiedSearchScreen> {
                     children: [
                       if (original > 0 && sell != original)
                         Text(
-                          '₹ ${original.toStringAsFixed(2)}',
+                          elitePrice('', '', original),
                           style: ThemeProvider.sans(
                             size: 12,
                             color: ThemeProvider.gold,
@@ -498,7 +523,7 @@ class _UnifiedSearchScreenState extends State<UnifiedSearchScreen> {
                       children: [
                         if (sell > 0)
                           Text(
-                            '₹ ${sell.toStringAsFixed(2)}',
+                            elitePrice('', '', sell),
                             style: ThemeProvider.sans(
                               size: 18,
                               weight: FontWeight.w700,
@@ -540,12 +565,27 @@ class _UnifiedSearchScreenState extends State<UnifiedSearchScreen> {
     for (final s in value.salonList) {
       final id = s.uid ?? 0;
       if (id <= 0 || seen.contains(id)) continue;
+      if ((value.isMale || value.isFemale || value.isKid || value.isFamily) &&
+          s.gender != value.genderId) {
+        continue;
+      }
       seen.add(id);
       shops.add(s);
     }
 
-    if (shops.isEmpty && value.individualList.isEmpty) {
-      return const EliteApiUnavailable();
+    if (shops.isEmpty &&
+        value.individualList
+            .where((s) =>
+                !(value.isMale ||
+                    value.isFemale ||
+                    value.isKid ||
+                    value.isFamily) ||
+                s.gender == value.genderId)
+            .isEmpty) {
+      return const EliteApiUnavailable(
+        title: 'No shops or experts nearby',
+        icon: Icons.search_off,
+      );
     }
 
     return ListView(
@@ -565,11 +605,23 @@ class _UnifiedSearchScreenState extends State<UnifiedSearchScreen> {
         ),
         const SizedBox(height: 12),
         ...shops.map((s) => _shopCard(value, s)),
-        if (value.individualList.isNotEmpty) ...[
+        if (value.individualList.any((s) =>
+            !(value.isMale ||
+                value.isFemale ||
+                value.isKid ||
+                value.isFamily) ||
+            s.gender == value.genderId)) ...[
           const SizedBox(height: 16),
           Text('Expert Freelancers'.tr, style: ThemeProvider.serif(size: 20)),
           const SizedBox(height: 10),
-          ...value.individualList.map((s) => _expert(value, s)),
+          ...value.individualList
+              .where((s) =>
+                  !(value.isMale ||
+                      value.isFemale ||
+                      value.isKid ||
+                      value.isFamily) ||
+                  s.gender == value.genderId)
+              .map((s) => _expert(value, s)),
         ],
       ],
     );
@@ -634,7 +686,7 @@ class _UnifiedSearchScreenState extends State<UnifiedSearchScreen> {
             if ((s.distance ?? 0) > 0) ...[
               const SizedBox(height: 4),
               Text(
-                '${(s.distance ?? 0).toStringAsFixed(1)} ${'mi away'.tr}',
+                '${(s.distance ?? 0).toStringAsFixed(1)} ${'km away'.tr}',
                 style: ThemeProvider.sans(
                     size: 11, color: ThemeProvider.gold),
               ),

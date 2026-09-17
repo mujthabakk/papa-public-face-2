@@ -65,6 +65,11 @@ class LanguagesParser {
     return uid;
   }
 
+  bool haveLoggedIn() {
+    final uid = getUid();
+    return uid != null && uid.isNotEmpty;
+  }
+
   /// Main picker API: countries + languages (+ optional country filter).
   Future<ActiveCountriesResult> fetchActiveCountries({
     String? country,
@@ -131,11 +136,17 @@ class LanguagesParser {
     required String lang,
     required String country,
   }) async {
-    final response = await apiService.postPublic(AppConstants.getLocaleConfig, {
-      'lang': lang,
-      'country': country,
-    });
-    final map = ApiBody.asMap(response.body);
+    var response = await apiService.getPublic(
+      '${AppConstants.getLocaleConfig}?lang=$lang&country=$country',
+    );
+    var map = ApiBody.asMap(response.body);
+    if (map == null) {
+      response = await apiService.postPublic(AppConstants.getLocaleConfig, {
+        'lang': lang,
+        'country': country,
+      });
+      map = ApiBody.asMap(response.body);
+    }
     if (map == null) {
       return LocaleConfigResult(
         meta: LocaleMeta(locale: lang, direction: 'ltr', isRtl: false),
@@ -146,9 +157,19 @@ class LanguagesParser {
     LocaleConfigData? config;
     final data = map['data'];
     if (data is Map) {
-      config = LocaleConfigData.fromJson(Map<String, dynamic>.from(data));
+      final merged = Map<String, dynamic>.from(map);
+      merged.addAll(Map<String, dynamic>.from(data));
+      config = LocaleConfigData.fromJson(merged);
+    } else {
+      config = LocaleConfigData.fromJson(map);
     }
-
+    if (config.currencyCode.isNotEmpty) {
+      sharedPreferencesManager.putString('currencyCode', config.currencyCode);
+    }
+    if (config.currencySymbol.isNotEmpty) {
+      sharedPreferencesManager.putString(
+          'currencySymbol', config.currencySymbol);
+    }
     return LocaleConfigResult(meta: meta, config: config);
   }
 

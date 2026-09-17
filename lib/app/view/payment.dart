@@ -347,7 +347,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
           Switch(
             value: value.isWalletChecked,
             activeThumbColor: ThemeProvider.gold,
-            onChanged: value.balance <= 0 || value.offerName.isNotEmpty
+            onChanged: value.balance <= 0
                 ? null
                 : (v) => value.updateWalletChecked(v),
           ),
@@ -426,7 +426,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
             Padding(
               padding: const EdgeInsets.only(bottom: 8),
               child: Text(
-                'Taxable: ${elitePrice(value.currencySide, value.currencySymbol, value.taxableValue, digits: 2)} | GST: ${elitePrice(value.currencySide, value.currencySymbol, value.taxAmount, digits: 2)}',
+                'Taxable: ${elitePrice(value.currencySide, value.currencySymbol, value.taxableValue, digits: 2)} | ${Get.isRegistered<ServiceCartController>() ? Get.find<ServiceCartController>().taxTypeLabel : 'Tax'}: ${elitePrice(value.currencySide, value.currencySymbol, value.taxAmount, digits: 2)}',
                 style: ThemeProvider.sans(
                   size: 11,
                   color: ThemeProvider.greyColor,

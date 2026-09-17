@@ -239,7 +239,7 @@ class PaymentParser {
   Future<({bool success, String message, CheckoutPaymentUrlData? data})>
       generateCheckoutPaymentUrl({
     required int appointmentId,
-    required double amount,
+    double? amount,
   }) async {
     final uid = getUidInt();
     if (uid == null) {
@@ -250,15 +250,17 @@ class PaymentParser {
       );
     }
 
-    // payNow == generatePaymentUrl; send book_id + appointment_id (same).
+    // Backend charges stored INR grand_total. Do not send converted QAR.
+    final payload = <String, dynamic>{
+      'uid': uid,
+      'user_id': uid,
+      'appointment_id': appointmentId,
+      'book_id': appointmentId,
+    };
+
     final response = await apiService.postPrivate(
       AppConstants.paymentsPayNow,
-      {
-        'uid': uid,
-        'appointment_id': appointmentId,
-        'book_id': appointmentId,
-        'amount': amount,
-      },
+      payload,
       getToken(),
     );
     final map = ApiBody.asMap(response.body);
@@ -270,15 +272,9 @@ class PaymentParser {
       );
     }
     if (map['success'] != true) {
-      // Fallback to generatePaymentUrl alias
       final legacy = await apiService.postPrivate(
         AppConstants.paymentsGeneratePaymentUrl,
-        {
-          'uid': uid,
-          'appointment_id': appointmentId,
-          'book_id': appointmentId,
-          'amount': amount,
-        },
+        payload,
         getToken(),
       );
       return _parsePayUrl(legacy);

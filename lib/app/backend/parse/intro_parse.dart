@@ -12,4 +12,9 @@ class IntroParser {
   void saveLanguage(String code) {
     sharedPreferencesManager.putString('language', code);
   }
+
+  void saveWelcome(bool value) {
+    sharedPreferencesManager.putBool('intro_completed', value);
+    sharedPreferencesManager.putBool('welcome', value);
+  }
 }

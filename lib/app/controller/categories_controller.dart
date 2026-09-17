@@ -6,10 +6,13 @@ import 'package:salon_user/app/backend/models/products_model.dart';
 import 'package:salon_user/app/backend/parse/categories_parse.dart';
 import 'package:salon_user/app/controller/cart_controller.dart';
 import 'package:salon_user/app/controller/products_controller.dart';
+import 'package:salon_user/app/helper/locale_helper.dart';
 import 'package:salon_user/app/helper/router.dart';
 import 'package:salon_user/app/util/constant.dart';
 
-class CategoriesController extends GetxController implements GetxService {
+class CategoriesController extends GetxController
+    with CountryScopedRefresh
+    implements GetxService {
   final CategoriesParser parser;
 
   String selectedCategory = '';
@@ -28,6 +31,7 @@ class CategoriesController extends GetxController implements GetxService {
     super.onInit();
     currencySide = parser.getCurrencySide();
     currencySymbol = parser.getCurrencySymbol();
+    markCountryFresh();
     getAllCategories();
   }
 

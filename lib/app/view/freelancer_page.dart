@@ -20,10 +20,7 @@ class SpecialistScreen extends StatefulWidget {
 
 class _SpecialistScreenState extends State<SpecialistScreen> {
   String _price(SpecialistController value, double? amount) {
-    final p = (amount ?? 0).toStringAsFixed(0);
-    return value.currencySide == 'left'
-        ? '${value.currencySymbol}$p'
-        : '$p${value.currencySymbol}';
+    return elitePrice(value.currencySide, value.currencySymbol, amount);
   }
 
   @override
@@ -69,12 +66,18 @@ class _SpecialistScreenState extends State<SpecialistScreen> {
                     if (value.servicesList.isNotEmpty)
                       _services(value)
                     else
-                      const EliteApiUnavailable(),
+                      const EliteApiUnavailable(
+                        title: 'No services available',
+                        icon: Icons.spa_outlined,
+                      ),
                     const SizedBox(height: 22),
                     if (value.gallery.isNotEmpty)
                       _gallery(value)
                     else
-                      const EliteApiUnavailable(),
+                      const EliteApiUnavailable(
+                        title: 'No photos yet',
+                        icon: Icons.photo_outlined,
+                      ),
                   ],
                 ),
           bottomNavigationBar: value.servicesList.isEmpty &&
@@ -197,7 +200,10 @@ class _SpecialistScreenState extends State<SpecialistScreen> {
   Widget _backgroundCard(SpecialistController value) {
     final about = value.individualDetails.about ?? '';
     if (about.isEmpty && value.categoriesList.isEmpty) {
-      return const EliteApiUnavailable();
+      return const EliteApiUnavailable(
+        title: 'No details added yet',
+        icon: Icons.info_outline,
+      );
     }
     return Container(
       padding: const EdgeInsets.all(16),
@@ -294,6 +300,16 @@ class _SpecialistScreenState extends State<SpecialistScreen> {
         ...List.generate(value.servicesList.length, (index) {
           final item = value.servicesList[index];
           final selected = item.isChecked == true;
+          final hasOffer = (item.discount ?? 0) > 0;
+          final offerPrice = hasOffer ? item.off : item.price;
+          final rating = (item.rating ?? 0) > 0
+              ? item.rating!
+              : (value.individualDetails.rating ?? 0);
+          final reviews = (item.reviewCount ?? 0) > 0
+              ? item.reviewCount!
+              : (item.totalRating ?? 0) > 0
+                  ? item.totalRating!
+                  : (value.individualDetails.totalRating ?? 0);
           return GestureDetector(
             onTap: () =>
                 value.updateServiceStatusInCart(index, !(item.isChecked ?? false)),
@@ -313,6 +329,19 @@ class _SpecialistScreenState extends State<SpecialistScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
+                        if (hasOffer)
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: 4),
+                            child: Text(
+                              '${item.discount!.toStringAsFixed(0)}% OFF',
+                              style: ThemeProvider.sans(
+                                size: 10,
+                                weight: FontWeight.w700,
+                                color: ThemeProvider.gold,
+                                letterSpacing: 1,
+                              ),
+                            ),
+                          ),
                         Text(
                           item.name ?? '',
                           style: ThemeProvider.serif(size: 16),
@@ -320,11 +349,19 @@ class _SpecialistScreenState extends State<SpecialistScreen> {
                         const SizedBox(height: 4),
                         Text(
                           '${item.descriptions ?? ''} ${(item.duration ?? 0).toStringAsFixed(0)} mins.',
-                          maxLines: 2,
+                          maxLines: 3,
                           overflow: TextOverflow.ellipsis,
                           style: ThemeProvider.sans(
                             size: 12,
                             color: Colors.white70,
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          '${rating.toStringAsFixed(1)} ($reviews Reviews)',
+                          style: ThemeProvider.sans(
+                            size: 11,
+                            color: ThemeProvider.gold,
                           ),
                         ),
                       ],
@@ -335,13 +372,21 @@ class _SpecialistScreenState extends State<SpecialistScreen> {
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
                       Text(
-                        _price(value, item.price),
-                        style: ThemeProvider.serif(
+                        _price(value, offerPrice),
+                        style: ThemeProvider.price(
                           size: 20,
                           color: ThemeProvider.gold,
                           weight: FontWeight.w700,
                         ),
                       ),
+                      if (hasOffer)
+                        Text(
+                          _price(value, item.price),
+                          style: ThemeProvider.sans(
+                            size: 11,
+                            color: ThemeProvider.greyColor,
+                          ).copyWith(decoration: TextDecoration.lineThrough),
+                        ),
                       Text(
                         selected ? 'SELECTED' : 'SELECT',
                         style: ThemeProvider.sans(
@@ -552,7 +597,12 @@ class _SpecialistScreenState extends State<SpecialistScreen> {
                                 ),
                               )
                             else if (value.slotTimes.isEmpty)
-                              const EliteApiUnavailable()
+                              const EliteApiUnavailable(
+                                title: 'No slots available',
+                                subtitle:
+                                    'Please select another date to see open times.',
+                                icon: Icons.event_busy_outlined,
+                              )
                             else ...[
                               if (morning.isNotEmpty) ...[
                                 _slotSectionLabel('MORNING SLOTS'),

@@ -28,7 +28,12 @@ class _AddressListScreenState extends State<AddressListScreen> {
                   child: CircularProgressIndicator(color: ThemeProvider.gold),
                 )
               : value.addressList.isEmpty
-                  ? const EliteApiUnavailable(minHeight: 180)
+                  ? const EliteApiUnavailable(
+                      minHeight: 180,
+                      title: 'No saved addresses',
+                      subtitle: 'Add an address to continue.',
+                      icon: Icons.location_on_outlined,
+                    )
                   : ListView.builder(
                       padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
                       itemCount: value.addressList.length,

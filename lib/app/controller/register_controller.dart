@@ -472,7 +472,7 @@ class RegisterController extends GetxController implements GetxService {
         Get.delete<CategoriesController>(force: true);
         Get.delete<BookingController>(force: true);
         Get.delete<AccountController>(force: true);
-        Get.offNamed(AppRouter.getTabsBarRoute());
+        Get.offNamed(AppRouter.getChooseLocationRoutes());
       }
     } else if (response.statusCode == 401) {
       Map<String, dynamic> myMap = Map<String, dynamic>.from(response.body);
@@ -570,7 +570,7 @@ class RegisterController extends GetxController implements GetxService {
         Get.delete<CategoriesController>(force: true);
         Get.delete<BookingController>(force: true);
         Get.delete<AccountController>(force: true);
-        Get.offNamed(AppRouter.getTabsBarRoute());
+        Get.offNamed(AppRouter.getChooseLocationRoutes());
       }
       debugPrint(modalText);
     } else {
@@ -628,7 +628,7 @@ class RegisterController extends GetxController implements GetxService {
                           Get.delete<CategoriesController>(force: true);
                           Get.delete<BookingController>(force: true);
                           Get.delete<AccountController>(force: true);
-                          Get.offNamed(AppRouter.getTabsBarRoute());
+                          Get.offNamed(AppRouter.getChooseLocationRoutes());
                         },
                         style: ElevatedButton.styleFrom(
                           foregroundColor: ThemeProvider.whiteColor,
@@ -660,7 +660,7 @@ class RegisterController extends GetxController implements GetxService {
                           Get.delete<CategoriesController>(force: true);
                           Get.delete<BookingController>(force: true);
                           Get.delete<AccountController>(force: true);
-                          Get.offNamed(AppRouter.getTabsBarRoute());
+                          Get.offNamed(AppRouter.getChooseLocationRoutes());
                         },
                         style: ElevatedButton.styleFrom(
                           foregroundColor: ThemeProvider.whiteColor,

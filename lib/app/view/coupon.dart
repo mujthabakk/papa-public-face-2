@@ -151,7 +151,11 @@ class _CouponScreenState extends State<CouponScreen> {
                       const SizedBox(height: 16),
                     ],
                     if (value.couponList.isEmpty)
-                      const EliteApiUnavailable(minHeight: 180)
+                      const EliteApiUnavailable(
+                        minHeight: 180,
+                        title: 'No coupons available',
+                        icon: Icons.local_offer_outlined,
+                      )
                     else
                       ...value.couponList.map((c) => _couponCard(value, c)),
                   ],
@@ -176,7 +180,10 @@ class _CouponScreenState extends State<CouponScreen> {
     final selected = value.selectedCouponCode == coupon.id.toString();
     final days = _daysLeft(coupon.expire);
     final scopeLabel = coupon.isPublicScope ? 'PUBLIC' : 'PARTNER';
-    return Container(
+    final used = coupon.alreadyUsed;
+    return Opacity(
+      opacity: used ? 0.42 : 1,
+      child: Container(
       margin: const EdgeInsets.only(bottom: 18),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -190,6 +197,26 @@ class _CouponScreenState extends State<CouponScreen> {
                       ThemeProvider.serif(size: 18, color: ThemeProvider.gold),
                 ),
               ),
+              if (used)
+                Container(
+                  margin: const EdgeInsets.only(right: 8),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF2A2A2A),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: ThemeProvider.greyColor),
+                  ),
+                  child: Text(
+                    'ALREADY USED'.tr,
+                    style: ThemeProvider.sans(
+                      size: 9,
+                      weight: FontWeight.w800,
+                      color: ThemeProvider.greyColor,
+                      letterSpacing: 0.6,
+                    ),
+                  ),
+                ),
               Container(
                 padding:
                     const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -224,7 +251,7 @@ class _CouponScreenState extends State<CouponScreen> {
                       children: [
                         _chip(scopeLabel),
                         if ((coupon.upto ?? 0) > 0)
-                          _chip('UP TO ₹${coupon.upto!.toStringAsFixed(0)}'),
+                          _chip('UP TO ${elitePrice('', '', coupon.upto)}'),
                         if (days != null)
                           Container(
                             padding: const EdgeInsets.symmetric(
@@ -294,38 +321,6 @@ class _CouponScreenState extends State<CouponScreen> {
                         onTap: () => value.bookOffer(coupon),
                       ),
                     ],
-                    if ((coupon.minCartValue ?? 0) > 0 ||
-                        (coupon.startDate ?? '').isNotEmpty ||
-                        (coupon.expire ?? '').isNotEmpty) ...[
-                      const SizedBox(height: 10),
-                      if ((coupon.minCartValue ?? 0) > 0)
-                        Text(
-                          'Min cart: ₹${coupon.minCartValue!.toStringAsFixed(0)}',
-                          style: ThemeProvider.sans(
-                            size: 11,
-                            color: ThemeProvider.greyColor,
-                          ),
-                        ),
-                      if ((coupon.startDate ?? '').isNotEmpty)
-                        Text(
-                          'Starts: ${coupon.startDate}',
-                          style: ThemeProvider.sans(
-                            size: 10,
-                            color: ThemeProvider.greyColor,
-                            letterSpacing: 0.4,
-                          ),
-                        ),
-                      if ((coupon.expire ?? '').isNotEmpty)
-                        Text(
-                          '${'Valid until'.tr}: ${coupon.expire}'
-                              .toUpperCase(),
-                          style: ThemeProvider.sans(
-                            size: 10,
-                            color: ThemeProvider.greyColor,
-                            letterSpacing: 0.8,
-                          ),
-                        ),
-                    ],
                     if (!coupon.canBook || value.action != 'browse') ...[
                       const SizedBox(height: 12),
                       Container(
@@ -358,6 +353,7 @@ class _CouponScreenState extends State<CouponScreen> {
                             ),
                             OutlinedButton.icon(
                               onPressed: () {
+                                if (!value.canUseOffer(coupon)) return;
                                 Clipboard.setData(
                                     ClipboardData(text: coupon.code ?? ''));
                                 successToast('Code copied');
@@ -387,6 +383,7 @@ class _CouponScreenState extends State<CouponScreen> {
           ),
         ],
       ),
+    ),
     );
   }
 
@@ -522,7 +519,7 @@ class _CouponScreenState extends State<CouponScreen> {
           ),
           if (price > 0)
             Text(
-              '₹${price.toStringAsFixed(0)}',
+              elitePrice('', '', price),
               style: ThemeProvider.sans(
                 size: 12,
                 weight: FontWeight.w700,

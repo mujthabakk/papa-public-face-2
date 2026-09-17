@@ -176,7 +176,7 @@ class LoginController extends GetxController implements GetxService {
     Get.delete<CategoriesController>(force: true);
     Get.delete<BookingController>(force: true);
     Get.delete<AccountController>(force: true);
-    Get.offAndToNamed(AppRouter.getTabsBarRoute());
+    Get.offAndToNamed(AppRouter.getChooseLocationRoutes());
     // Keep customer payment socket open after login (uid handshake).
     Future.microtask(() {
       if (Get.isRegistered<PaymentSocketController>()) {

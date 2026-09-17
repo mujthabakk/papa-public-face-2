@@ -491,6 +491,7 @@ import 'package:salon_user/app/controller/individual_checkout_controller.dart';
 import 'package:salon_user/app/controller/service_cart_controller.dart';
 import 'package:salon_user/app/env.dart';
 import 'package:salon_user/app/util/theme.dart';
+import 'package:salon_user/app/view/widgets/elite_ui.dart';
 
 class IndividualCheckoutScreen extends StatefulWidget {
   const IndividualCheckoutScreen({Key? key}) : super(key: key);
@@ -774,9 +775,8 @@ class _IndividualCheckoutScreenState extends State<IndividualCheckoutScreen> {
                   Row(
                     children: [
                       Text(
-                        value.currencySide == 'left'
-                            ? '${value.currencySymbol}${service.price}'
-                            : '${service.price}${value.currencySymbol}',
+                        elitePrice(value.currencySide, value.currencySymbol,
+                            service.price),
                         style: const TextStyle(
                           fontSize: 12,
                           color: textSecondary,
@@ -785,9 +785,8 @@ class _IndividualCheckoutScreenState extends State<IndividualCheckoutScreen> {
                       ),
                       const SizedBox(width: 8),
                       Text(
-                        value.currencySide == 'left'
-                            ? '${value.currencySymbol}${service.off}'
-                            : '${service.off}${value.currencySymbol}',
+                        elitePrice(value.currencySide, value.currencySymbol,
+                            service.off),
                         style: const TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w700,
@@ -925,9 +924,8 @@ class _IndividualCheckoutScreenState extends State<IndividualCheckoutScreen> {
                       Row(
                         children: [
                           Text(
-                            value.currencySide == 'left'
-                                ? '${value.currencySymbol}${package.price}'
-                                : '${package.price}${value.currencySymbol}',
+                            elitePrice(value.currencySide, value.currencySymbol,
+                                package.price),
                             style: const TextStyle(
                               fontSize: 12,
                               color: textSecondary,
@@ -936,9 +934,8 @@ class _IndividualCheckoutScreenState extends State<IndividualCheckoutScreen> {
                           ),
                           const SizedBox(width: 8),
                           Text(
-                            value.currencySide == 'left'
-                                ? '${value.currencySymbol}${package.off}'
-                                : '${package.off}${value.currencySymbol}',
+                            elitePrice(value.currencySide, value.currencySymbol,
+                                package.off),
                             style: const TextStyle(
                               fontSize: 14,
                               fontWeight: FontWeight.w700,
@@ -1033,24 +1030,21 @@ class _IndividualCheckoutScreenState extends State<IndividualCheckoutScreen> {
           children: [
             _buildBillRow(
               'Item Total'.tr,
-              value.currencySide == 'left'
-                  ? '${value.currencySymbol}${Get.find<ServiceCartController>().totalPrice.toStringAsFixed(2)}'
-                  : '${Get.find<ServiceCartController>().totalPrice.toStringAsFixed(2)}${value.currencySymbol}',
+              elitePrice(value.currencySide, value.currencySymbol,
+                  Get.find<ServiceCartController>().totalPrice),
             ),
             const SizedBox(height: 12),
             _buildBillRow(
               'Service Charge (${Get.find<ServiceCartController>().serviceCharge}%)'
                   .tr,
-              value.currencySide == 'left'
-                  ? '${value.currencySymbol}${Get.find<ServiceCartController>().serviceChargeAmount.toStringAsFixed(2)}'
-                  : '${Get.find<ServiceCartController>().serviceChargeAmount.toStringAsFixed(2)}${value.currencySymbol}',
+              elitePrice(value.currencySide, value.currencySymbol,
+                  Get.find<ServiceCartController>().serviceChargeAmount),
             ),
             const SizedBox(height: 12),
             _buildBillRow(
-              'Tax (GST ${Get.find<ServiceCartController>().orderTax}%)',
-              value.currencySide == 'left'
-                  ? '${value.currencySymbol}${Get.find<ServiceCartController>().taxAmount.toStringAsFixed(2)}'
-                  : '${Get.find<ServiceCartController>().taxAmount.toStringAsFixed(2)}${value.currencySymbol}',
+              'Tax (${Get.find<ServiceCartController>().taxTypeLabel} ${Get.find<ServiceCartController>().orderTax}%)',
+              elitePrice(value.currencySide, value.currencySymbol,
+                  Get.find<ServiceCartController>().taxAmount),
             ),
             const SizedBox(height: 16),
             Container(
@@ -1064,9 +1058,8 @@ class _IndividualCheckoutScreenState extends State<IndividualCheckoutScreen> {
             const SizedBox(height: 16),
             _buildBillRow(
               'To Pay'.tr,
-              value.currencySide == 'left'
-                  ? '${value.currencySymbol}${Get.find<ServiceCartController>().grandTotal.toStringAsFixed(2)}'
-                  : '${Get.find<ServiceCartController>().grandTotal.toStringAsFixed(2)}${value.currencySymbol}',
+              elitePrice(value.currencySide, value.currencySymbol,
+                  Get.find<ServiceCartController>().grandTotal),
               isTotal: true,
             ),
           ],
@@ -1081,17 +1074,17 @@ class _IndividualCheckoutScreenState extends State<IndividualCheckoutScreen> {
       children: [
         Text(
           label,
-          style: TextStyle(
-            fontSize: isTotal ? 16 : 14,
-            fontWeight: isTotal ? FontWeight.w600 : FontWeight.w500,
+          style: ThemeProvider.sans(
+            size: isTotal ? 16 : 14,
+            weight: isTotal ? FontWeight.w600 : FontWeight.w500,
             color: isTotal ? primary : textSecondary,
           ),
         ),
         Text(
           amount,
-          style: TextStyle(
-            fontSize: isTotal ? 16 : 14,
-            fontWeight: isTotal ? FontWeight.w700 : FontWeight.w600,
+          style: ThemeProvider.sans(
+            size: isTotal ? 16 : 14,
+            weight: isTotal ? FontWeight.w700 : FontWeight.w600,
             color: isTotal ? primary : textPrimary,
           ),
         ),

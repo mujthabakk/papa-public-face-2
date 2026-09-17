@@ -26,7 +26,9 @@ class ApiService extends GetxService {
   ApiService({
     required this.appBaseUrl,
     required this.sharedPreferencesManager,
-  });
+  }) {
+    _refreshAppCurrency();
+  }
 
   String get _lang =>
       sharedPreferencesManager.getString(LocaleHelper.prefLanguage) ??
@@ -38,21 +40,35 @@ class ApiService extends GetxService {
     return int.tryParse(raw);
   }
 
+  String get _country {
+    final code =
+        (sharedPreferencesManager.getString(LocaleHelper.prefCountry) ?? 'IN')
+            .trim();
+    return code.isEmpty ? 'IN' : code;
+  }
+
   Map<String, String> get _localeHeaders => {
         'X-App-Language': _lang,
         'Accept-Language': _lang,
+        'X-App-Country': _country,
       };
 
-  String _withLangQuery(String uri) {
+  String _withLangQuery(String uri, {bool includeUid = true}) {
     var path = uri;
     if (!path.contains('lang=')) {
       final separator = path.contains('?') ? '&' : '?';
       path = '$path${separator}lang=$_lang';
     }
-    final uid = _uidInt;
-    if (uid != null && uid > 0 && !path.contains('uid=')) {
+    if (!path.contains('country=')) {
       final separator = path.contains('?') ? '&' : '?';
-      path = '$path${separator}uid=$uid';
+      path = '$path${separator}country=$_country';
+    }
+    if (includeUid) {
+      final uid = _uidInt;
+      if (uid != null && uid > 0 && !path.contains('uid=')) {
+        final separator = path.contains('?') ? '&' : '?';
+        path = '$path${separator}uid=$uid';
+      }
     }
     return path;
   }
@@ -63,9 +79,21 @@ class ApiService extends GetxService {
     if (body is Map) {
       final copy = Map<String, dynamic>.from(body);
       copy['lang'] = _lang;
-      final uid = _uidInt;
-      if (uid != null && uid > 0) {
-        copy['uid'] = uid;
+      copy['country'] = _country;
+      final userUid = _uidInt;
+      if (userUid != null && userUid > 0) {
+        copy['user_id'] = userUid;
+      }
+      final existingUid = copy['uid'];
+      final hasPartnerUid = existingUid != null &&
+          existingUid.toString().trim().isNotEmpty &&
+          existingUid.toString() != '0';
+      if (hasPartnerUid) {
+        if (userUid != null && userUid > 0) {
+          copy['user_uid'] = userUid;
+        }
+      } else if (userUid != null && userUid > 0) {
+        copy['uid'] = userUid;
       }
       return copy;
     }
@@ -79,8 +107,8 @@ class ApiService extends GetxService {
     };
   }
 
-  Future<Response> getPublic(String uri) async {
-    final path = _withLangQuery(uri);
+  Future<Response> getPublic(String uri, {bool includeUid = true}) async {
+    final path = _withLangQuery(uri, includeUid: includeUid);
     final url = appBaseUrl + path;
     _logRequest('GET PUBLIC', url, path,
         params: null, headers: _localeHeaders);
@@ -94,7 +122,7 @@ class ApiService extends GetxService {
       return parseResponse(response, url);
     } catch (e) {
       _logError('GET PUBLIC', url, e);
-      return Response(statusCode: 1, statusText: e.toString());
+      return const Response(statusCode: 1, statusText: connectionIssue);
     }
   }
 
@@ -128,8 +156,9 @@ class ApiService extends GetxService {
     }
   }
 
-  Future<Response> getPrivate(String uri, String token) async {
-    final path = _withLangQuery(uri);
+  Future<Response> getPrivate(String uri, String token,
+      {bool includeUid = true}) async {
+    final path = _withLangQuery(uri, includeUid: includeUid);
     final url = appBaseUrl + path;
     final headers = _mergeHeaders({
       'Content-Type': 'application/json;',
@@ -199,7 +228,7 @@ class ApiService extends GetxService {
       return parseResponse(response, url);
     } catch (e) {
       _logError('POST PUBLIC', url, e);
-      return Response(statusCode: 1, statusText: e.toString());
+      return const Response(statusCode: 1, statusText: connectionIssue);
     }
   }
 
@@ -222,7 +251,7 @@ class ApiService extends GetxService {
       return parseResponse(response, url);
     } catch (e) {
       _logError('POST PRIVATE', url, e);
-      return Response(statusCode: 1, statusText: e.toString());
+      return const Response(statusCode: 1, statusText: connectionIssue);
     }
   }
 
@@ -314,12 +343,31 @@ class ApiService extends GetxService {
     }
 
     absorb(body);
+    final conv = body['currency_conversion'];
+    if (conv is Map) {
+      final to = conv['to']?.toString().trim();
+      if (to != null &&
+          to.isNotEmpty &&
+          RegExp(r'^[A-Za-z]{3}$').hasMatch(to) &&
+          (sharedPreferencesManager.getString('currencyCode') ?? '').isEmpty) {
+        sharedPreferencesManager.putString('currencyCode', to.toUpperCase());
+      }
+    }
     final data = body['data'];
     if (data is Map) {
       absorb(data);
       final settings = data['settings'];
       if (settings is Map) absorb(settings);
     }
+    _refreshAppCurrency();
+  }
+
+  void _refreshAppCurrency() {
+    AppCurrency.apply(
+      code: sharedPreferencesManager.getString('currencyCode'),
+      symbol: sharedPreferencesManager.getString('currencySymbol'),
+      side: sharedPreferencesManager.getString('currencySide'),
+    );
   }
 
   void _syncLocaleFromResponse(dynamic body) {

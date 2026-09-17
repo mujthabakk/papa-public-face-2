@@ -1,3 +1,11 @@
+import 'package:salon_user/app/helper/locale_helper.dart';
+
+bool _truthy(dynamic value) {
+  if (value == true) return true;
+  final text = value?.toString().trim().toLowerCase();
+  return text == '1' || text == 'true' || text == 'yes';
+}
+
 String? _offerString(dynamic value) {
   if (value == null) return null;
   final text = value.toString().trim();
@@ -142,6 +150,8 @@ class CouponsModel {
   String? extraField;
   int? status;
   bool? maxUsageExceeded;
+  bool firstTimeUserOnly = false;
+  bool alreadyUsed = false;
   List<OfferPartnerModel> partners = [];
   List<OfferServiceModel> services = [];
   OfferPartnerModel? partner;
@@ -168,6 +178,8 @@ class CouponsModel {
     this.extraField,
     this.status,
     this.maxUsageExceeded,
+    this.firstTimeUserOnly = false,
+    this.alreadyUsed = false,
     List<OfferPartnerModel>? partners,
     List<OfferServiceModel>? services,
     this.partner,
@@ -195,7 +207,9 @@ class CouponsModel {
     id = int.tryParse(json['id']?.toString() ?? '') ?? 0;
     name = _offerString(json['name']);
     shortDescriptions = _offerString(json['short_descriptions']);
-    code = _offerString(json['code']);
+    code = _offerString(json['code']) ??
+        _offerString(json['coupon_code']) ??
+        _offerString(json['offer_code']);
     type = int.tryParse(json['type']?.toString() ?? '') ?? 1;
     forWhome = int.tryParse(json['for']?.toString() ?? '');
     discount = double.tryParse(json['discount']?.toString() ?? '') ?? 0;
@@ -217,6 +231,14 @@ class CouponsModel {
     status = int.tryParse(json['status']?.toString() ?? '') ?? 1;
     maxUsageExceeded = json['max_usage_exceeded'] == true ||
         json['max_usage_exceeded']?.toString() == '1';
+    firstTimeUserOnly = _truthy(json['first_time_user']) ||
+        _truthy(json['first_user_only']) ||
+        _truthy(json['firstTimeUserOnly']) ||
+        _truthy(json['is_first_user']) ||
+        _truthy(json['for_first_user']);
+    alreadyUsed = _truthy(json['already_used']) ||
+        _truthy(json['used']) ||
+        json['eligible'] == false;
 
     try {
       final rawPartners = json['partners'];
@@ -254,6 +276,33 @@ class CouponsModel {
     } catch (_) {}
   }
 
+  bool get isFirstTimeUserOffer {
+    if (firstTimeUserOnly) return true;
+    return looksLikeFirstUserOffer(name: name, code: code);
+  }
+
+  static bool looksLikeFirstUserOffer({String? name, String? code}) {
+    final hay = '${name ?? ''} ${code ?? ''}'.toLowerCase();
+    final compact = hay.replaceAll(RegExp(r'[\s_-]+'), '');
+    return hay.contains('first user') ||
+        hay.contains('first-user') ||
+        hay.contains('first_user') ||
+        compact.contains('firstuser') ||
+        compact.contains('fristuser') ||
+        hay.contains('new user') ||
+        hay.contains('new-user') ||
+        hay.contains('new_user') ||
+        compact.contains('newuser');
+  }
+
+  static bool matchesCode(CouponsModel coupon, String lookup) {
+    final needle = lookup.trim().toLowerCase();
+    if (needle.isEmpty) return false;
+    final couponCode = (coupon.code ?? '').trim().toLowerCase();
+    final couponName = (coupon.name ?? '').trim().toLowerCase();
+    return couponCode == needle || couponName == needle;
+  }
+
   bool get isPublicScope =>
       (couponScope ?? '').toLowerCase() == 'public' ||
       (partnerIds ?? '').toUpperCase() == 'ALL';
@@ -272,16 +321,18 @@ class CouponsModel {
   bool get canBook => hasPartners && hasServices;
 
   List<int> get bookableServiceIds {
-    final ids = <int>{};
+    final listingIds = <int>{};
+    final catalogIds = <int>{};
     for (final service in services) {
-      if ((service.id ?? 0) > 0) ids.add(service.id!);
-      if ((service.serviceId ?? 0) > 0) ids.add(service.serviceId!);
+      if ((service.id ?? 0) > 0) listingIds.add(service.id!);
+      if ((service.serviceId ?? 0) > 0) catalogIds.add(service.serviceId!);
     }
     for (final raw in (serviceIds ?? '').split(',')) {
       final id = int.tryParse(raw.trim()) ?? 0;
-      if (id > 0) ids.add(id);
+      if (id > 0) listingIds.add(id);
     }
-    return ids.toList();
+    if (listingIds.isNotEmpty) return listingIds.toList();
+    return catalogIds.toList();
   }
 
   String get discountLabel {
@@ -290,7 +341,7 @@ class CouponsModel {
         ? value.toStringAsFixed(0)
         : value.toString();
     if ((type ?? 1) == 1) return '$pretty% OFF';
-    return '₹$pretty OFF';
+    return '${AppCurrency.format(value)} OFF';
   }
 
   Map<String, dynamic> toJson() {
@@ -316,6 +367,7 @@ class CouponsModel {
     data['extra_field'] = extraField;
     data['status'] = status;
     data['max_usage_exceeded'] = maxUsageExceeded;
+    data['first_time_user'] = firstTimeUserOnly;
     return data;
   }
 }

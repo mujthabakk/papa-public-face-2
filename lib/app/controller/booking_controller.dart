@@ -7,11 +7,12 @@ import 'package:salon_user/app/backend/models/appointment_model.dart';
 import 'package:salon_user/app/backend/parse/booking_parse.dart';
 import 'package:salon_user/app/controller/appointment_detail_controller.dart';
 import 'package:salon_user/app/controller/login_controller.dart';
+import 'package:salon_user/app/helper/locale_helper.dart';
 import 'package:salon_user/app/helper/router.dart';
 import 'package:salon_user/app/util/constant.dart';
 
 class BookingController extends GetxController
-    with GetTickerProviderStateMixin
+    with GetTickerProviderStateMixin, CountryScopedRefresh
     implements GetxService {
   final BookingParser parser;
 
@@ -58,6 +59,7 @@ class BookingController extends GetxController
     currencySide = parser.getCurrencySide();
     currencySymbol = parser.getCurrencySymbol();
     tabController = TabController(length: 2, vsync: this);
+    markCountryFresh();
     if (parser.haveLoggedIn() == true) {
       getAppointmentById();
     }

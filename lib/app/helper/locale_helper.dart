@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:get/get.dart';
+import 'package:salon_user/app/util/constant.dart';
 import 'package:salon_user/app/util/translator.dart';
 
 class LocaleHelper {
@@ -92,5 +93,48 @@ class LocaleHelper {
     } else {
       WidgetsBinding.instance.addPostFrameCallback((_) => apply());
     }
+  }
+}
+
+/// Bumped when the user changes country so screens can refetch on reopen.
+class LocaleRefresh {
+  static int countryEpoch = 0;
+
+  static void bumpCountry() => countryEpoch++;
+}
+
+mixin CountryScopedRefresh on GetxController {
+  int countryDataEpoch = LocaleRefresh.countryEpoch;
+
+  void markCountryFresh() {
+    countryDataEpoch = LocaleRefresh.countryEpoch;
+  }
+
+  bool takeCountryRefresh() {
+    if (countryDataEpoch == LocaleRefresh.countryEpoch) return false;
+    countryDataEpoch = LocaleRefresh.countryEpoch;
+    return true;
+  }
+}
+
+/// Display currency from API prefs. Format is always `SYMBOL 12.34`.
+class AppCurrency {
+  static String code = AppConstants.defaultCurrencyCode;
+  static String symbol = AppConstants.defaultCurrencySymbol;
+  static String side = AppConstants.defaultCurrencySide;
+
+  static void apply({String? code, String? symbol, String? side}) {
+    final nextCode = (code ?? '').trim();
+    if (nextCode.isNotEmpty) AppCurrency.code = nextCode.toUpperCase();
+    final nextSymbol = (symbol ?? '').trim();
+    if (nextSymbol.isNotEmpty) AppCurrency.symbol = nextSymbol;
+    if (side == 'left' || side == 'right') AppCurrency.side = side!;
+  }
+
+  static String format(num? amount, {int digits = 2}) {
+    final v = (amount ?? 0).toStringAsFixed(digits);
+    final s = symbol.trim();
+    if (s.isEmpty) return v;
+    return '$s $v';
   }
 }

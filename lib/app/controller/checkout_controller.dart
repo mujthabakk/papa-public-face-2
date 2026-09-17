@@ -5,11 +5,11 @@ import 'package:salon_user/app/backend/models/coupons_model.dart';
 import 'package:salon_user/app/backend/parse/checkout_parse.dart';
 import 'package:salon_user/app/backend/parse/coupon_parse.dart';
 import 'package:salon_user/app/backend/parse/pricing_parse.dart';
-import 'package:salon_user/app/backend/api/api_response.dart';
 import 'package:salon_user/app/controller/coupon_controller.dart';
 import 'package:salon_user/app/controller/login_controller.dart';
 import 'package:salon_user/app/controller/service_cart_controller.dart';
 import 'package:salon_user/app/controller/slot_controller.dart';
+import 'package:salon_user/app/helper/locale_helper.dart';
 import 'package:salon_user/app/helper/router.dart';
 import 'package:salon_user/app/util/constant.dart';
 import 'package:salon_user/app/util/facebook_service.dart';
@@ -30,7 +30,28 @@ class CheckoutController extends GetxController implements GetxService {
   double taxAmount = 0.0;
   double taxableValue = 0.0;
   double grandTotal = 0.0;
+  double apiDiscount = 0.0;
+  double apiServicesAmount = 0.0;
   bool pricingLoading = false;
+
+  double get couponDiscount {
+    if (apiDiscount > 0) return apiDiscount;
+    if (!Get.isRegistered<ServiceCartController>()) return 0;
+    return _couponDiscountAmount(Get.find<ServiceCartController>());
+  }
+
+  double get originalAmount {
+    if (apiServicesAmount > 0) return apiServicesAmount;
+    if (!Get.isRegistered<ServiceCartController>()) return 0;
+    return Get.find<ServiceCartController>().totalPrice;
+  }
+
+  double get payAmount {
+    if (grandTotal > 0) return grandTotal;
+    if (!Get.isRegistered<ServiceCartController>()) return 0;
+    final cart = Get.find<ServiceCartController>();
+    return (cart.grandTotal - couponDiscount).clamp(0, double.infinity);
+  }
 
   CheckoutController({required this.parser});
 
@@ -43,7 +64,35 @@ class CheckoutController extends GetxController implements GetxService {
       numItems: Get.find<ServiceCartController>().totalItemsInCart,
     );
     refreshPricingFromApi();
+    _dropIneligibleFirstUserCoupon();
     super.onInit();
+  }
+
+  Future<void> _dropIneligibleFirstUserCoupon() async {
+    if (!Get.isRegistered<ServiceCartController>() ||
+        !Get.isRegistered<CouponParser>()) {
+      return;
+    }
+    final cart = Get.find<ServiceCartController>();
+    final coupon = cart.selectedCoupon;
+    final code = (coupon.code ?? coupon.name ?? '').trim();
+    if (code.isEmpty && (coupon.id ?? 0) <= 0) return;
+    final couponParser = Get.find<CouponParser>();
+    final eligible = await couponParser.loadEligibleOffers();
+    final stillOk = eligible.any((item) =>
+        ((coupon.id ?? 0) > 0 && item.id == coupon.id) ||
+        (code.isNotEmpty && CouponsModel.matchesCode(item, code)));
+    if (stillOk) return;
+    if (!coupon.isFirstTimeUserOffer &&
+        !(code.isNotEmpty &&
+            await couponParser.isBlockedFirstUserOffer(code))) {
+      return;
+    }
+    cart.onSaveCoupon(CouponsModel());
+    _syncCouponLabel();
+    showToast(CouponParser.firstUserOnlyMessage.tr);
+    refreshPricingFromApi();
+    update();
   }
 
   void onCoupon() {
@@ -55,7 +104,10 @@ class CheckoutController extends GetxController implements GetxService {
       '',
       cart.salonId.toString(),
       cart.totalPrice.toString(),
-    ])?.then((_) => _syncCouponLabel());
+    ])?.then((_) {
+      _syncCouponLabel();
+      refreshPricingFromApi();
+    });
   }
 
   Future<void> applyCouponByCode(String code) async {
@@ -64,42 +116,36 @@ class CheckoutController extends GetxController implements GetxService {
       showToast('Please enter a coupon code.');
       return;
     }
-    if (!Get.isRegistered<CouponParser>()) {
-      showToast('Coupons are unavailable right now.');
-      return;
-    }
-    final couponParser = Get.find<CouponParser>();
-    final response = await couponParser.getCouponCodes();
-    if (response.statusCode != 200) {
-      showToast('Unable to load coupons. Please try again.');
-      return;
-    }
-    final cart = Get.find<ServiceCartController>();
-    final list = ApiBody.asList(response.body);
-    CouponsModel? matched;
-    for (final item in list) {
-      final coupon = CouponsModel.tryParse(item);
-      if (coupon == null) continue;
-      final couponCode = (coupon.code ?? '').trim().toLowerCase();
-      if (couponCode == trimmed.toLowerCase()) {
-        matched = coupon;
-        break;
+    try {
+      if (!Get.isRegistered<CouponParser>()) {
+        showToast('Coupons are unavailable right now.');
+        return;
       }
+      final couponParser = Get.find<CouponParser>();
+      final matched = await couponParser.findEligibleOffer(trimmed);
+      if (matched == null) {
+        if (await couponParser.isBlockedFirstUserOffer(trimmed)) {
+          showToast(CouponParser.firstUserOnlyMessage.tr);
+        } else {
+          showToast('Invalid coupon code.');
+        }
+        return;
+      }
+      final cart = Get.find<ServiceCartController>();
+      if (cart.totalPrice < (matched.minCartValue ?? 0)) {
+        showToast(
+            'Minimum cart value is ${AppCurrency.format(matched.minCartValue)}.');
+        return;
+      }
+      cart.onSaveCoupon(matched);
+      _syncCouponLabel();
+      await refreshPricingFromApi();
+      showToast('Coupon applied successfully.');
+      update();
+    } catch (e) {
+      debugPrint('applyCouponByCode: $e');
+      showToast('Unable to apply coupon. Please try again.');
     }
-    if (matched == null) {
-      showToast('Invalid coupon code.');
-      return;
-    }
-    if (cart.totalPrice < (matched.minCartValue ?? 0)) {
-      showToast(
-          'Minimum cart value is ₹${matched.minCartValue!.toStringAsFixed(0)}.');
-      return;
-    }
-    cart.onSaveCoupon(matched);
-    _syncCouponLabel();
-    refreshPricingFromApi();
-    showToast('Coupon applied successfully.');
-    update();
   }
 
   void removeCoupon() {
@@ -132,7 +178,6 @@ class CheckoutController extends GetxController implements GetxService {
     }
     currencySide = parser.getCurrencySide();
     currencySymbol = parser.getCurrencySymbol();
-    refreshPricingFromApi();
   }
 
   Future<void> refreshPricingFromApi() async {
@@ -146,7 +191,7 @@ class CheckoutController extends GetxController implements GetxService {
     update();
 
     final cart = Get.find<ServiceCartController>();
-    final discount = _couponDiscountAmount(cart);
+    final discount = cart.couponDiscountAmount();
     final servicesAmount = cart.totalPrice + cart.serviceChargeAmount;
 
     final result = await Get.find<PricingParser>().calculateAppointment(
@@ -157,9 +202,20 @@ class CheckoutController extends GetxController implements GetxService {
     pricingLoading = false;
     if (result.success && result.data != null) {
       final data = result.data!;
-      taxAmount = data.serviceTax;
-      taxableValue = data.taxableValue;
-      grandTotal = data.grandTotal;
+      final couponOff = discount;
+      taxAmount = data.serviceTax > 0 ? data.serviceTax : cart.taxAmount;
+      taxableValue =
+          data.taxableValue > 0 ? data.taxableValue : cart.taxableValue;
+      apiServicesAmount = data.servicesAmount;
+      if (couponOff <= 0 && data.discount > 0) {
+        // Cart already uses offer price (off). Do not apply that discount again.
+        apiDiscount = 0;
+        grandTotal = data.grandTotal + data.discount;
+      } else {
+        apiDiscount = data.discount;
+        grandTotal = data.grandTotal;
+      }
+      cart.applyApiPayAmount(grandTotal);
     } else {
       _applyLocalPricingFallback();
     }
@@ -167,20 +223,17 @@ class CheckoutController extends GetxController implements GetxService {
   }
 
   double _couponDiscountAmount(ServiceCartController cart) {
-    final coupon = cart.selectedCoupon;
-    if ((coupon.discount ?? 0) <= 0) return 0;
-    var amount = cart.totalPrice * (coupon.discount! / 100);
-    if (coupon.upto != null && amount > coupon.upto!) {
-      amount = coupon.upto!;
-    }
-    return amount;
+    return cart.couponDiscountAmount();
   }
 
   void _applyLocalPricingFallback() {
     final cart = Get.find<ServiceCartController>();
-    grandTotal = cart.grandTotal - _couponDiscountAmount(cart);
-    taxAmount = 0;
-    taxableValue = grandTotal;
+    apiDiscount = _couponDiscountAmount(cart);
+    apiServicesAmount = cart.totalPrice;
+    grandTotal = cart.grandTotal - apiDiscount;
+    cart.applyApiPayAmount(grandTotal);
+    taxAmount = cart.taxAmount;
+    taxableValue = cart.taxableValue > 0 ? cart.taxableValue : grandTotal;
   }
 
   void deleteServiceFromCart(int index) {

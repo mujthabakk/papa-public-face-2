@@ -7,8 +7,10 @@ import 'package:salon_user/app/backend/parse/coupon_parse.dart';
 import 'package:salon_user/app/controller/individual_payment_controller.dart';
 import 'package:salon_user/app/controller/payment_controller.dart';
 import 'package:salon_user/app/controller/product_payment_controller.dart';
+import 'package:salon_user/app/controller/service_cart_controller.dart';
 import 'package:salon_user/app/controller/services_controller.dart';
 import 'package:salon_user/app/controller/specialist_controller.dart';
+import 'package:salon_user/app/helper/locale_helper.dart';
 import 'package:salon_user/app/helper/router.dart';
 import 'package:salon_user/app/util/toast.dart';
 import 'package:intl/intl.dart';
@@ -57,10 +59,21 @@ class CouponController extends GetxController implements GetxService {
 
   Future<void> getCoupons() async {
     Response response = action == 'browse'
-        ? await parser.getAllOffers()
+        ? await parser.getAllOffers(includeUid: false)
         : await parser.getCouponCodes();
     apiCalled = true;
     _couponList = [];
+
+    final eligibleIds = <int>{};
+    final eligibleCodes = <String>{};
+    if (action == 'browse' && parser.hasUid) {
+      for (final offer in parser.parseOffers(
+          (await parser.getAllOffers(includeUid: true)).body)) {
+        if ((offer.id ?? 0) > 0) eligibleIds.add(offer.id!);
+        final code = (offer.code ?? '').trim().toLowerCase();
+        if (code.isNotEmpty) eligibleCodes.add(code);
+      }
+    }
 
     if (response.statusCode == 200 || ApiBody.asList(response.body).isNotEmpty) {
       final body = ApiBody.asList(response.body);
@@ -78,20 +91,18 @@ class CouponController extends GetxController implements GetxService {
 
           if (action == 'browse') {
             if (isActive && isNotExpired) {
+              if (data.isFirstTimeUserOffer && parser.hasUid) {
+                final code = (data.code ?? '').trim().toLowerCase();
+                final stillEligible = eligibleIds.contains(data.id) ||
+                    (code.isNotEmpty && eligibleCodes.contains(code));
+                if (!stillEligible) data.alreadyUsed = true;
+              }
               _couponList.add(data);
             }
             continue;
           }
 
-          if (data.expire == null || data.expire!.isEmpty) continue;
-
-          final isValidForFreelancer = uid.isEmpty ||
-              (data.freelancerIds != null &&
-                  (data.freelancerIds == 'ALL' ||
-                      data.freelancerIds!
-                          .split(',')
-                          .map((e) => e.trim())
-                          .contains(uid.toString())));
+          final isValidForFreelancer = uid.isEmpty || _matchesSalon(data, uid);
 
           if (isNotExpired &&
               isValidForFreelancer &&
@@ -126,6 +137,20 @@ class CouponController extends GetxController implements GetxService {
       ApiChecker.checkApi(response);
     }
     update();
+  }
+
+  bool _matchesSalon(CouponsModel data, String uid) {
+    final freelancer = (data.freelancerIds ?? '').trim();
+    final partners = (data.partnerIds ?? '').trim();
+    if (freelancer.isEmpty && partners.isEmpty) return true;
+    if (freelancer.toUpperCase() == 'ALL' || partners.toUpperCase() == 'ALL') {
+      return true;
+    }
+    final ids = <String>{
+      ...freelancer.split(','),
+      ...partners.split(','),
+    }.map((e) => e.trim()).where((e) => e.isNotEmpty);
+    return ids.contains(uid);
   }
 
   bool _isNotExpired(String? expire, DateTime currentDate) {
@@ -165,8 +190,20 @@ class CouponController extends GetxController implements GetxService {
         .toList();
   }
 
+  static const alreadyUsedMessage = 'This offer has already been used.';
+
+  bool canUseOffer(CouponsModel coupon) {
+    if (coupon.alreadyUsed) {
+      showToast(alreadyUsedMessage.tr);
+      return false;
+    }
+    return true;
+  }
+
   void bookOffer(CouponsModel coupon) {
+    if (!canUseOffer(coupon)) return;
     if (!coupon.canBook) return;
+    Get.find<ServiceCartController>().onSaveCoupon(coupon);
     final partners = _bookablePartners(coupon);
     final serviceIds = coupon.bookableServiceIds;
     if (partners.isEmpty) return;
@@ -317,7 +354,7 @@ class CouponController extends GetxController implements GetxService {
                           ),
                         ),
                         Text(
-                          '₹${cartValue!.toStringAsFixed(2)}',
+                          AppCurrency.format(cartValue),
                           style: const TextStyle(
                             color: Colors.white,
                             fontSize: 16,
@@ -340,7 +377,7 @@ class CouponController extends GetxController implements GetxService {
                           ),
                         ),
                         Text(
-                          '₹${savedCoupon.minCartValue!.toStringAsFixed(2)}',
+                          AppCurrency.format(savedCoupon.minCartValue),
                           style: const TextStyle(
                             color: Colors.white,
                             fontSize: 16,
@@ -375,7 +412,7 @@ class CouponController extends GetxController implements GetxService {
                           ),
                           const SizedBox(width: 6),
                           Text(
-                            'Add ₹${(savedCoupon.minCartValue! - cartValue!).toStringAsFixed(2)} more to apply this coupon',
+                            'Add ${AppCurrency.format(savedCoupon.minCartValue! - cartValue!)} more to apply this coupon',
                             style: const TextStyle(
                               color: Colors.white,
                               fontSize: 13,
@@ -418,7 +455,7 @@ class CouponController extends GetxController implements GetxService {
     update();
   }
 
-  void applyCouponByCode(String code) {
+  Future<void> applyCouponByCode(String code) async {
     final trimmed = code.trim();
     if (trimmed.isEmpty) {
       showToast('Please enter a coupon code.');
@@ -426,18 +463,26 @@ class CouponController extends GetxController implements GetxService {
     }
     CouponsModel? matched;
     for (final coupon in _couponList) {
-      if ((coupon.code ?? '').trim().toLowerCase() == trimmed.toLowerCase()) {
+      final couponCode = (coupon.code ?? '').trim().toLowerCase();
+      final couponName = (coupon.name ?? '').trim().toLowerCase();
+      if (couponCode == trimmed.toLowerCase() ||
+          couponName == trimmed.toLowerCase()) {
         matched = coupon;
         break;
       }
     }
     if (matched == null) {
-      showToast('Invalid coupon code.');
+      if (await parser.isBlockedFirstUserOffer(trimmed)) {
+        showToast(CouponController.alreadyUsedMessage.tr);
+      } else {
+        showToast('Invalid coupon code.');
+      }
       return;
     }
-    if (cartValue != null && cartValue! < (matched.minCartValue ?? 0)) {
+    if (!canUseOffer(matched)) return;
+    if (cartValue != null && cartValue! > 0 && cartValue! < (matched.minCartValue ?? 0)) {
       showToast(
-          'Minimum cart value is ₹${matched.minCartValue!.toStringAsFixed(0)}.');
+          'Minimum cart value is ${AppCurrency.format(matched.minCartValue)}.');
       return;
     }
     selectedCouponCode = matched.id.toString();
@@ -454,25 +499,32 @@ class CouponController extends GetxController implements GetxService {
       showToast('Please select or enter a coupon code.');
       return;
     }
-    if (action == 'service') {
-      if (selectedCouponCode != '') {
-        var savedCoupon = _couponList.firstWhere(
-            (element) => element.id.toString() == selectedCouponCode);
+    CouponsModel savedCoupon;
+    try {
+      savedCoupon = _couponList.firstWhere(
+          (element) => element.id.toString() == selectedCouponCode);
+    } catch (_) {
+      showToast('Please select or enter a coupon code.');
+      return;
+    }
+    if (!canUseOffer(savedCoupon)) return;
 
+    if (Get.isRegistered<ServiceCartController>()) {
+      Get.find<ServiceCartController>().onSaveCoupon(savedCoupon);
+    }
+
+    if (action == 'service') {
+      if (Get.isRegistered<PaymentController>()) {
         Get.find<PaymentController>().onSaveCoupon(savedCoupon);
       }
       onBack();
     } else if (action == 'product') {
-      if (selectedCouponCode != '') {
-        var savedCoupon = _couponList.firstWhere(
-            (element) => element.id.toString() == selectedCouponCode);
+      if (Get.isRegistered<ProductPaymentController>()) {
         Get.find<ProductPaymentController>().onSaveCoupon(savedCoupon);
       }
       onProductBack();
     } else {
-      if (selectedCouponCode != '') {
-        var savedCoupon = _couponList.firstWhere(
-            (element) => element.id.toString() == selectedCouponCode);
+      if (Get.isRegistered<IndividualPaymentController>()) {
         Get.find<IndividualPaymentController>().onSaveCoupon(savedCoupon);
       }
       onIndividualBack();
@@ -480,9 +532,10 @@ class CouponController extends GetxController implements GetxService {
   }
 
   void onIndividualBack() {
-    Get.find<IndividualPaymentController>().update();
-    var context = Get.context as BuildContext;
-    Navigator.of(context).pop(true);
+    if (Get.isRegistered<IndividualPaymentController>()) {
+      Get.find<IndividualPaymentController>().update();
+    }
+    Get.back(result: true);
   }
 
   void onBack() {
@@ -490,14 +543,16 @@ class CouponController extends GetxController implements GetxService {
       Get.back();
       return;
     }
-    Get.find<PaymentController>().update();
-    var context = Get.context as BuildContext;
-    Navigator.of(context).pop(true);
+    if (Get.isRegistered<PaymentController>()) {
+      Get.find<PaymentController>().update();
+    }
+    Get.back(result: true);
   }
 
   void onProductBack() {
-    Get.find<ProductPaymentController>().update();
-    var context = Get.context as BuildContext;
-    Navigator.of(context).pop(true);
+    if (Get.isRegistered<ProductPaymentController>()) {
+      Get.find<ProductPaymentController>().update();
+    }
+    Get.back(result: true);
   }
 }

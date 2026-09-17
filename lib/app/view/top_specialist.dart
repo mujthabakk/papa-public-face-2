@@ -37,7 +37,11 @@ class _TopSpecialistScreenState extends State<TopSpecialistScreen> {
                   child: SkeletonParagraph(),
                 )
               : list.isEmpty
-                  ? const EliteApiUnavailable(minHeight: 180)
+                  ? const EliteApiUnavailable(
+                      minHeight: 180,
+                      title: 'No experts nearby',
+                      icon: Icons.person_outline,
+                    )
                   : ListView(
                   padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
                   children: [
@@ -101,9 +105,8 @@ class _TopSpecialistScreenState extends State<TopSpecialistScreen> {
         '${item.userInfo?.firstName ?? ''} ${item.userInfo?.lastName ?? ''}'
             .trim();
     final tags = (item.categories as List?) ?? [];
-    final price = value.currencySide == 'left'
-        ? '${value.currencySymbol}${(item.feeStart ?? 0).toStringAsFixed(0)}'
-        : '${(item.feeStart ?? 0).toStringAsFixed(0)}${value.currencySymbol}';
+    final price = elitePrice(
+        value.currencySide, value.currencySymbol, item.feeStart ?? 0);
     return Container(
       margin: const EdgeInsets.only(bottom: 14),
       padding: const EdgeInsets.all(14),
@@ -156,7 +159,10 @@ class _TopSpecialistScreenState extends State<TopSpecialistScreen> {
                       const Icon(Icons.star, color: ThemeProvider.gold, size: 16),
                       const SizedBox(width: 4),
                       Text(
-                        (item.rating ?? 0).toStringAsFixed(1),
+                        eliteSafeRating(
+                          item.rating,
+                          reviews: item.totalRating,
+                        ).toStringAsFixed(1),
                         style: ThemeProvider.sans(
                           size: 14,
                           weight: FontWeight.w700,
@@ -222,7 +228,7 @@ class _TopSpecialistScreenState extends State<TopSpecialistScreen> {
                   ),
                   Text(
                     price,
-                    style: ThemeProvider.serif(
+                    style: ThemeProvider.price(
                       size: 22,
                       color: ThemeProvider.gold,
                       weight: FontWeight.w700,

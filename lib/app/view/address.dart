@@ -500,7 +500,7 @@ class _AddressScreenState extends State<AddressScreen> {
             ),
             const SizedBox(height: 24),
             Text(
-              'API is not available'.tr,
+              'No saved addresses'.tr,
               style: const TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w500,

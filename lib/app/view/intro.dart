@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:get/get.dart';
 import 'package:salon_user/app/controller/intro_controller.dart';
-import 'package:salon_user/app/helper/router.dart';
 import 'package:salon_user/app/util/constant.dart';
 import 'package:salon_user/app/util/theme.dart';
 
@@ -309,7 +308,7 @@ class _IntroScreenState extends State<IntroScreen> {
       primary: _primaryAction('Next'.tr, () => _controller.nextPage()),
       secondary: _textAction(
         'Skip'.tr,
-        () => Get.toNamed(AppRouter.chooseLocationRoutes),
+        () => Get.find<IntroController>().onSkip(),
       ),
     );
   }
@@ -332,7 +331,7 @@ class _IntroScreenState extends State<IntroScreen> {
     return _bar(
       primary: _primaryAction(
         'Get Started'.tr,
-        () => Get.toNamed(AppRouter.chooseLocationRoutes),
+        () => Get.find<IntroController>().onGetStarted(),
       ),
       secondary: _textAction('Previous'.tr, () => _controller.previousPage()),
     );

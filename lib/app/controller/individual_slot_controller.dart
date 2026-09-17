@@ -163,7 +163,12 @@ class IndividualSlotController extends GetxController implements GetxService {
 // Updated method with proper time sorting
   Future<void> getSlotsForBookings(int index, String date) async {
     var response = await parser.getSlots(
-      {"week_id": index, "date": date, "uid": uid, "from": "individual"},
+      {
+        "week_id": index,
+        "date": date,
+        "uid": int.tryParse(uid) ?? uid,
+        "from": "individual",
+      },
     );
     apiCalled = true;
 

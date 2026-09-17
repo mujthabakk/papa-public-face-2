@@ -66,7 +66,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                   children: [
                                     const SizedBox(height: 8),
                                     EliteSearchBar(
-                                      hint: 'Search shops, freelancers...'.tr,
+                                      hint: 'Search shops, freelancers, services...'.tr,
                                       onTap: value.onSearch,
                                       onFilter: value.onFilter,
                                     ),
@@ -81,7 +81,10 @@ class _HomeScreenState extends State<HomeScreen> {
                                     (value.timedOffers.isNotEmpty ||
                                             value.categoriesList.isNotEmpty)
                                         ? _categoryRow(value)
-                                        : const EliteApiUnavailable(),
+                                        : const EliteApiUnavailable(
+                                            title: 'No categories yet',
+                                            icon: Icons.grid_view_outlined,
+                                          ),
                                     EliteSectionHeader(
                                       title: 'Exclusive Offers'.tr,
                                       action: 'VIEW ALL'.tr,
@@ -89,7 +92,12 @@ class _HomeScreenState extends State<HomeScreen> {
                                     ),
                                     value.offersList.isNotEmpty
                                         ? _offers(value)
-                                        : const EliteApiUnavailable(),
+                                        : const EliteApiUnavailable(
+                                            title: 'No offers right now',
+                                            subtitle:
+                                                'Check back soon for new deals.',
+                                            icon: Icons.local_offer_outlined,
+                                          ),
                                     EliteSectionHeader(
                                       title: 'Featured Centers'.tr,
                                       action: 'VIEW ALL'.tr,
@@ -97,14 +105,20 @@ class _HomeScreenState extends State<HomeScreen> {
                                     ),
                                     value.salonList.isNotEmpty
                                         ? _centers(value)
-                                        : const EliteApiUnavailable(),
+                                        : const EliteApiUnavailable(
+                                            title: 'No centers nearby',
+                                            icon: Icons.storefront_outlined,
+                                          ),
                                     EliteSectionHeader(
                                       title: 'Top Freelancers'.tr,
                                       onAction: value.onAllSpecialist,
                                     ),
                                     value.individualList.isNotEmpty
                                         ? _freelancers(value)
-                                        : const EliteApiUnavailable(),
+                                        : const EliteApiUnavailable(
+                                            title: 'No experts nearby',
+                                            icon: Icons.person_outline,
+                                          ),
                                     EliteSectionHeader(
                                       title: 'Top Products'.tr,
                                       action: 'VIEW ALL'.tr,
@@ -112,7 +126,10 @@ class _HomeScreenState extends State<HomeScreen> {
                                     ),
                                     value.productsList.isNotEmpty
                                         ? _products(value)
-                                        : const EliteApiUnavailable(),
+                                        : const EliteApiUnavailable(
+                                            title: 'No products yet',
+                                            icon: Icons.shopping_bag_outlined,
+                                          ),
                                     if (value.topPartners.isNotEmpty) ...[
                                       EliteSectionHeader(
                                         title: 'Top Partners'.tr,
@@ -144,9 +161,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             Text(
-                              value.currencySide == 'left'
-                                  ? '${cartController.totalItemsInCart} ${'Items'.tr} ${value.currencySymbol} ${cartController.totalPrice}'
-                                  : '${cartController.totalItemsInCart} ${'Items'.tr} ${cartController.totalPrice}${value.currencySymbol}',
+                              '${cartController.totalItemsInCart} ${cartController.totalItemsInCart == 1 ? 'Item'.tr : 'Items'.tr}  ${'Pay Amount'.tr} ${elitePrice(value.currencySide, value.currencySymbol, cartController.totalPrice, digits: 2)}',
                               style: ThemeProvider.sans(
                                 size: 13,
                                 weight: FontWeight.w600,
@@ -353,7 +368,7 @@ class _HomeScreenState extends State<HomeScreen> {
           final isPercent = offer.type == 1;
           final discountLabel = isPercent
               ? '${(offer.discount ?? 0).toStringAsFixed(0)}% OFF'
-              : '${value.currencySymbol}${(offer.discount ?? 0).toStringAsFixed(0)} OFF';
+              : '${elitePrice(value.currencySide, value.currencySymbol, offer.discount, digits: 0)} OFF';
           return GestureDetector(
             onTap: () => value.openExclusiveOffer(offer),
             child: Container(
@@ -683,7 +698,6 @@ class _HomeScreenState extends State<HomeScreen> {
               ? cover
               : '${Environments.imageURL}$cover';
           final distance = item.distance;
-          final badge = (item.badge ?? '').trim();
           return GestureDetector(
             onTap: () => value.onTopPartner(item),
             child: Container(
@@ -703,27 +717,6 @@ class _HomeScreenState extends State<HomeScreen> {
                         height: 140,
                         width: 260,
                       ),
-                      if (badge.isNotEmpty)
-                        Positioned(
-                          top: 10,
-                          left: 10,
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 8, vertical: 4),
-                            decoration: BoxDecoration(
-                              color: ThemeProvider.gold,
-                              borderRadius: BorderRadius.circular(20),
-                            ),
-                            child: Text(
-                              badge,
-                              style: ThemeProvider.sans(
-                                size: 10,
-                                weight: FontWeight.w700,
-                                color: Colors.black,
-                              ),
-                            ),
-                          ),
-                        ),
                       Positioned(
                         top: 10,
                         right: 10,

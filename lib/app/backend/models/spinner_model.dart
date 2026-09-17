@@ -1,3 +1,5 @@
+import 'package:salon_user/app/helper/locale_helper.dart';
+
 double _spinnerAmount(dynamic value) {
   if (value == null) return 0;
   if (value is num) return value.toDouble();
@@ -69,7 +71,7 @@ class SpinnerStatus {
   }
 
   List<String> get wheelLabels =>
-      wheelAmounts.map((a) => '₹$a').toList(growable: false);
+      wheelAmounts.map((a) => AppCurrency.format(a, digits: 0)).toList(growable: false);
 }
 
 class SpinnerSpinResult {

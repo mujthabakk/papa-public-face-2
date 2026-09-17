@@ -46,12 +46,7 @@ class _SplashScreenState extends State<SplashScreen> {
         final isSuccess = await configFuture;
         if (!mounted) return;
         if (isSuccess) {
-          splash.parser.saveWelcome(true);
-          if (splash.parser.hasSavedLocation()) {
-            Get.offNamed(AppRouter.getTabsBarRoute());
-          } else {
-            Get.offNamed(AppRouter.getChooseLocationRoutes());
-          }
+          Get.offNamed(AppRouter.getInitialRoute());
         } else {
           Get.toNamed(AppRouter.getErrorRoutes());
         }

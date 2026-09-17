@@ -34,12 +34,15 @@ import 'package:salon_user/app/controller/top_packages_controller.dart';
 import 'package:salon_user/app/controller/top_products_controller.dart';
 import 'package:salon_user/app/controller/top_specialist_controller.dart';
 import 'package:salon_user/app/controller/unified_search_controller.dart';
+import 'package:salon_user/app/helper/locale_helper.dart';
 import 'package:salon_user/app/helper/router.dart';
 import 'package:salon_user/app/util/constant.dart';
 import 'package:salon_user/app/util/toast.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-class HomeController extends GetxController implements GetxService {
+class HomeController extends GetxController
+    with CountryScopedRefresh
+    implements GetxService {
   final HomeParser parser;
 
   List<SalonModel> _salonList = <SalonModel>[];
@@ -81,6 +84,7 @@ class HomeController extends GetxController implements GetxService {
     currencySide = parser.getCurrencySide();
     currencySymbol = parser.getCurrencySymbol();
     title = parser.getAddressName();
+    markCountryFresh();
     getHomeData();
   }
 
@@ -471,7 +475,7 @@ class HomeController extends GetxController implements GetxService {
     }
     final code = offer.code ?? '';
     if (code.isEmpty) {
-      showToast('API is not available'.tr);
+      showToast('Data is not available'.tr);
       return;
     }
     Clipboard.setData(ClipboardData(text: code));

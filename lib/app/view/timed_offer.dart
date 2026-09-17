@@ -24,124 +24,152 @@ class TimedOfferScreen extends StatelessWidget {
           backgroundColor: ThemeProvider.backgroundColor,
           appBar: EliteAppBar(
             showBack: true,
-            title: value.campaignName.isNotEmpty
-                ? value.campaignName
-                : (header?.name ?? 'Flash Offer'),
+            title: value.showAllCampaigns
+                ? 'Shop Discounts'.tr
+                : (value.campaignName.isNotEmpty
+                    ? value.campaignName
+                    : (header?.name ?? 'Flash Offer')),
           ),
           body: value.apiCalled == false
               ? const Center(
                   child: CircularProgressIndicator(color: ThemeProvider.gold),
                 )
               : value.rows.isEmpty
-                  ? const EliteApiUnavailable()
+                  ? const EliteApiUnavailable(
+                      title: 'No timed offers right now',
+                      subtitle: 'Check back soon for new deals.',
+                      icon: Icons.timer_outlined,
+                    )
                   : ListView(
                       padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-                      children: [
-                        if ((header?.discountText ?? '').isNotEmpty)
-                          Text(
-                            header!.discountText!,
-                            style: ThemeProvider.sans(
-                              size: 22,
-                              weight: FontWeight.w800,
-                              color: ThemeProvider.gold,
-                            ),
-                          ),
-                        if ((header?.description ??
-                                header?.shortDescription ??
-                                '')
-                            .isNotEmpty) ...[
-                          const SizedBox(height: 6),
-                          Text(
-                            header?.description ??
-                                header?.shortDescription ??
-                                '',
-                            style: ThemeProvider.sans(
-                                size: 13, color: Colors.white70),
-                          ),
-                        ],
-                        if ((header?.scheduleHint ?? '').isNotEmpty) ...[
-                          const SizedBox(height: 8),
-                          Text(
-                            header!.scheduleHint,
-                            style: ThemeProvider.sans(
-                              size: 12,
-                              color: header.isScheduleActive
-                                  ? ThemeProvider.gold
-                                  : ThemeProvider.greyColor,
-                            ),
-                          ),
-                        ],
-                        if ((header?.timeWindowText ?? '').isNotEmpty &&
-                            header!.timeWindowText != header.scheduleHint) ...[
-                          const SizedBox(height: 4),
-                          Text(
-                            header.timeWindowText,
-                            style: ThemeProvider.sans(
-                              size: 11,
-                              color: ThemeProvider.greyColor,
-                            ),
-                          ),
-                        ],
-                        if (value.couponRow != null) ...[
-                          const SizedBox(height: 16),
-                          EliteCard(
-                            child: Row(
-                              children: [
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Text('COUPON CODE'.tr,
-                                        style: ThemeProvider.sans(
-                                          size: 10,
-                                          color: ThemeProvider.greyColor,
-                                          letterSpacing: 1,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 4),
-                                      Text(
-                                        value.couponRow!.displayCode,
-                                        style: ThemeProvider.serif(
-                                            size: 20,
-                                            color: ThemeProvider.gold),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                OutlinedButton.icon(
-                                  onPressed: value.couponRow!.isScheduleActive
-                                      ? () =>
-                                          value.copyCode(value.couponRow!)
-                                      : null,
-                                  icon: const Icon(Icons.copy, size: 14),
-                                  label: Text('Copy Code'.tr,
-                                    style: ThemeProvider.sans(
-                                        size: 11, weight: FontWeight.w600),
-                                  ),
-                                  style: OutlinedButton.styleFrom(
-                                    foregroundColor: ThemeProvider.gold,
-                                    disabledForegroundColor:
-                                        ThemeProvider.greyColor,
-                                    side: BorderSide(
-                                      color: value.couponRow!.isScheduleActive
-                                          ? ThemeProvider.gold
-                                          : ThemeProvider.greyColor,
-                                    ),
-                                  ),
-                                ),
+                      children: value.showAllCampaigns
+                          ? [
+                              for (final group in value.campaignGroups) ...[
+                                ..._campaignBlock(value, group),
+                                const SizedBox(height: 12),
                               ],
-                            ),
-                          ),
-                        ],
-                        ...value.bookableRows.map(
-                          (row) => _bookableCard(value, row),
-                        ),
-                      ],
+                            ]
+                          : _campaignBlock(value, value.rows),
                     ),
         );
       },
     );
+  }
+
+  List<Widget> _campaignBlock(
+    TimedOfferController value,
+    List<TimedOfferRow> rows,
+  ) {
+    if (rows.isEmpty) return [];
+    final header = rows.firstWhere(
+      (r) => r.isCouponOnly,
+      orElse: () => rows.first,
+    );
+    TimedOfferRow? coupon;
+    for (final row in rows) {
+      if (row.isCouponOnly && row.displayCode.isNotEmpty) {
+        coupon = row;
+        break;
+      }
+    }
+    final couponRow = coupon;
+    final bookable = rows.where((r) => r.hasPartner).toList();
+    return [
+      if (value.showAllCampaigns && (header.name ?? '').isNotEmpty)
+        Padding(
+          padding: const EdgeInsets.only(top: 8, bottom: 4),
+          child: Text(
+            header.name!,
+            style: ThemeProvider.serif(size: 20, color: ThemeProvider.gold),
+          ),
+        ),
+      if ((header.discountText ?? '').isNotEmpty)
+        Text(
+          header.discountText!,
+          style: ThemeProvider.sans(
+            size: 22,
+            weight: FontWeight.w800,
+            color: ThemeProvider.gold,
+          ),
+        ),
+      if ((header.description ?? header.shortDescription ?? '').isNotEmpty) ...[
+        const SizedBox(height: 6),
+        Text(
+          header.description ?? header.shortDescription ?? '',
+          style: ThemeProvider.sans(size: 13, color: Colors.white70),
+        ),
+      ],
+      if (header.scheduleHint.isNotEmpty) ...[
+        const SizedBox(height: 8),
+        Text(
+          header.scheduleHint,
+          style: ThemeProvider.sans(
+            size: 12,
+            color: header.isScheduleActive
+                ? ThemeProvider.gold
+                : ThemeProvider.greyColor,
+          ),
+        ),
+      ],
+      if (header.timeWindowText.isNotEmpty &&
+          header.timeWindowText != header.scheduleHint) ...[
+        const SizedBox(height: 4),
+        Text(
+          header.timeWindowText,
+          style: ThemeProvider.sans(size: 11, color: ThemeProvider.greyColor),
+        ),
+      ],
+      if (couponRow != null) ...[
+        const SizedBox(height: 16),
+        EliteCard(
+          child: Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'COUPON CODE'.tr,
+                      style: ThemeProvider.sans(
+                        size: 10,
+                        color: ThemeProvider.greyColor,
+                        letterSpacing: 1,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      couponRow.displayCode,
+                      style: ThemeProvider.serif(
+                          size: 20, color: ThemeProvider.gold),
+                    ),
+                  ],
+                ),
+              ),
+              OutlinedButton.icon(
+                onPressed: couponRow.isScheduleActive
+                    ? () => value.copyCode(couponRow)
+                    : null,
+                icon: const Icon(Icons.copy, size: 14),
+                label: Text(
+                  'Copy Code'.tr,
+                  style: ThemeProvider.sans(size: 11, weight: FontWeight.w600),
+                ),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: ThemeProvider.gold,
+                  disabledForegroundColor: ThemeProvider.greyColor,
+                  side: BorderSide(
+                    color: couponRow.isScheduleActive
+                        ? ThemeProvider.gold
+                        : ThemeProvider.greyColor,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+      ...bookable.map((row) => _bookableCard(value, row)),
+    ];
   }
 
   Widget _bookableCard(TimedOfferController value, TimedOfferRow row) {
@@ -183,6 +211,15 @@ class TimedOfferScreen extends StatelessWidget {
                             size: 10,
                             color: ThemeProvider.gold,
                             letterSpacing: 0.6,
+                          ),
+                        ),
+                      if (row.displayCode.isNotEmpty)
+                        Text(
+                          row.displayCode,
+                          style: ThemeProvider.sans(
+                            size: 11,
+                            weight: FontWeight.w700,
+                            color: ThemeProvider.gold,
                           ),
                         ),
                       if ((partner.address ?? '').isNotEmpty)
@@ -252,7 +289,7 @@ class TimedOfferScreen extends StatelessWidget {
                           ),
                           if (price > 0)
                             Text(
-                              '₹${price.toStringAsFixed(0)}',
+                              elitePrice('', '', price),
                               style: ThemeProvider.sans(
                                 size: 12,
                                 weight: FontWeight.w700,

@@ -26,6 +26,8 @@ class CommonNotificationController extends GetxController
   int get unreadCount =>
       _notificationList.where((n) => n.isUnread).length;
 
+  bool get isLoading => _loading;
+
   CommonNotificationController({required this.parser});
 
   void safeUpdate() {
@@ -264,38 +266,28 @@ class CommonNotificationController extends GetxController
     if (_loading) return;
     _loading = true;
     uid = parser.getUID();
-
-    apiCalled = true;
     safeUpdate();
 
     try {
       final Response response = await parser.getAllNotification(uid);
-      if (response.statusCode == 200) {
-        final body = response.body;
-        final Map<String, dynamic> jsonData = body is Map
-            ? Map<String, dynamic>.from(body)
-            : <String, dynamic>{};
-        final NotificationModel notificationResponse =
-            NotificationModel.fromJson(jsonData);
-        if (notificationResponse.success ||
-            notificationResponse.data.isNotEmpty) {
-          _notificationList =
-              notificationResponse.data.reversed.toList();
-          debugPrint(
-              'Notifications loaded: ${_notificationList.length}, unread=$unreadCount');
-          if (Get.isRegistered<PaymentSocketController>()) {
-            final pay = Get.find<PaymentSocketController>();
-            for (final n in _notificationList) {
-              final id = n.data.payBookId;
-              if (id > 0 && n.data.showPopup && !n.data.isPaid) {
-                pay.watchBookId(id, fetchNow: false);
-              }
-            }
+      final items = NotificationModel.fromResponse(response.body);
+      _notificationList = items;
+      debugPrint(
+          'Notifications loaded: ${_notificationList.length}, unread=$unreadCount');
+      if (Get.isRegistered<PaymentSocketController>()) {
+        final pay = Get.find<PaymentSocketController>();
+        for (final n in _notificationList) {
+          final id = n.data.payBookId;
+          if (id > 0 && n.data.showPopup && !n.data.isPaid) {
+            pay.watchBookId(id, fetchNow: false);
           }
         }
-      } else {
+      }
+      if (response.statusCode != 200 && items.isEmpty) {
         ApiChecker.checkApi(response);
       }
+    } catch (e) {
+      debugPrint('getAllNotifications error: $e');
     } finally {
       apiCalled = true;
       _loading = false;

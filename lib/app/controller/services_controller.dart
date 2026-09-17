@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:get/get.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:salon_user/app/backend/api/api_response.dart';
 import 'package:salon_user/app/backend/api/handler.dart';
 import 'package:salon_user/app/backend/models/categories_model.dart';
 import 'package:salon_user/app/backend/models/owner_reviews_model.dart';
@@ -23,6 +24,7 @@ import 'package:salon_user/app/controller/service_cart_controller.dart';
 import 'package:salon_user/app/env.dart';
 import 'package:salon_user/app/helper/router.dart';
 import 'package:salon_user/app/util/constant.dart';
+import 'package:salon_user/app/util/open_hours.dart';
 import 'package:salon_user/app/util/theme.dart';
 import 'package:salon_user/app/util/toast.dart';
 import 'package:geolocator/geolocator.dart';
@@ -35,6 +37,13 @@ class ServicesController extends GetxController
   late TabController tabController;
 
   int tabID = 1;
+  int catalogTab = 0;
+
+  void setCatalogTab(int index) {
+    if (catalogTab == index) return;
+    catalogTab = index;
+    update();
+  }
 
   String title = 'Select Service';
 
@@ -199,6 +208,16 @@ class ServicesController extends GetxController
     if (response.statusCode == 200) {
       Map<String, dynamic> myMap = Map<String, dynamic>.from(response.body);
       var body = myMap['data'];
+      if (body is! Map) {
+        update();
+        return;
+      }
+      final salonMap = Map<String, dynamic>.from(body);
+      for (final key in ['facilities', 'features', 'amenities', 'key_features']) {
+        if (salonMap[key] == null && myMap[key] != null) {
+          salonMap[key] = myMap[key];
+        }
+      }
       var salonCategories = myMap['categories'];
       var salonPackages = myMap['packages'];
       var salonSpecialist = myMap['specialist'];
@@ -206,19 +225,19 @@ class ServicesController extends GetxController
 
       // Parse the timing string into a List<TimingModel>
       List<TimingModel> timings = [];
-      if (body['timing'] != null && body['timing'].isNotEmpty) {
+      final rawTiming = salonMap['timing'];
+      if (rawTiming != null && rawTiming.toString().isNotEmpty) {
         try {
-          var timingData = jsonDecode(body['timing']) as List<dynamic>;
+          var timingData = rawTiming is List
+              ? rawTiming
+              : jsonDecode(rawTiming.toString()) as List<dynamic>;
           timings = timingData
-              .map((e) => TimingModel.fromJson(e as Map<String, dynamic>))
+              .whereType<Map>()
+              .map((e) => TimingModel.fromJson(Map<String, dynamic>.from(e)))
               .toList();
-          debugPrint(
-              'DEBUG: Parsed timings: ${timings.map((t) => t.toJson()).toList()}');
         } catch (e) {
           debugPrint('DEBUG: Error parsing timings: $e');
         }
-      } else {
-        debugPrint('DEBUG: Timing data is null or empty in API response');
       }
 
       // Find the TimingModel for the current day
@@ -236,10 +255,9 @@ class ServicesController extends GetxController
       }
 
       // Initialize salonDetails and check status
-      _salonDetails = SalonDetailsModel.fromJson(body);
-      _salonDetails.timing =
-          timings; // Store the parsed timings in salonDetails
-      status = checkSalonStatus(currentTiming); // Pass the specific TimingModel
+      _salonDetails = SalonDetailsModel.fromJson(salonMap);
+      _salonDetails.timing = timings;
+      status = OpenHours.isOpen(timings) ? 'Open' : 'Closed';
       debugPrint('DEBUG: Salon Status: $status');
 
       _categoriesList = [];
@@ -247,58 +265,87 @@ class ServicesController extends GetxController
       _specialistList = [];
       _servicesList = [];
 
+      gallery = [];
       if (_salonDetails.images != 'NA' &&
           _salonDetails.images != null &&
           _salonDetails.images != '') {
-        var imgs = jsonDecode(_salonDetails.images!);
-        gallery = [];
-        if (imgs.length > 0) {
-          imgs.forEach((element) {
-            if (element != '') {
-              gallery.add(element);
+        try {
+          final imgs = jsonDecode(_salonDetails.images!);
+          if (imgs is List) {
+            for (final element in imgs) {
+              final path = element?.toString() ?? '';
+              if (path.isNotEmpty && path != 'NA') gallery.add(path);
             }
-          });
-          update();
+          }
+        } catch (e) {
+          debugPrint('Skip gallery parse: $e');
         }
       }
 
-      salonCategories.forEach((data) {
-        CategoriesModel categories = CategoriesModel.fromJson(data);
-        _categoriesList.add(categories);
-      });
-      debugPrint('DEBUG: Categories count: ${_categoriesList.length}');
-
-      salonServices.forEach((data) {
-        ServicesModel services = ServicesModel.fromJson(data);
-        debugPrint('DEBUG: Service ID: ${services.id}');
-        if (Get.find<ServiceCartController>()
-            .checkServiceInCart(services.id as int)) {
-          services.isChecked = true;
-        } else {
-          services.isChecked = false;
+      if (salonCategories is List) {
+        for (final data in salonCategories) {
+          try {
+            if (data is! Map) continue;
+            _categoriesList.add(
+                CategoriesModel.fromJson(Map<String, dynamic>.from(data)));
+          } catch (e) {
+            debugPrint('Skip category parse: $e');
+          }
         }
-        _servicesList.add(services);
-      });
+      }
+
+      if (salonServices is List) {
+        for (final data in salonServices) {
+          try {
+            if (data is! Map) continue;
+            ServicesModel services =
+                ServicesModel.fromJson(Map<String, dynamic>.from(data));
+            if ((services.id ?? 0) <= 0) continue;
+            if (Get.find<ServiceCartController>()
+                .checkServiceInCart(services.id as int)) {
+              services.isChecked = true;
+            } else {
+              services.isChecked = false;
+            }
+            _servicesList.add(services);
+          } catch (e) {
+            debugPrint('Skip service parse: $e');
+          }
+        }
+      }
       _servicesList.removeWhere((service) =>
           service.status == 0 &&
           !offerServiceIds.contains(service.id) &&
           !offerServiceIds.contains(service.serviceId));
-      debugPrint('DEBUG: Service list count: ${_servicesList.length}');
+      _dedupeDuplicateServices();
+      _applyOfferPricing();
       _applyOfferServiceSelection();
 
-      salonPackages.forEach((data) {
-        PackagesModel packages = PackagesModel.fromJson(data);
-        _packagesList.add(packages);
-      });
+      if (salonPackages is List) {
+        for (final data in salonPackages) {
+          try {
+            if (data is! Map) continue;
+            _packagesList.add(
+                PackagesModel.fromJson(Map<String, dynamic>.from(data)));
+          } catch (e) {
+            debugPrint('Skip package parse: $e');
+          }
+        }
+      }
       _packagesList.removeWhere((packages) => packages.status == 0);
-      debugPrint('DEBUG: Packages count: ${_packagesList.length}');
 
-      salonSpecialist.forEach((data) {
-        SpecialistModel specialist = SpecialistModel.fromJson(data);
-        _specialistList.add(specialist);
-      });
+      if (salonSpecialist is List) {
+        for (final data in salonSpecialist) {
+          try {
+            if (data is! Map) continue;
+            _specialistList.add(
+                SpecialistModel.fromJson(Map<String, dynamic>.from(data)));
+          } catch (e) {
+            debugPrint('Skip specialist parse: $e');
+          }
+        }
+      }
       _specialistList.removeWhere((specialist) => specialist.status == 0);
-      debugPrint('DEBUG: Specialist count: ${_specialistList.length}');
 
       double storeDistance = 0.0;
       double totalMeters = 0.0;
@@ -314,11 +361,43 @@ class ServicesController extends GetxController
 
       getDistance = distance.toString();
       update();
+      _resolveFacilityNames();
     } else {
       debugPrint('DEBUG: API call failed with status: ${response.statusCode}');
       ApiChecker.checkApi(response);
     }
     update();
+  }
+
+  Future<void> _resolveFacilityNames() async {
+    final ids = _salonDetails.facilityIds;
+    if (ids.isEmpty) return;
+    try {
+      final response = await parser.getFacilities();
+      final namesById = <String, String>{};
+      for (final item in ApiBody.asList(response.body,
+          keys: const ['data', 'facilities', 'items', 'list', 'result'])) {
+        if (item is! Map) continue;
+        final map = Map<String, dynamic>.from(item);
+        final id = map['id']?.toString() ?? '';
+        final name =
+            (map['name'] ?? map['title'] ?? map['label'] ?? '').toString().trim();
+        if (id.isEmpty || name.isEmpty || name == 'NA') continue;
+        namesById[id] = name;
+      }
+      var added = false;
+      for (final id in ids) {
+        final name = namesById[id];
+        if (name == null || name.isEmpty) continue;
+        if (!_salonDetails.facilities.contains(name)) {
+          _salonDetails.facilities.add(name);
+          added = true;
+        }
+      }
+      if (added) update();
+    } catch (e) {
+      debugPrint('Skip facility names: $e');
+    }
   }
 
   Future<void> getOwnerReviews() async {
@@ -625,6 +704,52 @@ class ServicesController extends GetxController
     update();
   }
 
+  bool _isOfferService(ServicesModel service) {
+    if (offerServiceIds.isEmpty) return false;
+    if (offerServiceIds.contains(service.id)) return true;
+    final hasListing = _servicesList.any((s) => offerServiceIds.contains(s.id));
+    if (hasListing) return false;
+    return offerServiceIds.contains(service.serviceId);
+  }
+
+  void _dedupeDuplicateServices() {
+    final preferred = <ServicesModel>[];
+    final rest = <ServicesModel>[];
+    for (final service in _servicesList) {
+      if (offerServiceIds.contains(service.id)) {
+        preferred.add(service);
+      } else {
+        rest.add(service);
+      }
+    }
+    final seen = <String>{};
+    final out = <ServicesModel>[];
+    for (final service in [...preferred, ...rest]) {
+      final key =
+          '${service.serviceId ?? 0}|${(service.name ?? '').trim().toLowerCase()}|${service.price}|${service.duration}';
+      if (seen.contains(key)) continue;
+      seen.add(key);
+      out.add(service);
+    }
+    _servicesList = out;
+  }
+
+  void _applyOfferPricing() {
+    if (offerServiceIds.isEmpty) return;
+    if (!Get.isRegistered<ServiceCartController>()) return;
+    final coupon = Get.find<ServiceCartController>().selectedCoupon;
+    if ((coupon.type ?? 1) != 1 || (coupon.discount ?? 0) <= 0) return;
+    for (final service in _servicesList) {
+      if (!_isOfferService(service)) continue;
+      final price = service.price ?? 0;
+      final currentOff = service.off ?? 0;
+      if (currentOff > 0 && currentOff < price) continue;
+      service.discount = coupon.discount;
+      service.off =
+          price * (1 - ((coupon.discount ?? 0) / 100));
+    }
+  }
+
   void _applyOfferServiceSelection() {
     if (offerServiceIds.isEmpty) return;
     final cart = Get.find<ServiceCartController>();
@@ -638,12 +763,26 @@ class ServicesController extends GetxController
         cart.clearCart();
       }
     }
+    final visibleIds = _servicesList.map((s) => s.id).toSet();
+    for (final item in List<ServicesModel>.from(cart.savedInCart.services ?? [])) {
+      if (!visibleIds.contains(item.id)) {
+        cart.removeServiceFromCart(item.id as int);
+      }
+    }
+    int? pick;
     for (var i = 0; i < _servicesList.length; i++) {
-      final service = _servicesList[i];
-      final match = offerServiceIds.contains(service.id) ||
-          offerServiceIds.contains(service.serviceId);
-      if (match && service.isChecked != true) {
-        updateServiceStatusInCart(i, true);
+      if (_isOfferService(_servicesList[i])) {
+        pick = i;
+        break;
+      }
+    }
+    if (pick == null) return;
+    for (var i = 0; i < _servicesList.length; i++) {
+      final checked = _servicesList[i].isChecked == true;
+      if (i == pick) {
+        if (!checked) updateServiceStatusInCart(i, true);
+      } else if (checked && _isOfferService(_servicesList[i])) {
+        updateServiceStatusInCart(i, false);
       }
     }
   }

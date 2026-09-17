@@ -23,6 +23,48 @@ class ServiceCartController extends GetxController implements GetxService {
   double _grandTotal = 0.0;
   double get grandTotal => _grandTotal;
 
+  double _payAmount = 0.0;
+  double get payAmount => _payAmount > 0 ? _payAmount : _grandTotal;
+
+  double couponDiscountAmount() {
+    final value = _selectedCoupon.discount ?? 0;
+    if (value <= 0) return 0;
+    if (_listingPricesAlreadyIncludeOffer()) return 0;
+    double amount;
+    if ((_selectedCoupon.type ?? 1) == 1) {
+      amount = _totalPrice * (value / 100);
+      if (_selectedCoupon.upto != null &&
+          _selectedCoupon.upto! > 0 &&
+          amount > _selectedCoupon.upto!) {
+        amount = _selectedCoupon.upto!;
+      }
+    } else {
+      amount = value;
+    }
+    if (amount > _totalPrice) amount = _totalPrice;
+    return amount;
+  }
+
+  bool _listingPricesAlreadyIncludeOffer() {
+    for (final item in _savedInCart.services ?? []) {
+      final price = item.price ?? 0;
+      final off = item.off ?? 0;
+      if ((item.discount ?? 0) > 0 && off > 0 && off < price) return true;
+    }
+    for (final item in _savedInCart.packages ?? []) {
+      final price = item.price ?? 0;
+      final off = item.off ?? 0;
+      if ((item.discount ?? 0) > 0 && off > 0 && off < price) return true;
+    }
+    return false;
+  }
+
+  void applyApiPayAmount(double amount) {
+    if (amount < 0) return;
+    _payAmount = double.parse(amount.toStringAsFixed(2));
+    update();
+  }
+
   double _walletDiscount = 0.0;
   double get walletDiscount => _walletDiscount;
 
@@ -55,6 +97,8 @@ class ServiceCartController extends GetxController implements GetxService {
 
   bool isWalletChecked = false;
   double taxAmount = 0.0;
+  double taxableValue = 0.0;
+  String taxTypeLabel = 'Tax';
 
   int salonId = 0;
   String servicesFrom = '';
@@ -197,15 +241,32 @@ class ServiceCartController extends GetxController implements GetxService {
     _totalPrice = double.parse((_totalPrice).toStringAsFixed(2));
     double totalPrice = _totalPrice;
 
-    // double totalPrice = _totalPrice + serviceCharge;
-
     taxAmount = 0;
+    taxableValue = 0;
+    taxTypeLabel = 'Tax';
+    var gstRate = 0.0;
+    for (final element in _savedInCart.services ?? const <ServicesModel>[]) {
+      taxAmount += element.resolvedTaxAmount;
+      taxableValue += element.taxableValue ?? 0;
+      final rate = element.taxRate ?? 0;
+      if (rate > gstRate) gstRate = rate;
+      if (element.resolvedTaxType.isNotEmpty &&
+          element.resolvedTaxType != 'Tax') {
+        taxTypeLabel = element.resolvedTaxType;
+      }
+    }
+    taxAmount = double.parse(taxAmount.toStringAsFixed(2));
+    taxableValue = double.parse(taxableValue.toStringAsFixed(2));
+    if (gstRate > 0) {
+      _orderTax = gstRate;
+    }
 
     _serviceChargeAmount = _totalPrice * (_serviceCharge / 100);
     _serviceChargeAmount = _serviceChargeAmount.toPrecision(2);
 
     _grandTotal = double.parse(
         (totalPrice + _serviceChargeAmount).toStringAsFixed(2));
+    _payAmount = double.parse(_grandTotal.toStringAsFixed(2));
     update();
   }
 }

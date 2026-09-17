@@ -16,12 +16,13 @@ import 'package:salon_user/app/util/facebook_service.dart';
 import 'firebase_options.dart';
 
 void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  _ignoreSimulatorEscapeKeyGlitch();
   SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle.light);
   SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
     statusBarColor: ThemeProvider.backgroundColor,
     statusBarIconBrightness: Brightness.light,
   ));
-  WidgetsFlutterBinding.ensureInitialized();
   await dotenv.load(fileName: '.env');
   await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,
@@ -29,6 +30,25 @@ void main() async {
   await FacebookService.init();
   await MainBinding().dependencies();
   runApp(const MyApp());
+}
+
+/// iOS Simulator / macOS keyboard sends Escape KeyUp without KeyDown.
+/// Flutter debug then asserts in HardwareKeyboard. Harmless; swallow it.
+void _ignoreSimulatorEscapeKeyGlitch() {
+  bool isKeyUpGlitch(Object error) {
+    final text = error.toString();
+    return text.contains('A KeyUpEvent is dispatched') ||
+        text.contains('_pressedKeys.containsKey(event.physicalKey)');
+  }
+
+  final previous = FlutterError.onError;
+  FlutterError.onError = (details) {
+    if (isKeyUpGlitch(details.exception)) {
+      HardwareKeyboard.instance.clearState();
+      return;
+    }
+    previous?.call(details);
+  };
 }
 
 class MyApp extends StatelessWidget {

@@ -11,13 +11,11 @@ import 'package:salon_user/app/backend/models/slot_time_model.dart';
 import 'package:salon_user/app/backend/models/slots_model.dart';
 import 'package:salon_user/app/backend/models/specialist_model.dart';
 import 'package:salon_user/app/backend/parse/reschedule_slot_parse.dart';
-import 'package:salon_user/app/backend/parse/slot_parse.dart';
 import 'package:salon_user/app/controller/booking_controller.dart';
-import 'package:salon_user/app/controller/checkout_controller.dart';
-import 'package:salon_user/app/controller/payment_controller.dart';
 import 'package:salon_user/app/helper/router.dart';
 import 'package:salon_user/app/util/theme.dart';
 import 'package:salon_user/app/util/toast.dart';
+import 'package:salon_user/app/view/widgets/elite_ui.dart';
 
 class RescheduleSlotController extends GetxController implements GetxService {
   final RescheduleSlotParser parser;
@@ -99,7 +97,12 @@ class RescheduleSlotController extends GetxController implements GetxService {
 
   Future<void> getSlotsForBookings(int index, String date) async {
     var response = await parser.getSlots(
-      {"week_id": index, "date": date, "uid": uid, "from": type},
+      {
+        "week_id": index,
+        "date": date,
+        "uid": int.tryParse(uid) ?? uid,
+        "from": type,
+      },
     );
     apiCalled = true;
 
@@ -232,19 +235,6 @@ class RescheduleSlotController extends GetxController implements GetxService {
     getSlotsForBookings(index, selectedDate);
   }
 
-  void onPayment() {
-    if (selectedSlotIndex == '') {
-      showToast('Please select Slots'.tr);
-      return;
-    }
-    if (selectedSpecialist == '') {
-      showToast('Please select specialist'.tr);
-      return;
-    }
-    Get.delete<PaymentController>(force: true);
-    Get.toNamed(AppRouter.getPaymentRoutes());
-  }
-
   void saveSpecialist(int id) {
     debugPrint(id.toString());
     selectedSpecialist = id.toString();
@@ -260,32 +250,11 @@ class RescheduleSlotController extends GetxController implements GetxService {
     //   showToast('Please select specialist'.tr);
     //   return;
     // }
-    var context = Get.context as BuildContext;
-    Navigator.pop(context);
     Get.dialog(
-        SimpleDialog(
-          children: [
-            Row(
-              children: [
-                const SizedBox(
-                  width: 30,
-                ),
-                const CircularProgressIndicator(
-                  color: ThemeProvider.appColor,
-                ),
-                const SizedBox(
-                  width: 30,
-                ),
-                SizedBox(
-                    child: Text(
-                  "Please wait".tr,
-                  style: const TextStyle(fontFamily: 'bold'),
-                )),
-              ],
-            )
-          ],
-        ),
-        barrierDismissible: false);
+      const Center(child: CircularProgressIndicator(color: ThemeProvider.gold)),
+      barrierDismissible: false,
+      barrierColor: const Color(0xB8000000),
+    );
     var body = {
       "id": appointmentId,
       "save_date": savedDate,
@@ -295,12 +264,6 @@ class RescheduleSlotController extends GetxController implements GetxService {
     Response response = await parser.onUpdateAppointmentStatus(body);
     Get.back();
     if (response.statusCode == 200) {
-      // back//
-      // successToast('Status Updated'.tr);
-      // Get.find<BookingController>().getAppointmentById();
-
-      //  onBack(); // list refresh
-
       showRescheduleSuccessDialog();
     } else {
       ApiChecker.checkApi(response);
@@ -312,6 +275,7 @@ class RescheduleSlotController extends GetxController implements GetxService {
   void showRescheduleSuccessDialog() {
     Get.dialog(
       Dialog(
+        backgroundColor: ThemeProvider.surface,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
         ),
@@ -320,103 +284,65 @@ class RescheduleSlotController extends GetxController implements GetxService {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // Success icon
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: ThemeProvider.greenColor.withOpacity(0.1),
+                  color: ThemeProvider.greenColor.withValues(alpha: 0.15),
                   shape: BoxShape.circle,
                 ),
-                child: Icon(
+                child: const Icon(
                   Icons.check_circle_outline,
                   size: 64,
                   color: ThemeProvider.greenColor,
                 ),
               ),
               const SizedBox(height: 24),
-
-              // Success title
               Text(
                 'Appointment Rescheduled'.tr,
                 textAlign: TextAlign.center,
-                style: const TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  color: ThemeProvider.blackColor,
+                style: ThemeProvider.serif(
+                  size: 20,
+                  color: ThemeProvider.gold,
                 ),
               ),
               const SizedBox(height: 8),
-
-              // Success message
               Text(
                 'Your appointment has been successfully rescheduled. You will receive a confirmation email shortly.'
                     .tr,
                 textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 14,
+                style: ThemeProvider.sans(
+                  size: 14,
                   color: ThemeProvider.greyColor,
-                  height: 1.4,
                 ),
               ),
               const SizedBox(height: 24),
-
-              // Action buttons
-              Column(
-                children: [
-                  // Book new appointment button
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton.icon(
-                      onPressed: () {
-                        Get.find<BookingController>().getAppointmentById();
-                        onBack(); // list refresh
-                        onBack();
-                      },
-                      icon: const Icon(Icons.schedule, size: 18),
-                      label: Text('Goto Appointments'.tr),
-                      style: ElevatedButton.styleFrom(
-                        foregroundColor: ThemeProvider.whiteColor,
-                        backgroundColor: ThemeProvider.appColor,
-                        minimumSize: const Size.fromHeight(48),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        elevation: 0,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-
-                  // // Done button
-                  // SizedBox(
-                  //   width: double.infinity,
-                  //   child: TextButton(
-                  //     onPressed: () {
-                  //       Navigator.pop(Get.context!);
-                  //     },
-                  //     style: TextButton.styleFrom(
-                  //       foregroundColor: ThemeProvider.greyColor,
-                  //       minimumSize: const Size.fromHeight(48),
-                  //       shape: RoundedRectangleBorder(
-                  //         borderRadius: BorderRadius.circular(8),
-                  //       ),
-                  //     ),
-                  //     child: Text(
-                  //       'Done'.tr,
-                  //       style: const TextStyle(
-                  //         fontSize: 16,
-                  //         fontWeight: FontWeight.w500,
-                  //       ),
-                  //     ),
-                  //   ),
-                  // ),
-                ],
+              SizedBox(
+                width: double.infinity,
+                child: EliteGoldButton(
+                  label: 'Goto Appointments'.tr,
+                  onTap: _goToAppointments,
+                ),
               ),
             ],
           ),
         ),
       ),
       barrierDismissible: false,
+      barrierColor: const Color(0xB8000000),
+    );
+  }
+
+  void _goToAppointments() {
+    if (Get.isRegistered<BookingController>()) {
+      Get.find<BookingController>().getAppointmentById();
+    }
+    if (Get.isDialogOpen == true) {
+      Get.back();
+    }
+    Get.offNamedUntil(
+      AppRouter.getBookingRoutes(),
+      (route) =>
+          route.settings.name == AppRouter.tabsBarRoutes || route.isFirst,
     );
   }
 

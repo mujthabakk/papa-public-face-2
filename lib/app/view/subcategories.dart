@@ -40,7 +40,11 @@ class _SubcategoriesScreenState extends State<SubcategoriesScreen> {
                   child: CircularProgressIndicator(color: ThemeProvider.gold),
                 )
               : subs.isEmpty
-                  ? const EliteApiUnavailable(minHeight: 180)
+                  ? const EliteApiUnavailable(
+                      minHeight: 180,
+                      title: 'No subcategories yet',
+                      icon: Icons.category_outlined,
+                    )
                   : ListView.builder(
                       padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
                       itemCount: subs.length,

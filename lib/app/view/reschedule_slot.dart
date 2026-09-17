@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:date_picker_timeline/date_picker_timeline.dart';
+import 'package:intl/intl.dart';
 import 'package:salon_user/app/controller/reschedule_slot_controller.dart';
-import 'package:salon_user/app/env.dart';
 import 'package:salon_user/app/util/theme.dart';
+import 'package:salon_user/app/view/widgets/elite_ui.dart';
 
 class RescheduleSlotScreen extends StatefulWidget {
   const RescheduleSlotScreen({Key? key}) : super(key: key);
@@ -17,270 +17,168 @@ class _RescheduleSlotScreenState extends State<RescheduleSlotScreen> {
   Widget build(BuildContext context) {
     return GetBuilder<RescheduleSlotController>(
       builder: (value) {
+        DateTime? selected;
+        try {
+          selected = DateTime.parse(value.savedDate);
+        } catch (_) {
+          selected = DateTime.now();
+        }
+        final days = List.generate(
+          14,
+          (i) => DateTime.now().add(Duration(days: i)),
+        );
         return Scaffold(
           backgroundColor: ThemeProvider.backgroundColor,
-          appBar: AppBar(
-            backgroundColor: ThemeProvider.appColor,
-            elevation: 0,
-            iconTheme: const IconThemeData(color: ThemeProvider.whiteColor),
-            titleSpacing: 0,
-            centerTitle: true,
-            title: Text(
-              'Reschedule Slots'.tr,
-              style: ThemeProvider.serif(size: 20, color: ThemeProvider.gold),
-            ),
+          appBar: EliteAppBar(
+            showBack: true,
+            title: 'Reschedule Slots'.tr,
           ),
           body: value.apiCalled == false
               ? const Center(
-                  child:
-                      CircularProgressIndicator(color: ThemeProvider.gold),
+                  child: CircularProgressIndicator(color: ThemeProvider.gold),
                 )
-              : SingleChildScrollView(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 10, vertical: 10),
-                    child: Column(
-                      children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Select Date'.tr,
-                              style: const TextStyle(
-                                  fontFamily: 'bold', fontSize: 14),
-                            ),
-                          ],
-                        ),
-                        Container(
-                          height: 120,
-                          margin: const EdgeInsets.symmetric(vertical: 10),
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 10, vertical: 10),
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(5),
-                            color: ThemeProvider.whiteColor,
-                            boxShadow: const [
-                              BoxShadow(
-                                color: ThemeProvider.greyColor,
-                                blurRadius: 5.0,
-                                offset: Offset(0.7, 2.0),
+              : ListView(
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+                  children: [
+                    Text(
+                      'Select Date'.tr,
+                      style: ThemeProvider.serif(
+                          size: 18, color: ThemeProvider.gold),
+                    ),
+                    const SizedBox(height: 10),
+                    SizedBox(
+                      height: 92,
+                      child: ListView.separated(
+                        scrollDirection: Axis.horizontal,
+                        itemCount: days.length,
+                        separatorBuilder: (_, __) => const SizedBox(width: 8),
+                        itemBuilder: (_, i) {
+                          final d = days[i];
+                          final isSel = selected != null &&
+                              d.year == selected.year &&
+                              d.month == selected.month &&
+                              d.day == selected.day;
+                          return GestureDetector(
+                            onTap: () => value.onDateChange(d),
+                            child: Container(
+                              width: 62,
+                              decoration: BoxDecoration(
+                                color: isSel
+                                    ? ThemeProvider.gold
+                                    : ThemeProvider.surface,
+                                borderRadius: BorderRadius.circular(10),
+                                border: Border.all(
+                                  color: isSel
+                                      ? ThemeProvider.gold
+                                      : const Color(0xFF2A2A2A),
+                                ),
                               ),
-                            ],
-                          ),
-                          child: DatePicker(
-                            DateTime.now(),
-                            width: 60,
-                            height: 90,
-                            controller: value.controller,
-                            initialSelectedDate: DateTime.now(),
-                            selectionColor: ThemeProvider.gold,
-                            selectedTextColor: Colors.black,
-                            activeDates: List.generate(
-                                30,
-                                (index) =>
-                                    DateTime.now().add(Duration(days: index))),
-                            onDateChange: (date) {
-                              value.onDateChange(date);
-                            },
-                          ),
-                        ),
-                        value.haveData == false
-                            ? Center(
-                                child: Text('No Slots Found'.tr),
-                              )
-                            : Row(
-                                mainAxisAlignment: MainAxisAlignment.start,
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
                                   Text(
-                                    'Select Slots'.tr,
-                                    style: const TextStyle(
-                                        fontFamily: 'bold', fontSize: 14),
+                                    DateFormat('MMM').format(d).toUpperCase(),
+                                    style: ThemeProvider.sans(
+                                      size: 10,
+                                      color: isSel
+                                          ? Colors.black
+                                          : ThemeProvider.greyColor,
+                                    ),
+                                  ),
+                                  Text(
+                                    '${d.day}',
+                                    style: ThemeProvider.serif(
+                                      size: 20,
+                                      color:
+                                          isSel ? Colors.black : Colors.white,
+                                    ),
+                                  ),
+                                  Text(
+                                    DateFormat('E').format(d).toUpperCase(),
+                                    style: ThemeProvider.sans(
+                                      size: 10,
+                                      color: isSel
+                                          ? Colors.black
+                                          : ThemeProvider.greyColor,
+                                    ),
                                   ),
                                 ],
                               ),
-                        value.haveData == false
-                            ? const SizedBox()
-                            : Container(
-                                width: double.infinity,
-                                margin:
-                                    const EdgeInsets.symmetric(vertical: 10),
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 10, vertical: 10),
-                                decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.circular(5),
-                                  color: ThemeProvider.whiteColor,
-                                  boxShadow: const [
-                                    BoxShadow(
-                                      color: ThemeProvider.greyColor,
-                                      blurRadius: 5.0,
-                                      offset: Offset(0.7, 2.0),
-                                    ),
-                                  ],
-                                ),
-                                child: Wrap(
-                                  spacing: 6.0,
-                                  runSpacing: 6.0,
-                                  alignment: WrapAlignment.center,
-                                  children: List.generate(
-                                    value.slotList.slots!.length,
-                                    (i) => GestureDetector(
-                                      onTap: () {
-                                        value.onSelectSlot(
-                                            '${value.slotList.slots![i].startTime}-${value.slotList.slots![i].endTime}');
-                                      },
-                                      child: Container(
-                                        margin: const EdgeInsets.symmetric(
-                                            vertical: 8, horizontal: 4),
-                                        padding: const EdgeInsets.symmetric(
-                                            horizontal: 8, vertical: 12),
-                                        decoration: BoxDecoration(
-                                          // color: Colors.white,
-                                          color: value.isBooked(
-                                                  '${value.slotList.slots![i].startTime}-${value.slotList.slots![i].endTime}')
-                                              ? Colors.grey
-                                              : value.selectedSlotIndex ==
-                                                      '${value.slotList.slots![i].startTime}-${value.slotList.slots![i].endTime}'
-                                                  ? ThemeProvider.appColor
-                                                  : Colors.white,
-
-                                          boxShadow: const [
-                                            BoxShadow(
-                                              offset: Offset(0, 0),
-                                              blurRadius: 6,
-                                              color:
-                                                  Color.fromRGBO(0, 0, 0, 0.16),
-                                            )
-                                          ],
-                                          borderRadius: const BorderRadius.all(
-                                              Radius.circular(50)),
-                                        ),
-                                        child: Text(
-                                          '${value.slotList.slots![i].startTime} to ${value.slotList.slots![i].endTime}',
-                                          style: TextStyle(
-                                              color: value.isBooked(
-                                                          '${value.slotList.slots![i].startTime}-${value.slotList.slots![i].endTime}') ||
-                                                      value.selectedSlotIndex ==
-                                                          '${value.slotList.slots![i].startTime}-${value.slotList.slots![i].endTime}'
-                                                  ? Colors.white
-                                                  : Colors.black,
-                                              fontSize: 13),
-                                        ),
-                                      ),
-                                    ),
-                                  ),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                    const SizedBox(height: 18),
+                    Text(
+                      'Select Slots'.tr,
+                      style: ThemeProvider.serif(
+                          size: 18, color: ThemeProvider.gold),
+                    ),
+                    const SizedBox(height: 10),
+                    if (value.haveData == false ||
+                        (value.slotList.slots ?? []).isEmpty)
+                      const EliteApiUnavailable(
+                        title: 'No slots available',
+                        subtitle: 'Please try another date.',
+                        icon: Icons.event_busy_outlined,
+                      )
+                    else
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: List.generate(value.slotList.slots!.length,
+                            (i) {
+                          final slot = value.slotList.slots![i];
+                          final key = '${slot.startTime}-${slot.endTime}';
+                          final booked = value.isBooked(key);
+                          final selectedSlot = value.selectedSlotIndex == key;
+                          return GestureDetector(
+                            onTap: booked
+                                ? null
+                                : () => value.onSelectSlot(key),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 14, vertical: 10),
+                              decoration: BoxDecoration(
+                                color: selectedSlot
+                                    ? ThemeProvider.gold
+                                    : ThemeProvider.surface,
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(
+                                  color: booked
+                                      ? const Color(0xFF2A2A2A)
+                                      : selectedSlot
+                                          ? ThemeProvider.gold
+                                          : const Color(0xFF3A3A3A),
                                 ),
                               ),
-                        // Row(
-                        //   mainAxisAlignment: MainAxisAlignment.start,
-                        //   children: [
-                        //     Text(
-                        //       'Select Specialist'.tr,
-                        //       style: const TextStyle(
-                        //           fontFamily: 'bold', fontSize: 14),
-                        //     ),
-                        //   ],
-                        // ),
-                        // SingleChildScrollView(
-                        //   scrollDirection: Axis.horizontal,
-                        //   child: Row(
-                        //     children: List.generate(
-                        //         value.specialistList.length,
-                        //         (index) => Padding(
-                        //               padding: const EdgeInsets.all(10.0),
-                        //               child: Column(
-                        //                 children: [
-                        //                   Stack(
-                        //                     clipBehavior: Clip.none,
-                        //                     alignment: Alignment.topRight,
-                        //                     children: [
-                        //                       ClipRRect(
-                        //                         borderRadius:
-                        //                             BorderRadius.circular(5),
-                        //                         child: SizedBox.fromSize(
-                        //                           size:
-                        //                               const Size.fromRadius(40),
-                        //                           child: FadeInImage(
-                        //                             image: NetworkImage(
-                        //                                 '${Environments.imageURL}${value.specialistList[index].cover}'),
-                        //                             placeholder: const AssetImage(
-                        //                                 "assets/images/placeholder.jpeg"),
-                        //                             imageErrorBuilder: (context,
-                        //                                 error, stackTrace) {
-                        //                               return Image.asset(
-                        //                                   'assets/images/notfound.png',
-                        //                                   fit: BoxFit.cover);
-                        //                             },
-                        //                             fit: BoxFit.cover,
-                        //                           ),
-                        //                         ),
-                        //                       ),
-                        //                       Positioned(
-                        //                         top: -12,
-                        //                         right: -12,
-                        //                         child: IconButton(
-                        //                           onPressed: () {
-                        //                             value.saveSpecialist(value
-                        //                                 .specialistList[index]
-                        //                                 .id as int);
-                        //                           },
-                        //                           icon: Icon(value
-                        //                                       .selectedSpecialist ==
-                        //                                   value
-                        //                                       .specialistList[
-                        //                                           index]
-                        //                                       .id
-                        //                                       .toString()
-                        //                               ? Icons
-                        //                                   .check_circle_outline
-                        //                               : Icons.circle_outlined),
-                        //                           color: ThemeProvider.appColor,
-                        //                         ),
-                        //                       ),
-                        //                     ],
-                        //                   ),
-                        //                   Padding(
-                        //                     padding: const EdgeInsets.only(
-                        //                         top: 10, bottom: 3),
-                        //                     child: Text(
-                        //                       '${value.specialistList[index].firstName} ${value.specialistList[index].lastName}',
-                        //                       style: const TextStyle(
-                        //                           fontSize: 12,
-                        //                           color:
-                        //                               ThemeProvider.blackColor),
-                        //                     ),
-                        //                   ),
-                        //                 ],
-                        //               ),
-                        //             )),
-                        //   ),
-                        // ),
-                      ],
-                    ),
-                  ),
+                              child: Text(
+                                booked
+                                    ? 'Booked'
+                                    : '${slot.startTime} to ${slot.endTime}',
+                                style: ThemeProvider.sans(
+                                  size: 12,
+                                  weight: FontWeight.w600,
+                                  color: booked
+                                      ? ThemeProvider.greyColor
+                                      : selectedSlot
+                                          ? Colors.black
+                                          : Colors.white,
+                                ),
+                              ),
+                            ),
+                          );
+                        }),
+                      ),
+                  ],
                 ),
-          bottomNavigationBar: InkWell(
-            onTap: () {
-              value.onUpdateAppointmentStatus();
-            },
-            child: Container(
-              height: 60,
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(vertical: 13.0),
-              decoration: const BoxDecoration(
-                color: ThemeProvider.pink,
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 6.0),
-                    child: Text(
-                      'Reschedule Appointment'.tr,
-                      style: const TextStyle(
-                          color: ThemeProvider.whiteColor, fontSize: 17),
-                    ),
-                  ),
-                ],
+          bottomNavigationBar: SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+              child: EliteGoldButton(
+                label: 'Reschedule Appointment'.tr,
+                onTap: value.onUpdateAppointmentStatus,
               ),
             ),
           ),

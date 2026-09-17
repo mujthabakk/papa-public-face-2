@@ -71,7 +71,11 @@ class _ProductsScreenState extends State<ProductsScreen> {
                     ),
                     if (list.isEmpty)
                       const SliverFillRemaining(
-                        child: EliteApiUnavailable(minHeight: 180),
+                        child: EliteApiUnavailable(
+                          minHeight: 180,
+                          title: 'No products yet',
+                          icon: Icons.shopping_bag_outlined,
+                        ),
                       )
                     else
                       SliverPadding(
@@ -157,8 +161,8 @@ class _ProductsScreenState extends State<ProductsScreen> {
                               (p.discount ?? 0) > 0
                                   ? p.sellPrice
                                   : p.originalPrice),
-                          style: ThemeProvider.serif(
-                              size: 16, color: ThemeProvider.gold),
+                          style: ThemeProvider.price(
+                              size: 16, color: ThemeProvider.gold, weight: FontWeight.w700),
                         ),
                       ),
                       GestureDetector(

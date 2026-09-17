@@ -26,6 +26,8 @@ class LocaleConfigData {
   final String defaultCountry;
   final String selectedLanguage;
   final String selectedCountry;
+  final String currencyCode;
+  final String currencySymbol;
   final List<LocaleCountryItem> countries;
 
   LocaleConfigData({
@@ -34,17 +36,34 @@ class LocaleConfigData {
     required this.defaultCountry,
     required this.selectedLanguage,
     required this.selectedCountry,
+    this.currencyCode = '',
+    this.currencySymbol = '',
     required this.countries,
   });
 
   factory LocaleConfigData.fromJson(Map<String, dynamic> json) {
     final countriesRaw = json['countries'];
+    String currencyCode = json['currencyCode']?.toString() ??
+        json['currency_code']?.toString() ??
+        json['currency']?.toString() ??
+        '';
+    String currencySymbol = json['currencySymbol']?.toString() ??
+        json['currency_symbol']?.toString() ??
+        '';
+    final conv = json['currency_conversion'];
+    if (conv is Map) {
+      if (currencyCode.isEmpty) {
+        currencyCode = conv['to']?.toString() ?? '';
+      }
+    }
     return LocaleConfigData(
       locale: json['locale']?.toString() ?? 'en',
       defaultLanguage: json['default_language']?.toString() ?? 'en',
       defaultCountry: json['default_country']?.toString() ?? '',
       selectedLanguage: json['selected_language']?.toString() ?? 'en',
       selectedCountry: json['selected_country']?.toString() ?? '',
+      currencyCode: currencyCode.toUpperCase(),
+      currencySymbol: currencySymbol,
       countries: countriesRaw is List
           ? countriesRaw
               .whereType<Map>()

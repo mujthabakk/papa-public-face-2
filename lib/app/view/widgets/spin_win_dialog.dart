@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:salon_user/app/backend/models/spinner_model.dart';
 import 'package:salon_user/app/backend/parse/spinner_parse.dart';
+import 'package:salon_user/app/helper/locale_helper.dart';
 import 'package:salon_user/app/helper/router.dart';
 import 'package:salon_user/app/util/theme.dart';
 import 'package:salon_user/app/util/toast.dart';
@@ -60,6 +61,11 @@ class _SpinWinDialogState extends State<SpinWinDialog>
   String? _statusMessage;
 
   List<String> get _wheelLabels => _status?.wheelLabels ?? [];
+
+  List<String> get _mysteryLabels {
+    final count = _wheelLabels.isEmpty ? 6 : _wheelLabels.length;
+    return List<String>.filled(count, '?');
+  }
 
   @override
   void initState() {
@@ -164,7 +170,8 @@ class _SpinWinDialogState extends State<SpinWinDialog>
       }
 
       final spinData = result.data!;
-      final labels = spinData.wheelAmounts.map((a) => '₹$a').toList();
+      final labels =
+          spinData.wheelAmounts.map((a) => AppCurrency.format(a, digits: 0)).toList();
       final segmentCount = labels.length;
       final segmentIndex = spinData.segmentIndex.clamp(0, segmentCount - 1);
 
@@ -278,7 +285,7 @@ class _SpinWinDialogState extends State<SpinWinDialog>
     final hasAccess = status?.hasAccess ?? false;
     final canSpin = status?.canSpin == true && !_spinning;
     final pendingAmount = status?.pendingAmount ?? 0;
-    final showWheel = hasAccess && _wheelLabels.isNotEmpty;
+    final showWheel = hasAccess && !_loading;
 
     return Center(
       child: Material(
@@ -320,7 +327,7 @@ class _SpinWinDialogState extends State<SpinWinDialog>
               if (status != null && status.walletBalance > 0) ...[
                 const SizedBox(height: 6),
                 Text(
-                  'Wallet: ₹${_formatAmount(status.walletBalance)}',
+                  'Wallet: ${AppCurrency.format(status.walletBalance)}',
                   style: ThemeProvider.sans(
                     size: 12,
                     weight: FontWeight.w600,
@@ -375,7 +382,7 @@ class _SpinWinDialogState extends State<SpinWinDialog>
                         },
                         child: CustomPaint(
                           size: const Size(220, 220),
-                          painter: _WheelPainter(labels: _wheelLabels),
+                          painter: _WheelPainter(labels: _mysteryLabels),
                         ),
                       ),
                       const Icon(Icons.arrow_drop_down,
@@ -448,7 +455,7 @@ class _SpinWinDialogState extends State<SpinWinDialog>
                       child: Text(
                         _redeeming
                             ? 'REDEEMING...'
-                            : 'REDEEM ₹${_formatAmount(pendingAmount)}',
+                            : 'REDEEM ${AppCurrency.format(pendingAmount)}',
                         style: ThemeProvider.sans(
                           size: 13,
                           weight: FontWeight.w700,
@@ -501,9 +508,9 @@ class _WheelPainter extends CustomPainter {
       );
       textPainter.text = TextSpan(
         text: labels[i],
-        style: const TextStyle(
+        style: TextStyle(
           color: ThemeProvider.gold,
-          fontSize: 11,
+          fontSize: 20,
           fontWeight: FontWeight.w700,
         ),
       );
@@ -572,7 +579,7 @@ class _SpinnerRewardPopupState extends State<_SpinnerRewardPopup>
 
   @override
   Widget build(BuildContext context) {
-    final amountText = '₹${widget.formatAmount(widget.amount)}';
+    final amountText = AppCurrency.format(widget.amount);
 
     return Center(
       child: FadeTransition(
@@ -671,7 +678,7 @@ class _SpinnerRewardPopupState extends State<_SpinnerRewardPopup>
                           ),
                           const SizedBox(width: 8),
                           Text(
-                            'Wallet balance: ₹${widget.formatAmount(widget.walletBalance!)}',
+                            'Wallet balance: ${AppCurrency.format(widget.walletBalance)}',
                             style: ThemeProvider.sans(
                               size: 12,
                               weight: FontWeight.w600,
@@ -679,6 +686,32 @@ class _SpinnerRewardPopupState extends State<_SpinnerRewardPopup>
                             ),
                           ),
                         ],
+                      ),
+                    ),
+                  ],
+                  if (!_isWin) ...[
+                    const SizedBox(height: 14),
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 10,
+                      ),
+                      decoration: BoxDecoration(
+                        color: ThemeProvider.gold.withValues(alpha: 0.08),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: ThemeProvider.gold.withValues(alpha: 0.25),
+                        ),
+                      ),
+                      child: Text(
+                        'This amount has been added to your wallet. Please use it within 1 month. Validity is 1 month.'
+                            .tr,
+                        textAlign: TextAlign.center,
+                        style: ThemeProvider.sans(
+                          size: 11,
+                          color: Colors.white70,
+                        ).copyWith(height: 1.4),
                       ),
                     ),
                   ],

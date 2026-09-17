@@ -15,10 +15,13 @@ import 'package:salon_user/app/controller/reset_password_controller.dart';
 import 'package:salon_user/app/controller/service_cart_controller.dart';
 import 'package:salon_user/app/controller/tabs_controller.dart';
 import 'package:salon_user/app/controller/wallet_controller.dart';
+import 'package:salon_user/app/helper/locale_helper.dart';
 import 'package:salon_user/app/helper/router.dart';
 import 'package:salon_user/app/util/theme.dart';
 
-class AccountController extends GetxController implements GetxService {
+class AccountController extends GetxController
+    with CountryScopedRefresh
+    implements GetxService {
   final AccountParser parser;
 
   String cover = '';
@@ -32,6 +35,7 @@ class AccountController extends GetxController implements GetxService {
   @override
   void onInit() {
     super.onInit();
+    markCountryFresh();
     changeInfo();
   }
 

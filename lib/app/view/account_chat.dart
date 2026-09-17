@@ -47,7 +47,11 @@ class _AccountChatScreenState extends State<AccountChatScreen> {
                           CircularProgressIndicator(color: ThemeProvider.gold),
                     )
                   : value.chatList.isEmpty
-                      ? const EliteApiUnavailable(minHeight: 180)
+                      ? const EliteApiUnavailable(
+                          minHeight: 180,
+                          title: 'No messages yet',
+                          icon: Icons.chat_bubble_outline,
+                        )
                       : ListView.builder(
                           padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
                           itemCount: value.chatList.length,

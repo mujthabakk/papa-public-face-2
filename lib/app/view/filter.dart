@@ -114,7 +114,10 @@ class _FilterScreenState extends State<FilterScreen> {
               ),
               const SizedBox(height: 12),
               if (controller.categoriesList.isEmpty)
-                const EliteApiUnavailable()
+                const EliteApiUnavailable(
+                  title: 'No categories yet',
+                  icon: Icons.grid_view_outlined,
+                )
               else
                 Wrap(
                   spacing: 8,
@@ -133,7 +136,10 @@ class _FilterScreenState extends State<FilterScreen> {
               Text('Facilities'.tr, style: ThemeProvider.serif(size: 18)),
               const SizedBox(height: 12),
               if (controller.chipLabels.isEmpty)
-                const EliteApiUnavailable()
+                const EliteApiUnavailable(
+                  title: 'No facilities listed',
+                  icon: Icons.room_service_outlined,
+                )
               else
                 Wrap(
                   spacing: 8,

@@ -9,6 +9,7 @@ import 'package:salon_user/app/controller/unified_search_controller.dart';
 import 'package:salon_user/app/env.dart';
 import 'package:salon_user/app/helper/map_style.dart';
 import 'package:salon_user/app/helper/router.dart';
+import 'package:salon_user/app/util/open_hours.dart';
 import 'package:salon_user/app/util/theme.dart';
 import 'package:salon_user/app/view/sidemenu.dart';
 import 'package:salon_user/app/view/widgets/elite_ui.dart';
@@ -54,7 +55,7 @@ class _NearScreenState extends State<NearScreen> {
       salons.sort((a, b) => (b.rating ?? 0).compareTo(a.rating ?? 0));
     }
     if (_chip == 1) {
-      salons = salons.where((s) => (s.status ?? 1) == 1).toList();
+      salons = salons.where((s) => s.isOpenNow).toList();
     }
 
     return Column(
@@ -71,7 +72,7 @@ class _NearScreenState extends State<NearScreen> {
           ),
         ),
         EliteSearchBar(
-          hint: 'Search shops, freelancers...'.tr,
+          hint: 'Search shops, freelancers, services...'.tr,
           onTap: () {
             Get.delete<UnifiedSearchController>(force: true);
             Get.toNamed(AppRouter.getSearchRoutes());
@@ -185,7 +186,12 @@ class _NearScreenState extends State<NearScreen> {
                   goldTitle: true,
                 ),
                 ...salons.map((item) => _centerCard(value, item)),
-              ],
+              ] else if (_chip == 1)
+                const EliteApiUnavailable(
+                  title: 'No shops open now',
+                  subtitle: 'These shops are closed right now.',
+                  icon: Icons.storefront_outlined,
+                ),
             ],
           ),
         ),
@@ -279,7 +285,7 @@ class _NearScreenState extends State<NearScreen> {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      '${(item.distance ?? 0).toStringAsFixed(1)} ${'mi away'.tr}',
+                      '${(item.distance ?? 0).toStringAsFixed(1)} ${'km away'.tr}',
                       style: ThemeProvider.sans(
                         size: 11,
                         color: ThemeProvider.gold,
@@ -293,20 +299,36 @@ class _NearScreenState extends State<NearScreen> {
           const SizedBox(height: 10),
           Row(
             children: [
-              Container(
-                width: 7,
-                height: 7,
-                decoration: const BoxDecoration(
-                  color: ThemeProvider.gold,
-                  shape: BoxShape.circle,
+              if (item.hoursResolved) ...[
+                Container(
+                  width: 7,
+                  height: 7,
+                  decoration: BoxDecoration(
+                    color: item.isOpenNow
+                        ? const Color(0xFF2E7D32)
+                        : ThemeProvider.greyColor,
+                    shape: BoxShape.circle,
+                  ),
                 ),
-              ),
-              const SizedBox(width: 6),
-              Text(
-                'OPEN NOW'.tr,
-                style: ThemeProvider.sans(size: 11, color: Colors.white70),
-              ),
-              const Spacer(),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    OpenHours.label(item.timing).isNotEmpty
+                        ? OpenHours.label(item.timing)
+                        : (item.isOpenNow ? 'Open Now' : 'Closed').tr,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: ThemeProvider.sans(
+                      size: 11,
+                      color: item.isOpenNow
+                          ? const Color(0xFF81C784)
+                          : ThemeProvider.greyColor,
+                    ),
+                  ),
+                ),
+              ] else
+                const Spacer(),
+              if (item.hoursResolved) const SizedBox(width: 8),
               EliteGoldButton(
                 label: 'BOOK NOW'.tr,
                 icon: Icons.calendar_today,
@@ -320,6 +342,10 @@ class _NearScreenState extends State<NearScreen> {
   }
 
   Widget _empty() {
-    return const EliteApiUnavailable(minHeight: 180);
+    return const EliteApiUnavailable(
+      minHeight: 180,
+      title: 'No shops or experts nearby',
+      icon: Icons.place_outlined,
+    );
   }
 }

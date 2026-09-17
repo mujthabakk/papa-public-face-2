@@ -1,3 +1,6 @@
+import 'package:salon_user/app/backend/models/timing_model.dart';
+import 'package:salon_user/app/util/open_hours.dart';
+
 class SalonModel {
   int? serviceId;
   String? serviceName;
@@ -20,6 +23,9 @@ class SalonModel {
   double? discount;
   //List<int>? categories; // For parsing "categories"
   int? reviewCount;
+  List<TimingModel>? timing;
+  bool? isOpenFlag;
+  bool hoursResolved = false;
 
   SalonModel({
     this.serviceId,
@@ -42,7 +48,10 @@ class SalonModel {
     this.off,
     this.discount,
     // this.categories,
-    this.reviewCount, // Default to 0 if not provided
+    this.reviewCount,
+    this.timing,
+    this.isOpenFlag,
+    this.hoursResolved = false,
   });
 
   // Parsing JSON data with null checks and default values
@@ -79,6 +88,20 @@ class SalonModel {
     //         .toList()
     //     : <int>[]; // Empty list if no categories
     reviewCount = int.tryParse(json['review_count']?.toString() ?? '') ?? 0;
+    timing = OpenHours.parse(json['timing']);
+    hoursResolved = timing != null && timing!.isNotEmpty;
+    if (json['is_open'] != null || json['open_now'] != null) {
+      final raw = json['is_open'] ?? json['open_now'];
+      isOpenFlag = raw == true || raw?.toString() == '1';
+      hoursResolved = true;
+    }
+  }
+
+  bool get isOpenNow {
+    if (timing != null && timing!.isNotEmpty) {
+      return OpenHours.isOpen(timing);
+    }
+    return isOpenFlag == true;
   }
 
   // Serializing to JSON

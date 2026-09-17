@@ -4,6 +4,7 @@ import 'package:salon_user/app/controller/individual_list_controller.dart';
 import 'package:salon_user/app/controller/service_cart_controller.dart';
 import 'package:salon_user/app/env.dart';
 import 'package:salon_user/app/util/theme.dart';
+import 'package:salon_user/app/view/widgets/elite_ui.dart';
 
 class IndividualListScreen extends StatefulWidget {
   const IndividualListScreen({Key? key}) : super(key: key);
@@ -37,10 +38,10 @@ class _IndividualListScreenState extends State<IndividualListScreen> {
                   child: CircularProgressIndicator(color: ThemeProvider.gold),
                 )
               : value.servicesList.isEmpty
-                  ? Center(
-                      child: Text('API is not available'.tr,
-                        style: const TextStyle(color: ThemeProvider.greyColor),
-                      ),
+                  ? const EliteApiUnavailable(
+                      minHeight: 180,
+                      title: 'No services available',
+                      icon: Icons.spa_outlined,
                     )
               : SingleChildScrollView(
                   child: Padding(
@@ -156,11 +157,10 @@ class _IndividualListScreenState extends State<IndividualListScreen> {
                                                 text: TextSpan(
                                                   children: [
                                                     TextSpan(
-                                                      text: Get.find<IndividualListController>()
-                                                                  .currencySide ==
-                                                              'left'
-                                                          ? '${Get.find<IndividualListController>().currencySymbol}  ${value.servicesList[i].price}'
-                                                          : '  ${value.servicesList[i].price}${Get.find<IndividualListController>().currencySymbol}',
+                                                      text: elitePrice(
+                                                          value.currencySide,
+                                                          value.currencySymbol,
+                                                          value.servicesList[i].price),
                                                       style: const TextStyle(
                                                           fontSize: 12,
                                                           color: ThemeProvider
@@ -170,11 +170,10 @@ class _IndividualListScreenState extends State<IndividualListScreen> {
                                                                   .lineThrough),
                                                     ),
                                                     TextSpan(
-                                                      text: Get.find<IndividualListController>()
-                                                                  .currencySide ==
-                                                              'left'
-                                                          ? '${Get.find<IndividualListController>().currencySymbol}  ${value.servicesList[i].off}'
-                                                          : '  ${value.servicesList[i].off}${Get.find<IndividualListController>().currencySymbol}',
+                                                      text: elitePrice(
+                                                          value.currencySide,
+                                                          value.currencySymbol,
+                                                          value.servicesList[i].off),
                                                       style: const TextStyle(
                                                           fontSize: 12,
                                                           color: ThemeProvider
@@ -229,9 +228,7 @@ class _IndividualListScreenState extends State<IndividualListScreen> {
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
                               Text(
-                                value.currencySide == 'left'
-                                    ? '${cartController.totalItemsInCart} ${'Items'.tr} ${value.currencySymbol} ${cartController.totalPrice}'
-                                    : '${cartController.totalItemsInCart} ${'Items'.tr} ${cartController.totalPrice}${value.currencySymbol}',
+                                '${cartController.totalItemsInCart} ${cartController.totalItemsInCart == 1 ? 'Item'.tr : 'Items'.tr}  ${'Pay Amount'.tr} ${elitePrice(value.currencySide, value.currencySymbol, cartController.totalPrice, digits: 2)}',
                                 style: const TextStyle(
                                     color: ThemeProvider.whiteColor),
                               ),

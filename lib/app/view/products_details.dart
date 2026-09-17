@@ -56,8 +56,8 @@ class _ProductsDetailsScreenState extends State<ProductsDetailsScreen> {
                             ? value.productsList.sellPrice
                             : value.productsList.originalPrice,
                       ),
-                      style: ThemeProvider.serif(
-                          size: 26, color: ThemeProvider.gold),
+                      style: ThemeProvider.price(
+                          size: 26, color: ThemeProvider.gold, weight: FontWeight.w700),
                     ),
                     const SizedBox(height: 10),
                     Text(

@@ -28,7 +28,12 @@ class _TopOffersScreenState extends State<TopOffersScreen> {
                   child: CircularProgressIndicator(color: ThemeProvider.gold),
                 )
               : value.topSalonList.isEmpty
-                  ? const EliteApiUnavailable(minHeight: 180)
+                  ? const EliteApiUnavailable(
+                      minHeight: 180,
+                      title: 'No offers right now',
+                      subtitle: 'Check back soon for new deals.',
+                      icon: Icons.local_offer_outlined,
+                    )
                   : ListView.builder(
                       padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
                       itemCount: value.topSalonList.length,

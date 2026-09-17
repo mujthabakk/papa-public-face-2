@@ -16,7 +16,7 @@ class _ReferAndEarnScreenState extends State<ReferAndEarnScreen> {
   Widget build(BuildContext context) {
     return GetBuilder<ReferAndEarnController>(
       builder: (value) {
-        final amount = (value.referralData.amount ?? 0).toStringAsFixed(0);
+        final amount = elitePrice('', '', value.referralData.amount);
         return Scaffold(
           backgroundColor: ThemeProvider.backgroundColor,
           appBar: EliteAppBar(
@@ -69,7 +69,7 @@ class _ReferAndEarnScreenState extends State<ReferAndEarnScreen> {
                               text:
                                   'Invite your friends to Papa Bear and you both receive '),
                           TextSpan(
-                            text: '₹$amount',
+                            text: amount,
                             style: const TextStyle(color: ThemeProvider.gold),
                           ),
                           const TextSpan(
@@ -127,7 +127,7 @@ class _ReferAndEarnScreenState extends State<ReferAndEarnScreen> {
                     _step(Icons.person_add_alt_1_outlined,
                         '2. Friend joins Papa Bear',
                         'Your friend creates an account and makes their first booking.'),
-                    _step(Icons.star_outline, '3. Both get ₹$amount',
+                    _step(Icons.star_outline, '3. Both get $amount',
                         'Rewards are credited to both accounts.'),
                     const SizedBox(height: 8),
                     SizedBox(

@@ -113,7 +113,11 @@ class _ProductOrderScreenState extends State<ProductOrderScreen> {
       builder: (b) {
         final list = [...b.appointmentList, ...b.appointmentListOld];
         if (list.isEmpty) {
-          return const EliteApiUnavailable(minHeight: 180);
+          return const EliteApiUnavailable(
+            minHeight: 180,
+            title: 'No bookings yet',
+            icon: Icons.calendar_today_outlined,
+          );
         }
         return ListView.builder(
           padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
@@ -267,7 +271,11 @@ class _ProductOrderScreenState extends State<ProductOrderScreen> {
   Widget _products(ProductOrderController c) {
     final list = [...c.productSalonList, ...c.productSalonListOld];
     if (list.isEmpty) {
-      return const EliteApiUnavailable(minHeight: 180);
+      return const EliteApiUnavailable(
+        minHeight: 180,
+        title: 'No orders yet',
+        icon: Icons.shopping_bag_outlined,
+      );
     }
     return ListView.builder(
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),

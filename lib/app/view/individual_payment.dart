@@ -556,6 +556,7 @@ import 'package:salon_user/app/controller/individual_slot_controller.dart';
 import 'package:salon_user/app/controller/service_cart_controller.dart';
 import 'package:salon_user/app/env.dart';
 import 'package:salon_user/app/util/theme.dart';
+import 'package:salon_user/app/view/widgets/elite_ui.dart';
 import 'package:skeletons/skeletons.dart';
 
 class IndividualPaymentScreen extends StatefulWidget {
@@ -828,9 +829,8 @@ class _IndividualPaymentScreenState extends State<IndividualPaymentScreen> {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    value.currencySide == 'left'
-                        ? '${value.currencySymbol}${value.balance.toStringAsFixed(2)}'
-                        : '${value.balance.toStringAsFixed(2)}${value.currencySymbol}',
+                    elitePrice(value.currencySide, value.currencySymbol,
+                        value.balance),
                     style: const TextStyle(
                       fontSize: 12,
                       color: textSecondary,
@@ -844,7 +844,7 @@ class _IndividualPaymentScreenState extends State<IndividualPaymentScreen> {
               scale: 1.2,
               child: Checkbox(
                 value: value.isWalletChecked,
-                onChanged: value.balance <= 0 || value.offerName.isNotEmpty
+                onChanged: value.balance <= 0
                     ? null
                     : (bool? status) {
                         value.updateWalletChecked(status!);
@@ -920,9 +920,7 @@ class _IndividualPaymentScreenState extends State<IndividualPaymentScreen> {
               const EdgeInsets.only(left: 20, right: 20, bottom: 20),
           title: _buildBillRow(
             'Total Amount'.tr,
-            value.currencySide == 'left'
-                ? '${value.currencySymbol}${value.grandTotal.toStringAsFixed(2)}'
-                : '${value.grandTotal.toStringAsFixed(2)}${value.currencySymbol}',
+            elitePrice(value.currencySide, value.currencySymbol, value.grandTotal),
             false,
             isTotal: true,
           ),
@@ -938,18 +936,15 @@ class _IndividualPaymentScreenState extends State<IndividualPaymentScreen> {
             const SizedBox(height: 16),
             _buildBillRow(
               'Service Total'.tr,
-              value.currencySide == 'left'
-                  ? '${value.currencySymbol}${Get.find<ServiceCartController>().totalPrice.toStringAsFixed(2)}'
-                  : '${Get.find<ServiceCartController>().totalPrice.toStringAsFixed(2)}${value.currencySymbol}',
+              elitePrice(value.currencySide, value.currencySymbol,
+                  Get.find<ServiceCartController>().totalPrice),
               false,
             ),
             const SizedBox(height: 12),
             if (value.discount > 0) ...[
               _buildBillRow(
                 'Service Discount'.tr,
-                value.currencySide == 'left'
-                    ? '-${value.currencySymbol}${value.discount.toStringAsFixed(2)}'
-                    : '-${value.discount.toStringAsFixed(2)}${value.currencySymbol}',
+                '-${elitePrice(value.currencySide, value.currencySymbol, value.discount)}',
                 true,
                 isDiscount: true,
               ),
@@ -958,9 +953,7 @@ class _IndividualPaymentScreenState extends State<IndividualPaymentScreen> {
             if (value.isWalletChecked && value.walletDiscount > 0) ...[
               _buildBillRow(
                 'Wallet Discount'.tr,
-                value.currencySide == 'left'
-                    ? '-${value.currencySymbol}${value.walletDiscount.toStringAsFixed(2)}'
-                    : '-${value.walletDiscount.toStringAsFixed(2)}${value.currencySymbol}',
+                '-${elitePrice(value.currencySide, value.currencySymbol, value.walletDiscount)}',
                 true,
                 isDiscount: true,
               ),
@@ -968,15 +961,14 @@ class _IndividualPaymentScreenState extends State<IndividualPaymentScreen> {
             ],
             _buildBillRow(
               'Distance Charge'.tr,
-              value.currencySide == 'left'
-                  ? '${value.currencySymbol}${value.deliveryPrice.toStringAsFixed(2)}'
-                  : '${value.deliveryPrice.toStringAsFixed(2)}${value.currencySymbol}',
+              elitePrice(value.currencySide, value.currencySymbol,
+                  value.deliveryPrice),
               false,
             ),
             if (value.taxAmount > 0) ...[
               const SizedBox(height: 12),
               Text(
-                'Taxable: ${value.currencySide == 'left' ? '${value.currencySymbol}${value.taxableValue.toStringAsFixed(2)}' : '${value.taxableValue.toStringAsFixed(2)}${value.currencySymbol}'} | GST: ${value.currencySide == 'left' ? '${value.currencySymbol}${value.taxAmount.toStringAsFixed(2)}' : '${value.taxAmount.toStringAsFixed(2)}${value.currencySymbol}'}',
+                'Taxable: ${elitePrice(value.currencySide, value.currencySymbol, value.taxableValue)} | ${Get.find<ServiceCartController>().taxTypeLabel}: ${elitePrice(value.currencySide, value.currencySymbol, value.taxAmount)}',
                 style: const TextStyle(fontSize: 12, color: textSecondary),
               ),
             ],
@@ -1166,9 +1158,7 @@ class _IndividualPaymentScreenState extends State<IndividualPaymentScreen> {
           ),
           child: Center(
             child: Text(
-              value.currencySide == 'left'
-                  ? 'Pay ${value.currencySymbol}${value.grandTotal.toStringAsFixed(2)}'
-                  : 'Pay ${value.grandTotal.toStringAsFixed(2)}${value.currencySymbol}',
+              'Pay ${elitePrice(value.currencySide, value.currencySymbol, value.grandTotal)}',
               style: const TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w600,

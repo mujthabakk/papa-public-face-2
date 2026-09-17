@@ -14,6 +14,12 @@ class ServicesParser {
     return await apiService.postPublic(AppConstants.salonDetails, body);
   }
 
+  Future<Response> getFacilities() async {
+    var response = await apiService.getPublic(AppConstants.getFacilitiesNew);
+    if ((response.statusCode ?? 0) == 200) return response;
+    return await apiService.getPublic(AppConstants.getFacilities);
+  }
+
   Future<Response> getOwnerReviewsList(var body) async {
     return await apiService.postPublic(AppConstants.getOwnerReviewsList, body);
   }

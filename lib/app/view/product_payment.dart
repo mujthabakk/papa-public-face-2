@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:salon_user/app/controller/product_cart_controller.dart';
 import 'package:salon_user/app/controller/product_payment_controller.dart';
+import 'package:salon_user/app/controller/service_cart_controller.dart';
 import 'package:salon_user/app/env.dart';
 import 'package:salon_user/app/helper/map_style.dart';
 import 'package:salon_user/app/util/theme.dart';
@@ -245,7 +246,7 @@ class _ProductPaymentScreenState extends State<ProductPaymentScreen> {
           Switch(
             value: value.isWalletChecked,
             activeThumbColor: ThemeProvider.gold,
-            onChanged: value.balance <= 0 || value.offerName.isNotEmpty
+            onChanged: value.balance <= 0
                 ? null
                 : (v) => value.updateWalletChecked(v),
           ),
@@ -306,7 +307,7 @@ class _ProductPaymentScreenState extends State<ProductPaymentScreen> {
             Padding(
               padding: const EdgeInsets.only(bottom: 8, top: 4),
               child: Text(
-                'Taxable: ${elitePrice(value.currencySide, value.currencySymbol, value.taxableValue, digits: 2)} | GST: ${elitePrice(value.currencySide, value.currencySymbol, value.taxAmount, digits: 2)}',
+                'Taxable: ${elitePrice(value.currencySide, value.currencySymbol, value.taxableValue, digits: 2)} | ${Get.isRegistered<ServiceCartController>() ? Get.find<ServiceCartController>().taxTypeLabel : 'Tax'}: ${elitePrice(value.currencySide, value.currencySymbol, value.taxAmount, digits: 2)}',
                 style: ThemeProvider.sans(
                   size: 11,
                   color: ThemeProvider.greyColor,

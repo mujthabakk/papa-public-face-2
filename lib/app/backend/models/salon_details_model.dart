@@ -31,6 +31,9 @@ class SalonDetailsModel {
   String? mobile;
   int? status;
   SalonSocialLinks? socialLinks;
+  List<String> facilities = [];
+  List<String> facilityIds = [];
+  List<String> features = [];
 
   SalonDetailsModel(
       {this.id,
@@ -88,6 +91,103 @@ class SalonDetailsModel {
     mobile = json['mobile']?.toString();
     status = int.tryParse(json['status']?.toString() ?? '') ?? 0;
     socialLinks = SalonSocialLinks.fromSalonJson(json);
+    facilities = [];
+    facilityIds = [];
+    features = [];
+    _splitIdsAndNames(
+      _parseNamedList(json, const [
+        'facilities',
+        'facility',
+        'amenities',
+        'amenity',
+      ]),
+      names: facilities,
+      ids: facilityIds,
+    );
+    for (final item in _parseNamedList(json, const [
+      'features',
+      'feature',
+      'key_features',
+      'highlights',
+    ])) {
+      if (!RegExp(r'^\d+$').hasMatch(item)) {
+        _addUnique(features, item);
+      }
+    }
+    if (serviceAtHome == 1 || inHome == 1) {
+      _addUnique(facilities, 'Home Service');
+    }
+    if (haveShop == 1) _addUnique(facilities, 'In Salon');
+    if (haveStylist == 1) _addUnique(facilities, 'Stylists');
+    if (verified == 1) _addUnique(features, 'Verified');
+    if (popular == 1) _addUnique(features, 'Popular');
+  }
+
+  static void _splitIdsAndNames(
+    List<String> raw, {
+    required List<String> names,
+    required List<String> ids,
+  }) {
+    for (final item in raw) {
+      if (RegExp(r'^\d+$').hasMatch(item)) {
+        _addUnique(ids, item);
+      } else {
+        _addUnique(names, item);
+      }
+    }
+  }
+
+  static void _addUnique(List<String> list, String value) {
+    if (!list.contains(value)) list.add(value);
+  }
+
+  static List<String> _parseNamedList(
+      Map<String, dynamic> json, List<String> keys) {
+    final values = <String>[];
+    Map<String, dynamic>? extra;
+    final rawExtra = json['extra_field'];
+    if (rawExtra is Map) {
+      extra = Map<String, dynamic>.from(rawExtra);
+    } else if (rawExtra is String &&
+        rawExtra.isNotEmpty &&
+        rawExtra != 'NA') {
+      try {
+        final decoded = jsonDecode(rawExtra);
+        if (decoded is Map) extra = Map<String, dynamic>.from(decoded);
+      } catch (_) {}
+    }
+    for (final key in keys) {
+      _collectStrings(values, json[key]);
+      if (extra != null) _collectStrings(values, extra[key]);
+    }
+    return values;
+  }
+
+  static void _collectStrings(List<String> out, dynamic raw) {
+    if (raw == null) return;
+    if (raw is List) {
+      for (final item in raw) {
+        if (item is Map) {
+          final name = item['name'] ?? item['title'] ?? item['label'];
+          _collectStrings(out, name);
+        } else {
+          _collectStrings(out, item);
+        }
+      }
+      return;
+    }
+    final text = raw.toString().trim();
+    if (text.isEmpty || text == 'NA' || text == 'null') return;
+    if (text.startsWith('[')) {
+      try {
+        _collectStrings(out, jsonDecode(text));
+        return;
+      } catch (_) {}
+    }
+    for (final part in text.split(',')) {
+      final name = part.trim();
+      if (name.isNotEmpty && !out.contains(name)) out.add(name);
+    }
   }
 
   static List<TimingModel> _parseTiming(dynamic raw) {

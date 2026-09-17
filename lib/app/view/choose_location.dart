@@ -54,6 +54,20 @@ class _ChooseLocationScreenState extends State<ChooseLocationScreen> {
                   icon: Icons.map_outlined,
                   onTap: value.onChooseLocation,
                 ),
+                if (value.hasLastLocation) ...[
+                  const SizedBox(height: 12),
+                  TextButton(
+                    onPressed: value.continueLastLocation,
+                    child: Text(
+                      'CONTINUE WITH LAST LOCATION'.tr,
+                      style: ThemeProvider.sans(
+                        size: 12,
+                        weight: FontWeight.w700,
+                        color: ThemeProvider.gold,
+                      ),
+                    ),
+                  ),
+                ],
                 const SizedBox(height: 36),
               ],
             ),

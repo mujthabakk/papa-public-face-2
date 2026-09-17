@@ -4,6 +4,7 @@ import 'package:salon_user/app/controller/account_controller.dart';
 import 'package:salon_user/app/controller/common_notification_controller.dart';
 import 'package:salon_user/app/controller/languages_controller.dart';
 import 'package:salon_user/app/controller/tabs_controller.dart';
+import 'package:salon_user/app/controller/timed_offer_controller.dart';
 import 'package:salon_user/app/env.dart';
 import 'package:salon_user/app/helper/router.dart';
 import 'package:salon_user/app/util/constant.dart';
@@ -151,7 +152,11 @@ class _AccountScreenState extends State<AccountScreen> {
                       Get.toNamed(AppRouter.getCouponRoutes());
                     }),
                     _row(Icons.discount_outlined, 'Shop Discounts'.tr, () {
-                      Get.toNamed(AppRouter.getTopOffersRoutes());
+                      Get.delete<TimedOfferController>(force: true);
+                      Get.toNamed(
+                        AppRouter.getTimedOfferRoutes(),
+                        arguments: const ['all'],
+                      );
                     }),
                     _row(Icons.card_giftcard_outlined, 'Refer & Earn'.tr,
                         value.onReferAndEarn),
@@ -163,7 +168,7 @@ class _AccountScreenState extends State<AccountScreen> {
                         value.onChangePassword),
                     _row(Icons.account_balance_wallet_outlined, 'Wallet'.tr,
                         value.onWallet),
-                    _row(Icons.location_on_outlined, 'Payment Methods'.tr,
+                    _row(Icons.location_on_outlined, 'My Addresses'.tr,
                         value.onAddress),
                     _row(Icons.chat_bubble_outline, 'Chats'.tr,
                         value.onAccountChat),

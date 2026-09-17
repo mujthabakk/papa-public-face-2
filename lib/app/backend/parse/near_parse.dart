@@ -12,8 +12,13 @@ class NearParser {
       {required this.apiService, required this.sharedPreferencesManager});
 
   Future<Response> getHomeData(var body) async {
-    var response = await apiService.postPublic(AppConstants.getHomeData, body);
-    return response;
+    final payload =
+        body is Map ? Map<String, dynamic>.from(body) : <String, dynamic>{};
+    final uid = sharedPreferencesManager.getString('uid');
+    if (uid != null && uid.isNotEmpty && uid != '0') {
+      payload['uid'] = int.tryParse(uid) ?? uid;
+    }
+    return apiService.postPublic(AppConstants.getHomeData, payload);
   }
 
   Future<Response> getTopSalon(var body) {
@@ -22,6 +27,10 @@ class NearParser {
 
   Future<Response> getTopFreelancer(var body) {
     return apiService.postPublic(AppConstants.getTopFreelancer, body);
+  }
+
+  Future<Response> getSalonDetails(var body) {
+    return apiService.postPublic(AppConstants.salonDetails, body);
   }
 
   double getLat() {

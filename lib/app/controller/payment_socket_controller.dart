@@ -291,7 +291,10 @@ class PaymentSocketController extends GetxController
       if (wasPending) onPaymentCompleted(data);
       return;
     }
+    if (_isCancelledPayload(data)) return;
     if (!showPopup) return;
+    if (!_isCodPayload(data)) return;
+    if (_isCancelledPayload(data)) return;
     _upsertPending(data, bookId);
     if (bookId > 0) _watchBookIds.add(bookId);
     if (_alreadyShowedPayPopup(bookId)) return;
@@ -302,6 +305,43 @@ class PaymentSocketController extends GetxController
     final eventUid = payload['uid']?.toString() ?? '';
     return loggedInUid.isNotEmpty &&
         (eventUid.isEmpty || eventUid == loggedInUid);
+  }
+
+  bool _isCancelledPayload(Map<String, dynamic> data) {
+    final st = int.tryParse(
+          data['appointment_status']?.toString() ??
+              data['booking_status']?.toString() ??
+              data['status']?.toString() ??
+              '',
+        ) ??
+        -1;
+    if (st == 2 || st == 5 || st == 6) return true;
+    final blob =
+        '${data['title'] ?? ''} ${data['message'] ?? ''} ${data['status'] ?? ''} ${data['status_label'] ?? ''} ${data['action'] ?? ''}'
+            .toLowerCase();
+    return blob.contains('cancel') ||
+        blob.contains('reject') ||
+        blob.contains('refund');
+  }
+
+  bool _isCodPayload(Map<String, dynamic> data) {
+    final method = int.tryParse(
+          data['pay_method']?.toString() ??
+              data['payment_method']?.toString() ??
+              '',
+        ) ??
+        0;
+    final label = (data['pay_method_label'] ??
+            data['paid'] ??
+            data['payment_method'] ??
+            '')
+        .toString()
+        .toLowerCase();
+    if (method == 1 || label.contains('cod') || label.contains('cash')) {
+      return true;
+    }
+    if (method >= 2) return false;
+    return data['show_cod'] == true || data['show_cod']?.toString() == '1';
   }
 
   bool _isDuplicate(String event, int bookId) {
@@ -316,6 +356,8 @@ class PaymentSocketController extends GetxController
   /// Socket missed fallback uses the same payload. Popup still once per book_id.
   void onPayNowPopup(Map<String, dynamic> payload) {
     if (!_isForMe(payload)) return;
+    if (_isCancelledPayload(payload)) return;
+    if (!_isCodPayload(payload)) return;
 
     final bookId = _readInt(payload, const [
       'book_id',

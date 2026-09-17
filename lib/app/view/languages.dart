@@ -3,7 +3,6 @@ import 'package:get/get.dart';
 import 'package:salon_user/app/controller/account_controller.dart';
 import 'package:salon_user/app/controller/languages_controller.dart';
 import 'package:salon_user/app/env.dart';
-import 'package:salon_user/app/helper/router.dart';
 import 'package:salon_user/app/util/constant.dart';
 import 'package:salon_user/app/util/theme.dart';
 import 'package:salon_user/app/view/widgets/elite_ui.dart';
@@ -87,41 +86,6 @@ class _LanguagesScreenState extends State<LanguagesScreen> {
                       'Country/Region'.tr,
                       trailingText: lang.selectedCountryLabel,
                       onTap: () => lang.showLocaleSettings(initialTab: 1),
-                    ),
-                  ],
-                ),
-              ),
-              _header('APP SETTINGS'),
-              EliteCard(
-                padding: EdgeInsets.zero,
-                child:                     _row(
-                      Icons.notifications_none,
-                      'Notifications',
-                      onTap: () =>
-                          Get.toNamed(AppRouter.getNotificatinRoutes()),
-                    ),
-              ),
-              _header('INFORMATION'),
-              EliteCard(
-                padding: EdgeInsets.zero,
-                child: Column(
-                  children: [
-                    _row(
-                      Icons.description_outlined,
-                      'Terms of Service',
-                      trailing: const Icon(Icons.open_in_new,
-                          size: 16, color: ThemeProvider.greyColor),
-                      onTap: () => account?.onAppPages(
-                          'Terms & Conditions'.tr, '3'),
-                    ),
-                    const Divider(height: 1, color: Color(0xFF2C2C2C)),
-                    _row(
-                      Icons.shield_outlined,
-                      'Privacy Policy',
-                      trailing: const Icon(Icons.open_in_new,
-                          size: 16, color: ThemeProvider.greyColor),
-                      onTap: () =>
-                          account?.onAppPages('Privacy Policy'.tr, '2'),
                     ),
                   ],
                 ),

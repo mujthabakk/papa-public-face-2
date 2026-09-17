@@ -86,7 +86,10 @@ class _WalletScreenState extends State<WalletScreen> {
                     ),
                     const SizedBox(height: 12),
                     if (value.walletList.isEmpty)
-                      const EliteApiUnavailable()
+                      const EliteApiUnavailable(
+                        title: 'No wallet activity',
+                        icon: Icons.account_balance_wallet_outlined,
+                      )
                     else
                       ...value.walletList.map((tx) {
                         final credit =

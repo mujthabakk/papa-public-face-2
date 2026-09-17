@@ -22,6 +22,22 @@ class ChooseLocationController extends GetxController implements GetxService {
     Get.toNamed(AppRouter.getFindLocationRoutes());
   }
 
+  void continueLastLocation() {
+    Get.delete<TabsController>(force: true);
+    Get.delete<HomeController>(force: true);
+    Get.delete<NearController>(force: true);
+    Get.delete<CategoriesController>(force: true);
+    Get.delete<BookingController>(force: true);
+    Get.delete<AccountController>(force: true);
+    Get.offAndToNamed(AppRouter.getTabsBarRoute());
+  }
+
+  bool get hasLastLocation {
+    final lat = parser.getLat();
+    final lng = parser.getLng();
+    return lat != 0.0 && lng != 0.0;
+  }
+
   void getLocation() async {
     ////// TEST DATA ////
     // parser.saveLatLng(21.7645, 72.1519, 'Bhavnagar Gujarat India');

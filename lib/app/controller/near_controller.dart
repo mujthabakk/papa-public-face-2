@@ -10,13 +10,17 @@ import 'package:salon_user/app/backend/parse/near_parse.dart';
 import 'package:salon_user/app/controller/services_controller.dart';
 import 'package:salon_user/app/controller/specialist_controller.dart';
 import 'package:salon_user/app/controller/unified_search_controller.dart';
+import 'package:salon_user/app/helper/locale_helper.dart';
 import 'package:salon_user/app/helper/router.dart';
+import 'package:salon_user/app/util/open_hours.dart';
 
 const double cameraZoom = 16;
 const double cameraTilt = 80;
 const double cameraBearing = 30;
 
-class NearController extends GetxController implements GetxService {
+class NearController extends GetxController
+    with CountryScopedRefresh
+    implements GetxService {
   final NearParser parser;
   bool apiCalled = false;
   bool _loading = false;
@@ -43,6 +47,7 @@ class NearController extends GetxController implements GetxService {
   @override
   void onInit() {
     super.onInit();
+    markCountryFresh();
     getHomeData();
   }
 
@@ -71,6 +76,7 @@ class NearController extends GetxController implements GetxService {
       _buildMarkers();
       apiCalled = true;
       update();
+      _loadOpenHours();
 
       final extras = <Future<void>>[];
       if (_salonList.isEmpty) {
@@ -98,6 +104,7 @@ class NearController extends GetxController implements GetxService {
         haveData = salonList.isNotEmpty || individualList.isNotEmpty;
         _buildMarkers();
         update();
+        _loadOpenHours();
       }
     } catch (e, st) {
       debugPrint('near getHomeData error: $e\n$st');
@@ -106,6 +113,37 @@ class NearController extends GetxController implements GetxService {
       update();
     } finally {
       _loading = false;
+    }
+  }
+
+  Future<void> _loadOpenHours() async {
+    final pending = _salonList
+        .where((s) => !s.hoursResolved && (s.uid ?? 0) > 0)
+        .toList();
+    const chunkSize = 4;
+    for (var i = 0; i < pending.length && i < 24; i += chunkSize) {
+      final slice = pending.skip(i).take(chunkSize);
+      await Future.wait(slice.map(_fillSalonHours));
+      if (!isClosed) update();
+    }
+  }
+
+  Future<void> _fillSalonHours(SalonModel salon) async {
+    try {
+      final response = await parser.getSalonDetails({"id": salon.uid});
+      final map = ApiBody.asMap(response.body);
+      final data = map?['data'];
+      if (data is Map) {
+        salon.timing = OpenHours.parse(data['timing']);
+        if (data['is_open'] != null || data['open_now'] != null) {
+          final raw = data['is_open'] ?? data['open_now'];
+          salon.isOpenFlag = raw == true || raw.toString() == '1';
+        }
+      }
+    } catch (e) {
+      debugPrint('near hours ${salon.uid}: $e');
+    } finally {
+      salon.hoursResolved = true;
     }
   }
 

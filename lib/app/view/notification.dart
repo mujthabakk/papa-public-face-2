@@ -3,7 +3,6 @@ import 'package:get/get.dart';
 import 'package:salon_user/app/backend/models/common_notification_model.dart';
 import 'package:salon_user/app/controller/common_notification_controller.dart';
 import 'package:salon_user/app/util/theme.dart';
-import 'package:salon_user/app/view/widgets/elite_ui.dart';
 
 class NotificationScreen extends StatefulWidget {
   const NotificationScreen({Key? key}) : super(key: key);
@@ -68,13 +67,25 @@ class _NotificationScreenState extends State<NotificationScreen> {
               ),
               const SizedBox(height: 8),
               Expanded(
-                child: controller.apiCalled
+                child: controller.isLoading &&
+                        controller.notificationList.isEmpty
                     ? const Center(
                         child: CircularProgressIndicator(
                             color: ThemeProvider.gold),
                       )
                     : items.isEmpty
-                        ? const EliteApiUnavailable(minHeight: 180)
+                        ? Center(
+                            child: Text(
+                              _filter == 'All'
+                                  ? 'No notifications yet'.tr
+                                  : 'No ${_filter.toLowerCase()} notifications'
+                                      .tr,
+                              style: ThemeProvider.sans(
+                                size: 13,
+                                color: ThemeProvider.greyColor,
+                              ),
+                            ),
+                          )
                         : ListView.builder(
                             padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
                             itemCount: items.length,
@@ -125,10 +136,17 @@ class _NotificationScreenState extends State<NotificationScreen> {
             .toList();
       case 'Alerts':
         return all
-            .where((n) =>
-                n.type.toLowerCase().contains('payment') ||
-                n.type.toLowerCase().contains('security') ||
-                n.type.toLowerCase() == 'alert')
+            .where((n) {
+              final t = n.type.toLowerCase();
+              final title = n.title.toLowerCase();
+              return t.contains('payment') ||
+                  t.contains('security') ||
+                  t == 'alert' ||
+                  t.contains('appointment') ||
+                  title.contains('cancelled') ||
+                  title.contains('completed') ||
+                  title.contains('accepted');
+            })
             .toList();
       default:
         return all;
@@ -206,6 +224,9 @@ class _NotificationScreenState extends State<NotificationScreen> {
     return InkWell(
       onTap: () {
         controller.openNotification(n);
+        if (n.isClosedAppointment && n.data.appointmentId != null) {
+          controller.onAppointment(n.data.appointmentId!);
+        }
       },
       borderRadius: BorderRadius.circular(14),
       child: Container(
@@ -282,7 +303,32 @@ class _NotificationScreenState extends State<NotificationScreen> {
                 ),
               ],
             ),
-            if (isAppointment) ...[
+            if (n.showCodPayNow) ...[
+              const SizedBox(height: 12),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () {
+                    controller.openNotification(n);
+                    if (n.data.appointmentId != null) {
+                      controller.onAppointment(n.data.appointmentId!);
+                    }
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: ThemeProvider.gold,
+                    foregroundColor: Colors.black,
+                    minimumSize: const Size(0, 40),
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                  child: Text('Pay Now'.tr,
+                      style: ThemeProvider.sans(
+                          size: 12, weight: FontWeight.w700)),
+                ),
+              ),
+            ] else if (n.canManageAppointment) ...[
               const SizedBox(height: 12),
               Row(
                 children: [
@@ -325,14 +371,14 @@ class _NotificationScreenState extends State<NotificationScreen> {
                           borderRadius: BorderRadius.circular(8),
                         ),
                       ),
-                      child: Text('Confirm'.tr,
+                      child: Text('Cancel'.tr,
                           style: ThemeProvider.sans(
                               size: 12, weight: FontWeight.w700)),
                     ),
                   ),
                 ],
               ),
-            ] else ...[
+            ] else if (!isAppointment) ...[
               const SizedBox(height: 10),
               GestureDetector(
                 onTap: () => controller.showNotificationDialog(context, n),

@@ -4,6 +4,7 @@ import 'package:salon_user/app/controller/individual_categories_controller.dart'
 import 'package:salon_user/app/controller/service_cart_controller.dart';
 import 'package:salon_user/app/env.dart';
 import 'package:salon_user/app/util/theme.dart';
+import 'package:salon_user/app/view/widgets/elite_ui.dart';
 
 class IndividualCategoriesScreen extends StatefulWidget {
   const IndividualCategoriesScreen({Key? key}) : super(key: key);
@@ -39,10 +40,10 @@ class _IndividualCategoriesScreenState
                   child: CircularProgressIndicator(color: ThemeProvider.gold),
                 )
               : value.servicesList.isEmpty
-                  ? Center(
-                      child: Text('API is not available'.tr,
-                        style: const TextStyle(color: ThemeProvider.greyColor),
-                      ),
+                  ? const EliteApiUnavailable(
+                      minHeight: 180,
+                      title: 'No services available',
+                      icon: Icons.spa_outlined,
                     )
               : SingleChildScrollView(
                   child: Padding(
@@ -222,9 +223,7 @@ class _IndividualCategoriesScreenState
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
-                      value.currencySide == 'left'
-                          ? '${Get.find<ServiceCartController>().totalItemsInCart} ${'Items'.tr} ${value.currencySymbol} ${Get.find<ServiceCartController>().totalPrice}'
-                          : ' ${Get.find<ServiceCartController>().totalItemsInCart} ${'Items'.tr} ${Get.find<ServiceCartController>().totalPrice}${value.currencySymbol}',
+                      '${Get.find<ServiceCartController>().totalItemsInCart} ${Get.find<ServiceCartController>().totalItemsInCart == 1 ? 'Item'.tr : 'Items'.tr}  ${'Pay Amount'.tr} ${elitePrice(value.currencySide, value.currencySymbol, Get.find<ServiceCartController>().totalPrice, digits: 2)}',
                       style: const TextStyle(color: ThemeProvider.whiteColor),
                     ),
                     Text(

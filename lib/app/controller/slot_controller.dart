@@ -13,6 +13,7 @@ import 'package:salon_user/app/backend/models/specialist_model.dart';
 import 'package:salon_user/app/backend/parse/slot_parse.dart';
 import 'package:salon_user/app/controller/checkout_controller.dart';
 import 'package:salon_user/app/controller/payment_controller.dart';
+import 'package:salon_user/app/controller/service_cart_controller.dart';
 import 'package:salon_user/app/controller/services_controller.dart';
 import 'package:salon_user/app/helper/router.dart';
 import 'package:salon_user/app/util/theme.dart';
@@ -145,8 +146,17 @@ class SlotController extends GetxController implements GetxService {
 
 // Updated method with proper time sorting
   Future<void> getSlotsForBookings(int index, String date) async {
+    final partnerUid = int.tryParse(uid) ??
+        (Get.isRegistered<ServiceCartController>()
+            ? Get.find<ServiceCartController>().salonId
+            : 0);
     var response = await parser.getSlots(
-      {"week_id": index, "date": date, "uid": uid, "from": "salon"},
+      {
+        "week_id": index,
+        "date": date,
+        "uid": partnerUid,
+        "from": "salon",
+      },
     );
 
     if (response.statusCode == 200) {

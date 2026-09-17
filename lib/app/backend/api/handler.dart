@@ -10,7 +10,7 @@ class ApiChecker {
       return;
     }
     if (response.statusCode == 1 || response.statusCode == 0) {
-      showToast(response.statusText?.tr ?? 'Connection failed!'.tr);
+      showToast(_connectionMessage(response.statusText));
       return;
     }
     final message = ApiBody.message(response);
@@ -25,5 +25,25 @@ class ApiChecker {
       return;
     }
     showToast('Something went wrong!'.tr);
+  }
+
+  static String _connectionMessage(String? text) {
+    final raw = (text ?? '').toLowerCase();
+    if (raw.contains('clientexception') ||
+        raw.contains('socket') ||
+        raw.contains('network is unreachable') ||
+        raw.contains('failed host lookup') ||
+        raw.contains('connection failed') ||
+        raw.contains('timed out') ||
+        raw.contains('timeout')) {
+      return 'No Internet Connection'.tr;
+    }
+    if (text != null &&
+        text.isNotEmpty &&
+        !text.contains('Exception') &&
+        text.length < 80) {
+      return text.tr;
+    }
+    return 'Connection failed!'.tr;
   }
 }

@@ -131,10 +131,7 @@ class _SlotScreenState extends State<SlotScreen> {
 
   Widget _practitioners(SlotController value) {
     if (value.specialistList.isEmpty) {
-      return const Padding(
-        padding: EdgeInsets.only(top: 18),
-        child: EliteApiUnavailable(),
-      );
+      return const SizedBox.shrink();
     }
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -282,8 +279,12 @@ class _SlotScreenState extends State<SlotScreen> {
           ),
         ),
         const SizedBox(height: 16),
-        if (!value.haveData)
-          const EliteApiUnavailable()
+        if (!value.haveData || slots.isEmpty)
+          const EliteApiUnavailable(
+            title: 'No slots available',
+            subtitle: 'Please select another date to see open times.',
+            icon: Icons.event_busy_outlined,
+          )
         else ...[
           _slotGroup('MORNING SLOTS', morning, value),
           const SizedBox(height: 12),
@@ -411,69 +412,87 @@ class _SlotScreenState extends State<SlotScreen> {
   }
 
   Widget _summary(SlotController value) {
-    final cart = Get.find<ServiceCartController>();
-    final checkout = Get.find<CheckoutController>();
-    String specialistName = '';
-    if (value.selectedSpecialist.isNotEmpty) {
-      final match = value.specialistList
-          .where((s) => s.id.toString() == value.selectedSpecialist);
-      if (match.isNotEmpty) {
-        specialistName =
-            '${match.first.firstName ?? ''} ${match.first.lastName ?? ''}'
-                .trim();
-      }
-    }
-    String dateLabel = value.savedDate;
-    try {
-      dateLabel = DateFormat('MMM d, yyyy').format(DateTime.parse(value.savedDate));
-    } catch (_) {}
-    final first = (checkout.savedInCart.services?.isNotEmpty == true)
-        ? checkout.savedInCart.services!.first.name
-        : (checkout.savedInCart.packages?.isNotEmpty == true
-            ? checkout.savedInCart.packages!.first.name
-            : '');
-    return EliteCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text('Booking Summary'.tr,
-              style: ThemeProvider.serif(size: 18, color: ThemeProvider.gold)),
-          const SizedBox(height: 12),
-          _row('SERVICE', first ?? '',
-              elitePrice(checkout.currencySide, checkout.currencySymbol,
-                  cart.totalPrice, digits: 2)),
-          if (specialistName.isNotEmpty)
-            _row('PRACTITIONER', specialistName, ''),
-          _row(
-              'DATE & TIME',
-              '$dateLabel${value.selectedSlotIndex.isNotEmpty ? ' at ${value.selectedSlotIndex.split('-').first}' : ''}',
-              ''),
-          const Divider(color: Color(0xFF2A2A2A)),
-          _row('Subtotal', '',
-              elitePrice(checkout.currencySide, checkout.currencySymbol,
-                  cart.totalPrice, digits: 2)),
-          _row('Service Fee', '',
-              elitePrice(checkout.currencySide, checkout.currencySymbol,
-                  cart.serviceChargeAmount, digits: 2)),
-          const SizedBox(height: 8),
-          Row(
+    return GetBuilder<CheckoutController>(
+      builder: (checkout) {
+        String specialistName = '';
+        if (value.selectedSpecialist.isNotEmpty) {
+          final match = value.specialistList
+              .where((s) => s.id.toString() == value.selectedSpecialist);
+          if (match.isNotEmpty) {
+            specialistName =
+                '${match.first.firstName ?? ''} ${match.first.lastName ?? ''}'
+                    .trim();
+          }
+        }
+        String dateLabel = value.savedDate;
+        try {
+          dateLabel =
+              DateFormat('MMM d, yyyy').format(DateTime.parse(value.savedDate));
+        } catch (_) {}
+        final first = (checkout.savedInCart.services?.isNotEmpty == true)
+            ? checkout.savedInCart.services!.first.name
+            : (checkout.savedInCart.packages?.isNotEmpty == true
+                ? checkout.savedInCart.packages!.first.name
+                : '');
+        final money = (num? amount) => elitePrice(
+              checkout.currencySide,
+              checkout.currencySymbol,
+              amount,
+              digits: 2,
+            );
+        return EliteCard(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Total'.tr,
+              Text('Booking Summary'.tr,
                   style: ThemeProvider.serif(
                       size: 18, color: ThemeProvider.gold)),
-              const Spacer(),
-              Text(
-                elitePrice(checkout.currencySide, checkout.currencySymbol,
-                    cart.grandTotal, digits: 2),
-                style: ThemeProvider.price(
-                    size: 20,
-                    weight: FontWeight.w700,
-                    color: ThemeProvider.gold),
+              const SizedBox(height: 12),
+              _row('SERVICE', first ?? '', money(checkout.originalAmount)),
+              if (specialistName.isNotEmpty)
+                _row('PRACTITIONER', specialistName, ''),
+              _row(
+                  'DATE & TIME',
+                  '$dateLabel${value.selectedSlotIndex.isNotEmpty ? ' at ${value.selectedSlotIndex.split('-').first}' : ''}',
+                  ''),
+              const Divider(color: Color(0xFF2A2A2A)),
+              _row('Original Amount'.tr, '', money(checkout.originalAmount)),
+              _row(
+                  'Service Fee',
+                  '',
+                  money(Get.find<ServiceCartController>().serviceChargeAmount)),
+              if (checkout.taxAmount > 0 ||
+                  Get.find<ServiceCartController>().taxAmount > 0) ...[
+                const SizedBox(height: 4),
+                Text(
+                  'Taxable: ${money(checkout.taxableValue > 0 ? checkout.taxableValue : Get.find<ServiceCartController>().taxableValue)} | ${Get.find<ServiceCartController>().taxTypeLabel}: ${money(checkout.taxAmount > 0 ? checkout.taxAmount : Get.find<ServiceCartController>().taxAmount)}',
+                  style: ThemeProvider.sans(
+                    size: 11,
+                    color: ThemeProvider.greyColor,
+                  ),
+                ),
+              ],
+              const SizedBox(height: 10),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text('Pay Amount'.tr,
+                      style: ThemeProvider.serif(
+                          size: 18, color: ThemeProvider.gold)),
+                  const Spacer(),
+                  Text(
+                    money(checkout.payAmount),
+                    style: ThemeProvider.price(
+                        size: 20,
+                        weight: FontWeight.w700,
+                        color: ThemeProvider.gold),
+                  ),
+                ],
               ),
             ],
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 

@@ -58,19 +58,23 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
                     Padding(
                       padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
                       child: Text(
-                        'Categories'.tr,
+                        'Shop By Category'.tr,
                         style: ThemeProvider.serif(
                             size: 28, weight: FontWeight.w700),
                       ),
                     ),
                     EliteSearchBar(
-                      hint: 'Search categories...'.tr,
+                      hint: 'Search shops, freelancers, services...'.tr,
                       onTap: _openSearch,
                     ),
                     const SizedBox(height: 8),
                     Expanded(
                       child: controller.productsList.isEmpty
-                          ? const EliteApiUnavailable(minHeight: 180)
+                          ? const EliteApiUnavailable(
+                          minHeight: 180,
+                          title: 'No categories yet',
+                          icon: Icons.grid_view_outlined,
+                        )
                           : ListView.builder(
                               padding: const EdgeInsets.only(bottom: 100),
                               itemCount: controller.productsList.length,

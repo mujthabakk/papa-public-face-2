@@ -180,19 +180,36 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                       ),
                     ],
                     const Divider(color: Color(0xFF2A2A2A), height: 24),
-                    _bill('Subtotal',
+                    _bill(
+                        'Original Amount'.tr,
                         elitePrice(value.currencySide, value.currencySymbol,
-                            cart.totalPrice,
+                            value.originalAmount,
                             digits: 2)),
                     _bill(
                         'Service Charge (${cart.serviceCharge}%)',
                         elitePrice(value.currencySide, value.currencySymbol,
                             cart.serviceChargeAmount,
                             digits: 2)),
-                    if (value.taxAmount > 0) ...[
+                    _bill(
+                      '${cart.taxTypeLabel} (${cart.orderTax}%)',
+                      elitePrice(
+                        value.currencySide,
+                        value.currencySymbol,
+                        value.taxAmount > 0 ? value.taxAmount : cart.taxAmount,
+                        digits: 2,
+                      ),
+                    ),
+                    if (value.couponDiscount > 0)
+                      _bill(
+                        'Discount Amount'.tr,
+                        '-${elitePrice(value.currencySide, value.currencySymbol, value.couponDiscount, digits: 2)}',
+                        amountColor: ThemeProvider.gold,
+                      ),
+                    if (value.taxAmount > 0 ||
+                        Get.find<ServiceCartController>().taxAmount > 0) ...[
                       const SizedBox(height: 6),
                       Text(
-                        'Taxable: ${elitePrice(value.currencySide, value.currencySymbol, value.taxableValue, digits: 2)} | GST: ${elitePrice(value.currencySide, value.currencySymbol, value.taxAmount, digits: 2)}',
+                        'Taxable: ${elitePrice(value.currencySide, value.currencySymbol, value.taxableValue > 0 ? value.taxableValue : Get.find<ServiceCartController>().taxableValue, digits: 2)} | ${Get.find<ServiceCartController>().taxTypeLabel}: ${elitePrice(value.currencySide, value.currencySymbol, value.taxAmount > 0 ? value.taxAmount : Get.find<ServiceCartController>().taxAmount, digits: 2)}',
                         style: ThemeProvider.sans(
                           size: 11,
                           color: ThemeProvider.greyColor,
@@ -200,22 +217,43 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                       ),
                     ],
                     const SizedBox(height: 8),
-                    Text('TOTAL AMOUNT'.tr,
+                    Text('Pay Amount'.tr,
                         style: ThemeProvider.sans(
                             size: 10,
                             color: ThemeProvider.greyColor,
                             letterSpacing: 1)),
-                    Text(
-                      elitePrice(
-                        value.currencySide,
-                        value.currencySymbol,
-                        value.grandTotal > 0 ? value.grandTotal : cart.grandTotal,
-                        digits: 2,
-                      ),
-                      style: ThemeProvider.price(
-                          size: 28,
-                          weight: FontWeight.w700,
-                          color: ThemeProvider.gold),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        if (value.couponDiscount > 0) ...[
+                          Text(
+                            elitePrice(
+                              value.currencySide,
+                              value.currencySymbol,
+                              value.originalAmount,
+                              digits: 2,
+                            ),
+                            style: ThemeProvider.sans(
+                              size: 14,
+                              color: ThemeProvider.greyColor,
+                            ).copyWith(
+                                decoration: TextDecoration.lineThrough),
+                          ),
+                          const SizedBox(width: 10),
+                        ],
+                        Text(
+                          elitePrice(
+                            value.currencySide,
+                            value.currencySymbol,
+                            value.payAmount,
+                            digits: 2,
+                          ),
+                          style: ThemeProvider.price(
+                              size: 28,
+                              weight: FontWeight.w700,
+                              color: ThemeProvider.gold),
+                        ),
+                      ],
                     ),
                   ],
                 ),
@@ -319,15 +357,21 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     );
   }
 
-  Widget _bill(String label, String amount) {
+  Widget _bill(String label, String amount, {Color? amountColor}) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: Row(
         children: [
           Text(label, style: ThemeProvider.sans(size: 13)),
           const Spacer(),
-          Text(amount,
-              style: ThemeProvider.sans(size: 13, weight: FontWeight.w600)),
+          Text(
+            amount,
+            style: ThemeProvider.sans(
+              size: 13,
+              weight: FontWeight.w600,
+              color: amountColor ?? Colors.white,
+            ),
+          ),
         ],
       ),
     );

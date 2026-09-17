@@ -11,7 +11,7 @@ class SplashParser {
       {required this.apiService, required this.sharedPreferencesManager});
 
   bool isNewUser() {
-    return sharedPreferencesManager.getBool('welcome');
+    return sharedPreferencesManager.getBool('intro_completed');
   }
 
   /// True when the user already picked a usable location (skip choose-location).
@@ -28,6 +28,7 @@ class SplashParser {
   }
 
   void saveWelcome(bool value) {
+    sharedPreferencesManager.putBool('intro_completed', value);
     sharedPreferencesManager.putBool('welcome', value);
   }
 

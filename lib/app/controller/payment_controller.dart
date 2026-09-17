@@ -72,6 +72,14 @@ class PaymentController extends GetxController implements GetxService {
   late CouponsModel _selectedCoupon = CouponsModel();
   CouponsModel get selectedCoupon => _selectedCoupon;
 
+  bool get hasCoupon {
+    final code = (_selectedCoupon.code ?? '').trim();
+    final name = offerName.trim();
+    return code.isNotEmpty ||
+        (_selectedCoupon.id ?? 0) > 0 ||
+        (name.isNotEmpty && name != 'null');
+  }
+
   List<AddressModel> _addressList = <AddressModel>[];
   List<AddressModel> get addressList => _addressList;
 
@@ -121,8 +129,15 @@ class PaymentController extends GetxController implements GetxService {
     super.onClose();
   }
 
+  void _closePaymentDialog() {
+    while (Get.isDialogOpen == true) {
+      Get.back();
+    }
+  }
+
   void _handlePaymentSuccess(PaymentSuccessResponse response) {
     debugPrint('Razorpay Payment Success: ${response.paymentId}');
+    _closePaymentDialog();
     if (response.paymentId != null) {
       verifyRazorpayPurchase(response.paymentId!);
     }
@@ -130,7 +145,13 @@ class PaymentController extends GetxController implements GetxService {
 
   void _handlePaymentError(PaymentFailureResponse response) {
     debugPrint('Razorpay Error: ${response.code} - ${response.message}');
-    showToast('Payment failed. Please try again.');
+    _closePaymentDialog();
+    final cancelled = (response.message ?? '')
+        .toLowerCase()
+        .contains('cancelled');
+    showToast(cancelled
+        ? 'Payment cancelled'.tr
+        : 'Payment failed. Please try again.'.tr);
   }
 
   void _handleExternalWallet(ExternalWalletResponse response) {
@@ -153,19 +174,23 @@ class PaymentController extends GetxController implements GetxService {
   }
 
   Future<void> getMyWalletAmount() async {
-    Response response = await parser.getMyWalletBalance();
-    if (response.statusCode == 200) {
-      Map<String, dynamic> myMap = Map<String, dynamic>.from(response.body);
-      dynamic body = myMap["data"];
-      if (body != null &&
-          body != '' &&
-          body['balance'] != null &&
-          body['balance'] != '') {
-        balance = double.tryParse(body['balance'].toString()) ?? 0.0;
-        walletDiscount = double.tryParse(body['balance'].toString()) ?? 0.0;
+    try {
+      Response response = await parser.getMyWalletBalance();
+      if (response.statusCode == 200) {
+        Map<String, dynamic> myMap = Map<String, dynamic>.from(response.body);
+        dynamic body = myMap["data"];
+        if (body != null &&
+            body != '' &&
+            body['balance'] != null &&
+            body['balance'] != '') {
+          balance = double.tryParse(body['balance'].toString()) ?? 0.0;
+          walletDiscount = double.tryParse(body['balance'].toString()) ?? 0.0;
+        }
+      } else {
+        debugPrint('Wallet balance unavailable: ${response.statusText}');
       }
-    } else {
-      ApiChecker.checkApi(response);
+    } catch (e) {
+      debugPrint('Wallet balance failed: $e');
     }
     update();
   }
@@ -354,6 +379,10 @@ class PaymentController extends GetxController implements GetxService {
   }
 
   void onCoupon(String offerId, String offerName, String cartValue) {
+    if (isWalletChecked) {
+      showToast('Use either a coupon or wallet, not both.'.tr);
+      return;
+    }
     Get.delete<CouponController>(force: true);
     Get.toNamed(AppRouter.getCouponRoutes(), arguments: [
       'service',
@@ -365,12 +394,33 @@ class PaymentController extends GetxController implements GetxService {
   }
 
   void updateWalletChecked(bool status) {
+    if (status && hasCoupon) {
+      _clearCoupon();
+      showToast('Coupon removed. Use either a coupon or wallet.'.tr);
+    }
     isWalletChecked = status;
     calculateAllCharge();
     update();
   }
 
+  void _clearCoupon() {
+    _selectedCoupon = CouponsModel();
+    offerId = '';
+    offerName = '';
+    _discount = 0;
+    if (Get.isRegistered<ServiceCartController>()) {
+      Get.find<ServiceCartController>().onSaveCoupon(CouponsModel());
+    }
+  }
+
   void onSaveCoupon(CouponsModel offer) {
+    final applying =
+        (offer.code ?? '').trim().isNotEmpty || (offer.id ?? 0) > 0;
+    if (applying && isWalletChecked) {
+      isWalletChecked = false;
+      walletDiscount = 0;
+      showToast('Wallet removed. Use either a coupon or wallet.'.tr);
+    }
     _selectedCoupon = offer;
 
     offerId = offer.id.toString();
@@ -384,24 +434,31 @@ class PaymentController extends GetxController implements GetxService {
       _deliveryPrice = 0;
     }
 
-    _discount = 0;
-    if (_selectedCoupon.discount != null && _selectedCoupon.discount != 0) {
-      double percentage(numFirst, per) {
-        return (numFirst / 100) * per;
-      }
-
-      _discount = percentage(
-        Get.find<ServiceCartController>().totalPrice,
-        _selectedCoupon.discount,
-      );
-
-      if (_discount > (_selectedCoupon.upto ?? _discount)) {
-        _discount = _selectedCoupon.upto!;
-      }
+    _discount = _couponDiscountAmount();
+    if (_discount > 0) {
+      isWalletChecked = false;
+      walletDiscount = 0;
+    } else {
+      walletDiscount = isWalletChecked ? balance : 0;
     }
-
-    walletDiscount = isWalletChecked ? balance : 0;
     refreshPricingFromApi();
+  }
+
+  double _couponDiscountAmount() {
+    if (!Get.isRegistered<ServiceCartController>()) return 0;
+    final cart = Get.find<ServiceCartController>();
+    final value = _selectedCoupon.discount ?? 0;
+    if (value <= 0) return 0;
+    double amount;
+    if ((_selectedCoupon.type ?? 1) == 1) {
+      amount = cart.totalPrice * (value / 100);
+      final upto = _selectedCoupon.upto ?? 0;
+      if (upto > 0 && amount > upto) amount = upto;
+    } else {
+      amount = value;
+    }
+    if (amount > cart.totalPrice) amount = cart.totalPrice;
+    return amount;
   }
 
   Future<void> refreshPricingFromApi() async {
@@ -416,13 +473,12 @@ class PaymentController extends GetxController implements GetxService {
 
     final cart = Get.find<ServiceCartController>();
     final servicesAmount = cart.totalPrice + cart.serviceChargeAmount;
-    final walletAmount = isWalletChecked ? walletDiscount : 0.0;
-
+    final useWallet = isWalletChecked && _discount <= 0;
     final result = await Get.find<PricingParser>().calculateAppointment(
       servicesAmount: servicesAmount,
-      discount: discount,
+      discount: useWallet ? 0 : discount,
       distanceCost: deliveryPrice,
-      walletAmount: walletAmount,
+      walletAmount: useWallet ? walletDiscount : 0,
     );
 
     pricingLoading = false;
@@ -603,47 +659,52 @@ class PaymentController extends GetxController implements GetxService {
   }
 
   Future<void> _startCheckoutPayment() async {
-    await refreshPricingFromApi();
+    try {
+      await refreshPricingFromApi();
 
-    _showProgressDialog('Please wait'.tr);
+      _showProgressDialog('Please wait'.tr);
 
-    final appointmentId = await _createPendingAppointment();
-    if (Get.isDialogOpen ?? false) Get.back();
-    if (appointmentId == null) return;
+      final appointmentId = await _createPendingAppointment();
+      _closePaymentDialog();
+      if (appointmentId == null) return;
 
-    _showProgressDialog('Opening Payment...'.tr);
+      _showProgressDialog('Opening Payment...'.tr);
 
-    final result = await parser.generateCheckoutPaymentUrl(
-      appointmentId: appointmentId,
-      amount: grandTotal,
-    );
-    if (Get.isDialogOpen ?? false) Get.back();
+      final result = await parser.generateCheckoutPaymentUrl(
+        appointmentId: appointmentId,
+      );
+      _closePaymentDialog();
 
-    if (!result.success || result.data == null) {
-      showToast(result.message.isNotEmpty
-          ? result.message
-          : 'Unable to start payment.');
-      return;
-    }
+      if (!result.success || result.data == null) {
+        showToast(result.message.isNotEmpty
+            ? result.message
+            : 'Unable to start payment.');
+        return;
+      }
 
-    final paymentData = result.data!;
-    if (paymentData.paymentUrl.isEmpty) {
-      showToast('Payment URL not available.');
-      return;
-    }
+      final paymentData = result.data!;
+      if (paymentData.paymentUrl.isEmpty) {
+        showToast('Payment URL not available.');
+        return;
+      }
 
-    final verifyResult = await openUpgradePaymentWebView(
-      paymentUrl: paymentData.paymentUrl,
-      appointmentId: paymentData.appointmentId,
-      paymentLinkId: paymentData.paymentLinkId,
-    );
+      final verifyResult = await openUpgradePaymentWebView(
+        paymentUrl: paymentData.paymentUrl,
+        appointmentId: paymentData.appointmentId,
+        paymentLinkId: paymentData.paymentLinkId,
+      );
 
-    if (verifyResult is! CheckoutVerifyData || !verifyResult.isPaid) {
+      if (verifyResult is! CheckoutVerifyData || !verifyResult.isPaid) {
+        showToast('Payment not completed.');
+        return;
+      }
+
+      _showOrderSuccessDialog();
+    } catch (e) {
+      debugPrint('Checkout payment error: $e');
+      _closePaymentDialog();
       showToast('Payment not completed.');
-      return;
     }
-
-    _showOrderSuccessDialog();
   }
 
   Future<int?> _createPendingAppointment() async {

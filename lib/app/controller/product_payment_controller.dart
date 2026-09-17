@@ -79,6 +79,14 @@ class ProductPaymentController extends GetxController implements GetxService {
   String offerId = '';
   String offerName = '';
 
+  bool get hasCoupon {
+    final code = (_selectedCoupon.code ?? '').trim();
+    final name = offerName.trim();
+    return code.isNotEmpty ||
+        (_selectedCoupon.id ?? 0) > 0 ||
+        (name.isNotEmpty && name != 'null');
+  }
+
   String salonId = '';
   int ownerId = 0;
   String ownerType = '';
@@ -141,8 +149,15 @@ class ProductPaymentController extends GetxController implements GetxService {
     super.onClose();
   }
 
+  void _closePaymentDialog() {
+    while (Get.isDialogOpen == true) {
+      Get.back();
+    }
+  }
+
   void _handlePaymentSuccess(PaymentSuccessResponse response) {
     debugPrint('Razorpay Payment Success: ${response.paymentId}');
+    _closePaymentDialog();
     if (response.paymentId != null) {
       verifyRazorpayPurchase(response.paymentId!);
     }
@@ -150,7 +165,13 @@ class ProductPaymentController extends GetxController implements GetxService {
 
   void _handlePaymentError(PaymentFailureResponse response) {
     debugPrint('Razorpay Error: ${response.code} - ${response.message}');
-    showToast('Payment failed. Please try again.');
+    _closePaymentDialog();
+    final cancelled = (response.message ?? '')
+        .toLowerCase()
+        .contains('cancelled');
+    showToast(cancelled
+        ? 'Payment cancelled'.tr
+        : 'Payment failed. Please try again.'.tr);
   }
 
   void _handleExternalWallet(ExternalWalletResponse response) {
@@ -423,6 +444,10 @@ class ProductPaymentController extends GetxController implements GetxService {
   // }
 
   void onCoupon(String offerId, String offerName, String cartValue) {
+    if (isWalletChecked) {
+      showToast('Use either a coupon or wallet, not both.'.tr);
+      return;
+    }
     Get.delete<CouponController>(force: true);
     Get.toNamed(AppRouter.getCouponRoutes(), arguments: [
       'product',
@@ -434,12 +459,30 @@ class ProductPaymentController extends GetxController implements GetxService {
   }
 
   void updateWalletChecked(bool status) {
+    if (status && hasCoupon) {
+      _clearCoupon();
+      showToast('Coupon removed. Use either a coupon or wallet.'.tr);
+    }
     isWalletChecked = status;
     calculateAllCharge();
     update();
   }
 
+  void _clearCoupon() {
+    _selectedCoupon = CouponsModel();
+    offerId = '';
+    offerName = '';
+    _discount = 0;
+  }
+
   void onSaveCoupon(CouponsModel offer) {
+    final applying =
+        (offer.code ?? '').trim().isNotEmpty || (offer.id ?? 0) > 0;
+    if (applying && isWalletChecked) {
+      isWalletChecked = false;
+      walletDiscount = 0;
+      showToast('Wallet removed. Use either a coupon or wallet.'.tr);
+    }
     _selectedCoupon = offer;
     offerId = offer.id.toString();
     offerName = offer.name.toString();
@@ -448,23 +491,31 @@ class ProductPaymentController extends GetxController implements GetxService {
   }
 
   void calculateAllCharge() {
-    _discount = 0;
-    if (_selectedCoupon.discount != null && _selectedCoupon.discount != 0) {
-      double percentage(numFirst, per) {
-        return (numFirst / 100) * per;
-      }
-
-      _discount = percentage(
-        Get.find<ProductCartController>().totalPrice,
-        _selectedCoupon.discount,
-      );
-      if (_discount > (_selectedCoupon.upto ?? _discount)) {
-        _discount = _selectedCoupon.upto!;
-      }
+    _discount = _couponDiscountAmount();
+    if (_discount > 0) {
+      isWalletChecked = false;
+      walletDiscount = 0;
+    } else {
+      walletDiscount = isWalletChecked ? balance : 0;
     }
-
-    walletDiscount = isWalletChecked ? balance : 0;
     refreshPricingFromApi();
+  }
+
+  double _couponDiscountAmount() {
+    if (!Get.isRegistered<ProductCartController>()) return 0;
+    final cart = Get.find<ProductCartController>();
+    final value = _selectedCoupon.discount ?? 0;
+    if (value <= 0) return 0;
+    double amount;
+    if ((_selectedCoupon.type ?? 1) == 1) {
+      amount = cart.totalPrice * (value / 100);
+      final upto = _selectedCoupon.upto ?? 0;
+      if (upto > 0 && amount > upto) amount = upto;
+    } else {
+      amount = value;
+    }
+    if (amount > cart.totalPrice) amount = cart.totalPrice;
+    return amount;
   }
 
   Future<void> refreshPricingFromApi() async {
@@ -474,11 +525,12 @@ class ProductPaymentController extends GetxController implements GetxService {
       return;
     }
 
+    final useWallet = isWalletChecked && _discount <= 0;
     final result = await Get.find<PricingParser>().calculateProductOrder(
       itemsAmount: Get.find<ProductCartController>().totalPrice,
-      discount: discount,
+      discount: useWallet ? 0 : discount,
       deliveryCharge: deliveryPrice,
-      walletAmount: isWalletChecked ? walletDiscount : 0,
+      walletAmount: useWallet ? walletDiscount : 0,
     );
 
     if (result.success && result.data != null) {
@@ -666,12 +718,13 @@ class ProductPaymentController extends GetxController implements GetxService {
           ),
           barrierDismissible: false);
 
-      Future.delayed(const Duration(milliseconds: 500), () {
-        // Get.back(closeOverlays: true);
+      Future.delayed(const Duration(milliseconds: 400), () {
+        _closePaymentDialog();
         try {
           _razorpay.open(options);
         } catch (e) {
           debugPrint('Razorpay open error: $e');
+          _closePaymentDialog();
           showToast('Could not open payment screen.');
         }
       });

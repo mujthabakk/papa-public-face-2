@@ -126,7 +126,7 @@ class _SideMenuScreenState extends State<SideMenuScreen> {
                         Navigator.pop(context);
                         Get.toNamed(AppRouter.getAfterPaymentRoutes());
                       }),
-                    _item(Icons.grid_view_outlined, 'Categories', () {
+                    _item(Icons.shopping_bag_outlined, 'Products', () {
                       Navigator.pop(context);
                       Get.find<TabsController>().updateTabId(3);
                     }),

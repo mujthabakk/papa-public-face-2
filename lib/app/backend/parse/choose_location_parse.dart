@@ -17,4 +17,16 @@ class ChooseLocationParser {
   void saveLanguage(String code) {
     sharedPreferencesManager.putString('language', code);
   }
+
+  double getLat() {
+    return sharedPreferencesManager.getDouble('lat') ?? 0.0;
+  }
+
+  double getLng() {
+    return sharedPreferencesManager.getDouble('lng') ?? 0.0;
+  }
+
+  String getAddress() {
+    return sharedPreferencesManager.getString('address') ?? '';
+  }
 }

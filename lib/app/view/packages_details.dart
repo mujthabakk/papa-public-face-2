@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import 'package:salon_user/app/controller/packages_details_controller.dart';
 import 'package:salon_user/app/env.dart';
 import 'package:salon_user/app/util/theme.dart';
+import 'package:salon_user/app/view/widgets/elite_ui.dart';
 import 'package:salon_user/app/view/imageviewer.dart';
 
 class PackagesDetailsScreen extends StatefulWidget {
@@ -225,9 +226,8 @@ class _PackagesDetailsScreenState extends State<PackagesDetailsScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                controller.currencySide == 'left'
-                    ? '${controller.currencySymbol}${controller.packagesDetails.price}'
-                    : '${controller.packagesDetails.price}${controller.currencySymbol}',
+                elitePrice(controller.currencySide, controller.currencySymbol,
+                    controller.packagesDetails.price),
                 style: TextStyle(
                   fontSize: 14,
                   color: Colors.grey,
@@ -235,9 +235,8 @@ class _PackagesDetailsScreenState extends State<PackagesDetailsScreen> {
                 ),
               ),
               Text(
-                controller.currencySide == 'left'
-                    ? '${controller.currencySymbol}${controller.packagesDetails.off}'
-                    : '${controller.packagesDetails.off}${controller.currencySymbol}',
+                elitePrice(controller.currencySide, controller.currencySymbol,
+                    controller.packagesDetails.off),
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
@@ -329,9 +328,8 @@ Widget _buildServicesList(PackagesDetailsController controller) {
           ],
         ),
         trailing: Text(
-          controller.currencySide == 'left'
-              ? '${controller.currencySymbol}${service.price}'
-              : '${service.price}${controller.currencySymbol}',
+          elitePrice(controller.currencySide, controller.currencySymbol,
+              service.price),
           style: const TextStyle(fontWeight: FontWeight.bold),
         ),
       );

@@ -8,7 +8,13 @@ class IntroController extends GetxController implements GetxService {
   IntroController({required this.parser});
 
   void onSkip() {
-    Get.toNamed(AppRouter.getWelcomeRoute(), arguments: ['']);
+    parser.saveWelcome(true);
+    Get.offNamed(AppRouter.getChooseLocationRoutes());
+  }
+
+  void onGetStarted() {
+    parser.saveWelcome(true);
+    Get.offNamed(AppRouter.getChooseLocationRoutes());
   }
 
   void saveLanguage(String code) {

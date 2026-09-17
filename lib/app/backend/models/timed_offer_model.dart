@@ -124,9 +124,11 @@ class TimedOfferRow {
     return row;
   }
 
-  bool get hasServices => services.isNotEmpty && (partner?.id ?? 0) > 0;
+  bool get hasPartner => (partner?.id ?? 0) > 0;
 
-  bool get isCouponOnly => !hasServices;
+  bool get hasServices => hasPartner && services.isNotEmpty;
+
+  bool get isCouponOnly => !hasPartner;
 
   String get displayCode =>
       (couponCode ?? code ?? '').trim();

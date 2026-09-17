@@ -9,6 +9,7 @@ import 'package:salon_user/app/controller/services_controller.dart';
 import 'package:salon_user/app/env.dart';
 import 'package:salon_user/app/helper/map_style.dart';
 import 'package:salon_user/app/helper/router.dart';
+import 'package:salon_user/app/util/open_hours.dart';
 import 'package:salon_user/app/util/theme.dart';
 import 'package:salon_user/app/view/imageviewer.dart';
 import 'package:salon_user/app/view/widgets/elite_ui.dart';
@@ -92,10 +93,8 @@ class _ServicesScreenState extends State<ServicesScreen> {
   Widget _hero(ServicesController value) {
     final cover =
         '${Environments.imageURL}${value.salonDetails.cover ?? ''}';
-    final close = (value.salonDetails.timing ?? []).where((t) {
-      return t.day == DateTime.now().weekday % 7;
-    });
-    final until = close.isEmpty ? '' : _to12(close.first.closeTime);
+    final hoursLabel = OpenHours.label(value.salonDetails.timing);
+    final isOpen = OpenHours.isOpen(value.salonDetails.timing);
     return SliverAppBar(
       expandedHeight: 320,
       pinned: true,
@@ -160,29 +159,47 @@ class _ServicesScreenState extends State<ServicesScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    value.salonDetails.name ?? '',
-                    style: ThemeProvider.serif(
-                        size: 28, weight: FontWeight.w700),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        child: Text(
+                          value.salonDetails.name ?? '',
+                          style: ThemeProvider.serif(
+                              size: 26, weight: FontWeight.w700),
+                        ),
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 10, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: isOpen
+                              ? const Color(0xFF2E7D32)
+                              : ThemeProvider.greyColor,
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Text(
+                          isOpen ? 'Open'.tr : 'Closed'.tr,
+                          style: ThemeProvider.sans(
+                            size: 11,
+                            weight: FontWeight.w700,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                   const SizedBox(height: 8),
-                  if (value.parser.isLogin())
-                    Wrap(
-                      spacing: 14,
-                      runSpacing: 6,
-                      children: [
-                        if ((value.salonDetails.address ?? '').isNotEmpty)
-                          _meta(Icons.location_on,
-                              value.salonDetails.address ?? ''),
-                        _meta(
-                          Icons.star,
-                          '${(value.salonDetails.rating ?? 0).toStringAsFixed(1)} (${value.salonDetails.totalRating ?? 0} Reviews)',
-                        ),
-                      ],
-                    ),
-                  if (value.parser.isLogin() && until.isNotEmpty) ...[
-                    const SizedBox(height: 8),
-                    _meta(Icons.access_time, 'Open until $until',
+                  if ((value.salonDetails.address ?? '').isNotEmpty)
+                    _meta(Icons.location_on, value.salonDetails.address ?? ''),
+                  const SizedBox(height: 6),
+                  _meta(
+                    Icons.star,
+                    '${(value.salonDetails.rating ?? 0).toStringAsFixed(1)} (${value.salonDetails.totalRating ?? 0} Reviews)',
+                  ),
+                  if (hoursLabel.isNotEmpty) ...[
+                    const SizedBox(height: 6),
+                    _meta(Icons.access_time, hoursLabel,
                         color: ThemeProvider.gold),
                   ],
                 ],
@@ -231,6 +248,11 @@ class _ServicesScreenState extends State<ServicesScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          _quickActions(value),
+          _chipBlock('Facilities'.tr, value.salonDetails.facilities),
+          _chipBlock('Features'.tr, value.salonDetails.features),
+          _socialLinks(value),
+          _location(value),
           if (loggedIn)
             EliteCard(
               child: Column(
@@ -243,7 +265,13 @@ class _ServicesScreenState extends State<ServicesScreen> {
                   const SizedBox(height: 10),
                   (value.salonDetails.about ?? '').isEmpty ||
                           value.salonDetails.about == 'NA'
-                      ? const EliteApiUnavailable()
+                      ? Text(
+                          'No details added yet'.tr,
+                          style: ThemeProvider.sans(
+                            size: 13,
+                            color: ThemeProvider.greyColor,
+                          ),
+                        )
                       : Text(
                           value.salonDetails.about ?? '',
                           style: ThemeProvider.sans(
@@ -262,39 +290,343 @@ class _ServicesScreenState extends State<ServicesScreen> {
                 onTap: goLogin,
               ),
             ),
-          if (value.categoriesList.isNotEmpty ||
-              value.servicesList.isNotEmpty)
-            ..._serviceSections(value)
-          else
-            const EliteApiUnavailable(),
-          if (value.packagesList.isNotEmpty)
+          _catalogTabs(value),
+          if (value.catalogTab == 0)
+            ...(value.categoriesList.isNotEmpty ||
+                    value.servicesList.isNotEmpty
+                ? _serviceSections(value)
+                : [
+                    const EliteApiUnavailable(
+                      title: 'No services available',
+                      icon: Icons.spa_outlined,
+                    ),
+                  ])
+          else if (value.packagesList.isNotEmpty)
             _packages(value)
           else
-            const EliteApiUnavailable(),
-          if (loggedIn) _location(value),
-          if (loggedIn)
-            EliteConnectSection(
-              links: value.salonDetails.contactLinks,
-              isAuthenticated: true,
-              onCall: value.callSalon,
-              onChat: value.onChat,
-              onWebsite: value.openWebsite,
-              onInstagram: value.openInstagram,
-              onYoutube: value.openYoutube,
-              onFacebook: value.openFacebook,
-              onWhatsapp: value.openWhatsapp,
-              onTwitter: value.openTwitter,
-              onLinkedin: value.openLinkedin,
+            const EliteApiUnavailable(
+              title: 'No treatments available',
+              icon: Icons.inventory_2_outlined,
             ),
-          if (loggedIn && value.gallery.isNotEmpty)
-            _gallery(value)
-          else if (loggedIn)
-            const EliteApiUnavailable(),
-          if (loggedIn && value.specialistList.isNotEmpty)
-            _specialists(value)
-          else if (loggedIn)
-            const EliteApiUnavailable(),
-          if (loggedIn) _reviews(value),
+          if (value.gallery.isNotEmpty) _gallery(value),
+          if (value.specialistList.isNotEmpty) _specialists(value),
+          _reviews(value),
+        ],
+      ),
+    );
+  }
+
+  Widget _quickActions(ServicesController value) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: Row(
+        children: [
+          _quickItem(Icons.language, 'Website'.tr, value.openWebsite),
+          _quickItem(Icons.phone_outlined, 'Call'.tr, value.callSalon),
+          _quickItem(Icons.chat_bubble_outline, 'Chat'.tr, value.onChat),
+          _quickItem(Icons.near_me_outlined, 'Direction'.tr, value.openMap),
+          _quickItem(Icons.share_outlined, 'Share'.tr, value.share),
+        ],
+      ),
+    );
+  }
+
+  Widget _quickItem(IconData icon, String label, VoidCallback onTap) {
+    return Expanded(
+      child: GestureDetector(
+        onTap: onTap,
+        child: Column(
+          children: [
+            Container(
+              width: 48,
+              height: 48,
+              decoration: BoxDecoration(
+                color: ThemeProvider.surface,
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: const Color(0xFF2A2A2A)),
+              ),
+              child: Icon(icon, color: ThemeProvider.gold, size: 22),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: ThemeProvider.sans(size: 11, color: Colors.white70),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _catalogTabs(ServicesController value) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: Container(
+        padding: const EdgeInsets.all(4),
+        decoration: BoxDecoration(
+          color: ThemeProvider.surface,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: const Color(0xFF2A2A2A)),
+        ),
+        child: Row(
+          children: [
+            _catalogTab(value, 0, 'Services'.tr),
+            _catalogTab(value, 1, 'Packages'.tr),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _catalogTab(ServicesController value, int index, String label) {
+    final selected = value.catalogTab == index;
+    return Expanded(
+      child: GestureDetector(
+        onTap: () => value.setCatalogTab(index),
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          decoration: BoxDecoration(
+            color: selected ? ThemeProvider.gold : Colors.transparent,
+            borderRadius: BorderRadius.circular(10),
+          ),
+          alignment: Alignment.center,
+          child: Text(
+            label,
+            style: ThemeProvider.sans(
+              size: 13,
+              weight: FontWeight.w700,
+              color: selected ? Colors.black : Colors.white70,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _chipBlock(String title, List<String> items) {
+    final visible = items
+        .map((e) => e.trim())
+        .where((e) => e.isNotEmpty && !RegExp(r'^\d+$').hasMatch(e))
+        .toList();
+    if (visible.isEmpty) return const SizedBox.shrink();
+    const previewCount = 3;
+    final preview = visible.take(previewCount).toList();
+    final extra = visible.length - preview.length;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          EliteSectionBar(title: title),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              ...preview.map(_facilityChip),
+              if (extra > 0)
+                GestureDetector(
+                  onTap: () => _showAllChips(title, visible),
+                  child: Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: ThemeProvider.gold,
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Text(
+                      '+$extra',
+                      style: ThemeProvider.sans(
+                        size: 12,
+                        weight: FontWeight.w700,
+                        color: Colors.black,
+                      ),
+                    ),
+                  ),
+                )
+              else if (visible.length > 1)
+                GestureDetector(
+                  onTap: () => _showAllChips(title, visible),
+                  child: Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: ThemeProvider.surface,
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: ThemeProvider.gold),
+                    ),
+                    child: Text(
+                      'All'.tr,
+                      style: ThemeProvider.sans(
+                        size: 12,
+                        weight: FontWeight.w700,
+                        color: ThemeProvider.gold,
+                      ),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _facilityChip(String item) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: ThemeProvider.surface,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: ThemeProvider.gold.withValues(alpha: 0.45)),
+      ),
+      child: Text(
+        item,
+        style: ThemeProvider.sans(size: 12, color: ThemeProvider.gold),
+      ),
+    );
+  }
+
+  void _showAllChips(String title, List<String> items) {
+    Get.bottomSheet(
+      Container(
+        width: double.infinity,
+        padding: const EdgeInsets.fromLTRB(20, 12, 20, 28),
+        decoration: const BoxDecoration(
+          color: ThemeProvider.surface,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        child: SafeArea(
+          top: false,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  margin: const EdgeInsets.only(bottom: 14),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF3A3A3A),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                ),
+              ),
+              Text(title, style: ThemeProvider.serif(size: 20)),
+              const SizedBox(height: 14),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: items.map(_facilityChip).toList(),
+              ),
+            ],
+          ),
+        ),
+      ),
+      isScrollControlled: true,
+    );
+  }
+
+  Widget _socialLinks(ServicesController value) {
+    final links = value.salonDetails.contactLinks;
+    final items = <({IconData icon, String label, bool enabled, VoidCallback onTap})>[
+      (
+        icon: Icons.camera_alt,
+        label: 'Instagram'.tr,
+        enabled: links.hasInstagram,
+        onTap: value.openInstagram,
+      ),
+      (
+        icon: Icons.play_circle_filled,
+        label: 'YouTube'.tr,
+        enabled: links.hasYoutube,
+        onTap: value.openYoutube,
+      ),
+      (
+        icon: Icons.facebook,
+        label: 'Facebook'.tr,
+        enabled: links.hasFacebook,
+        onTap: value.openFacebook,
+      ),
+      (
+        icon: Icons.chat,
+        label: 'WhatsApp'.tr,
+        enabled: links.hasWhatsapp,
+        onTap: value.openWhatsapp,
+      ),
+      (
+        icon: Icons.alternate_email,
+        label: 'Twitter'.tr,
+        enabled: links.hasTwitter,
+        onTap: value.openTwitter,
+      ),
+      (
+        icon: Icons.business_center,
+        label: 'LinkedIn'.tr,
+        enabled: links.hasLinkedin,
+        onTap: value.openLinkedin,
+      ),
+    ];
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          EliteSectionBar(title: 'Social Media'.tr),
+          const SizedBox(height: 4),
+          Wrap(
+            spacing: 14,
+            runSpacing: 14,
+            children: items
+                .map(
+                  (item) => Opacity(
+                    opacity: item.enabled ? 1 : 0.32,
+                    child: GestureDetector(
+                      onTap: item.onTap,
+                      child: SizedBox(
+                        width: 68,
+                        child: Column(
+                          children: [
+                            Container(
+                              width: 54,
+                              height: 54,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: ThemeProvider.surface,
+                                border: Border.all(
+                                  color: ThemeProvider.gold
+                                      .withValues(alpha: 0.55),
+                                  width: 1.4,
+                                ),
+                              ),
+                              child: Icon(
+                                item.icon,
+                                size: 28,
+                                color: ThemeProvider.gold,
+                              ),
+                            ),
+                            const SizedBox(height: 6),
+                            Text(
+                              item.label,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              textAlign: TextAlign.center,
+                              style: ThemeProvider.sans(
+                                size: 11,
+                                weight: FontWeight.w600,
+                                color: Colors.white70,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                )
+                .toList(),
+          ),
         ],
       ),
     );
@@ -338,17 +670,52 @@ class _ServicesScreenState extends State<ServicesScreen> {
   Widget _serviceCard(
       ServicesController value, ServicesModel service, int index) {
     final selected = service.isChecked == true;
+    final hasOffer = (service.discount ?? 0) > 0;
+    final offerPrice = hasOffer ? service.off : service.price;
+    final serviceRating = (service.rating ?? 0) > 0
+        ? service.rating!
+        : (value.salonDetails.rating ?? 0);
+    final reviewCount = (service.reviewCount ?? 0) > 0
+        ? service.reviewCount!
+        : (service.totalRating ?? 0) > 0
+            ? service.totalRating!
+            : (value.salonDetails.totalRating ?? 0);
     return EliteCard(
       padding: const EdgeInsets.all(12),
       borderColor: selected ? ThemeProvider.gold : null,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          EliteNetworkImage(
-            url: '${Environments.imageURL}${service.cover}',
-            height: 160,
-            width: double.infinity,
-            radius: BorderRadius.circular(12),
+          Stack(
+            children: [
+              EliteNetworkImage(
+                url: '${Environments.imageURL}${service.cover}',
+                height: 160,
+                width: double.infinity,
+                radius: BorderRadius.circular(12),
+              ),
+              if (hasOffer)
+                Positioned(
+                  top: 10,
+                  left: 10,
+                  child: Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: ThemeProvider.gold,
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Text(
+                      '${service.discount!.toStringAsFixed(0)}% OFF',
+                      style: ThemeProvider.sans(
+                        size: 11,
+                        weight: FontWeight.w700,
+                        color: ThemeProvider.backgroundColor,
+                      ),
+                    ),
+                  ),
+                ),
+            ],
           ),
           const SizedBox(height: 12),
           Row(
@@ -360,33 +727,64 @@ class _ServicesScreenState extends State<ServicesScreen> {
                   style: ThemeProvider.serif(size: 18),
                 ),
               ),
-              Text(
-                elitePrice(
-                  value.currencySide,
-                  value.currencySymbol,
-                  (service.discount ?? 0) > 0 ? service.off : service.price,
-                ),
-                style: ThemeProvider.price(
-                    size: 18,
-                    weight: FontWeight.w700,
-                    color: ThemeProvider.gold),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text(
+                    elitePrice(
+                      value.currencySide,
+                      value.currencySymbol,
+                      offerPrice,
+                    ),
+                    style: ThemeProvider.price(
+                        size: 18,
+                        weight: FontWeight.w700,
+                        color: ThemeProvider.gold),
+                  ),
+                  if (hasOffer) ...[
+                    const SizedBox(height: 2),
+                    Text(
+                      elitePrice(
+                        value.currencySide,
+                        value.currencySymbol,
+                        service.price,
+                      ),
+                      style: ThemeProvider.sans(
+                        size: 12,
+                        color: ThemeProvider.greyColor,
+                      ).copyWith(decoration: TextDecoration.lineThrough),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      'Offer ${elitePrice(value.currencySide, value.currencySymbol, ((service.price ?? 0) - (service.off ?? 0)))}',
+                      style: ThemeProvider.sans(
+                        size: 11,
+                        weight: FontWeight.w600,
+                        color: ThemeProvider.gold,
+                      ),
+                    ),
+                  ],
+                ],
               ),
             ],
           ),
           const SizedBox(height: 8),
-          Row(
+          Wrap(
+            spacing: 12,
+            runSpacing: 6,
             children: [
               _chip(Icons.access_time, '${service.duration?.toInt() ?? 0} Mins'),
-              const SizedBox(width: 12),
               _chip(Icons.bolt, _gender(service.gender)),
+              _chip(
+                Icons.star,
+                '${serviceRating.toStringAsFixed(1)} ($reviewCount Reviews)',
+              ),
             ],
           ),
           if ((service.descriptions ?? '').isNotEmpty) ...[
             const SizedBox(height: 10),
             Text(
               service.descriptions!,
-              maxLines: 3,
-              overflow: TextOverflow.ellipsis,
               style: ThemeProvider.sans(size: 13, color: Colors.white70),
             ),
           ],
@@ -547,36 +945,38 @@ class _ServicesScreenState extends State<ServicesScreen> {
   Widget _location(ServicesController value) {
     final lat = value.salonDetails.lat ?? 0;
     final lng = value.salonDetails.lng ?? 0;
+    final hasMap = lat.abs() > 0.0001 && lng.abs() > 0.0001;
     final today = DateTime.now().weekday % 7;
     return EliteCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           EliteSectionBar(title: 'Location & Hours'.tr),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(12),
-            child: SizedBox(
-              height: 140,
-              child: GoogleMap(
-                style: Utils.mapStyles,
-                markers: {
-                  Marker(
-                    markerId: const MarkerId('salon'),
-                    position: LatLng(lat, lng),
+          if (hasMap)
+            ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: SizedBox(
+                height: 140,
+                child: GoogleMap(
+                  style: Utils.mapStyles,
+                  markers: {
+                    Marker(
+                      markerId: const MarkerId('salon'),
+                      position: LatLng(lat, lng),
+                    ),
+                  },
+                  initialCameraPosition: CameraPosition(
+                    target: LatLng(lat, lng),
+                    zoom: 14,
                   ),
-                },
-                initialCameraPosition: CameraPosition(
-                  target: LatLng(lat, lng),
-                  zoom: 14,
+                  zoomControlsEnabled: false,
+                  myLocationButtonEnabled: false,
+                  liteModeEnabled: false,
+                  onTap: (_) => value.openMap(),
                 ),
-                zoomControlsEnabled: false,
-                myLocationButtonEnabled: false,
-                liteModeEnabled: true,
-                onTap: (_) => value.openMap(),
               ),
             ),
-          ),
-          const SizedBox(height: 12),
+          if (hasMap) const SizedBox(height: 12),
           Text(
             value.salonDetails.address ?? '',
             style: ThemeProvider.sans(size: 13, color: Colors.white70),
@@ -709,7 +1109,11 @@ class _ServicesScreenState extends State<ServicesScreen> {
           trailing: '${value.ownerReviewsList.length}',
         ),
         if (value.ownerReviewsList.isEmpty)
-          const EliteApiUnavailable()
+          const EliteApiUnavailable(
+            title: 'No reviews yet',
+            subtitle: 'Be the first to share your experience.',
+            icon: Icons.rate_review_outlined,
+          )
         else
           ...value.ownerReviewsList.take(6).map((r) {
             final name =

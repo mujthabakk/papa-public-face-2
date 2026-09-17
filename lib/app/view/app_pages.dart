@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:salon_user/app/controller/app_pages_controller.dart';
 import 'package:salon_user/app/util/theme.dart';
+import 'package:salon_user/app/view/widgets/elite_ui.dart';
 import 'package:flutter_html/flutter_html.dart';
 
 class AppPagesScreen extends StatefulWidget {
@@ -34,10 +35,10 @@ class _AppPagesScreenState extends State<AppPagesScreen> {
                 )
               : (value.content.toString().isEmpty ||
                       value.content.toString() == 'null')
-                  ? Center(
-                      child: Text('API is not available'.tr,
-                        style: const TextStyle(color: ThemeProvider.greyColor),
-                      ),
+                  ? const EliteApiUnavailable(
+                      minHeight: 180,
+                      title: 'This page is not available',
+                      icon: Icons.article_outlined,
                     )
                   : SingleChildScrollView(
                       child: Padding(

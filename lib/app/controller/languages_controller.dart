@@ -8,11 +8,18 @@ import 'package:salon_user/app/backend/models/language_model.dart';
 import 'package:salon_user/app/backend/models/locale_api_model.dart';
 import 'package:salon_user/app/backend/parse/languages_parse.dart';
 import 'package:salon_user/app/controller/account_controller.dart';
+import 'package:salon_user/app/controller/booking_controller.dart';
+import 'package:salon_user/app/controller/categories_controller.dart';
 import 'package:salon_user/app/controller/home_controller.dart';
 import 'package:salon_user/app/controller/near_controller.dart';
+import 'package:salon_user/app/controller/product_cart_controller.dart';
+import 'package:salon_user/app/controller/service_cart_controller.dart';
+import 'package:salon_user/app/controller/login_controller.dart';
 import 'package:salon_user/app/controller/splash_controller.dart';
 import 'package:salon_user/app/controller/tabs_controller.dart';
 import 'package:salon_user/app/helper/locale_helper.dart';
+import 'package:salon_user/app/helper/locale_refresh.dart';
+import 'package:salon_user/app/helper/router.dart';
 import 'package:salon_user/app/util/constant.dart';
 import 'package:salon_user/app/util/theme.dart';
 
@@ -124,12 +131,12 @@ class LanguagesController extends GetxController implements GetxService {
     await parser.saveUserPreference(
       userId: uid,
       language: languageCode,
-      country: countryName.isNotEmpty ? countryName : countryCode,
+      country: countryCode,
     );
     final profile = await parser.updateProfileLocale(
       uid: uid,
       language: languageCode,
-      country: countryName.isNotEmpty ? countryName : countryCode,
+      country: countryCode,
     );
     if (profile != null) {
       await applyPreferredFromUser(profile, reloadUi: false);
@@ -383,6 +390,7 @@ class LanguagesController extends GetxController implements GetxService {
   }
 
   Future<void> changeCountry(String code) async {
+    if (!_ensureLoggedInForCountry()) return;
     if (code == countryCode) return;
     final item = countries.firstWhere(
       (c) => c.code == code,
@@ -405,25 +413,79 @@ class LanguagesController extends GetxController implements GetxService {
     _notifyAppUi();
 
     await _savePreferenceToServer();
-    await _reloadCurrencyAfterCountryChange();
+    await _reloadPrimaryTabsAfterCountryChange();
     unawaited(loadPicker(country: code));
   }
 
-  Future<void> _reloadCurrencyAfterCountryChange() async {
+  Future<void> _reloadPrimaryTabsAfterCountryChange() async {
+    LocaleRefresh.bumpCountry();
     try {
       if (Get.isRegistered<SplashController>()) {
         await Get.find<SplashController>().getConfigData();
       }
       await parser.fetchConfig(lang: languageCode, country: countryCode);
     } catch (e) {
-      debugPrint('reload currency after country failed: $e');
+      debugPrint('reload config after country failed: $e');
     }
-    if (Get.isRegistered<HomeController>()) {
-      final home = Get.find<HomeController>();
-      home.currencySide = home.parser.getCurrencySide();
-      home.currencySymbol = home.parser.getCurrencySymbol();
-      await home.getHomeData();
-    }
+
+    try {
+      if (Get.isRegistered<ServiceCartController>()) {
+        Get.find<ServiceCartController>().calcuate();
+      }
+    } catch (_) {}
+    try {
+      if (Get.isRegistered<ProductCartController>()) {
+        Get.find<ProductCartController>().update();
+      }
+    } catch (_) {}
+
+    dropSecondaryCountryControllers();
+
+    try {
+      if (Get.isRegistered<HomeController>()) {
+        final home = Get.find<HomeController>();
+        home.currencySide = home.parser.getCurrencySide();
+        home.currencySymbol = home.parser.getCurrencySymbol();
+        home.markCountryFresh();
+        unawaited(home.getHomeData());
+      }
+    } catch (_) {}
+    try {
+      if (Get.isRegistered<NearController>()) {
+        final near = Get.find<NearController>();
+        near.markCountryFresh();
+        unawaited(near.getHomeData());
+      }
+    } catch (_) {}
+    try {
+      if (Get.isRegistered<CategoriesController>()) {
+        final categories = Get.find<CategoriesController>();
+        categories.currencySide = categories.parser.getCurrencySide();
+        categories.currencySymbol = categories.parser.getCurrencySymbol();
+        categories.markCountryFresh();
+        unawaited(categories.getAllCategories());
+      }
+    } catch (_) {}
+    try {
+      if (Get.isRegistered<BookingController>()) {
+        final booking = Get.find<BookingController>();
+        booking.currencySide = booking.parser.getCurrencySide();
+        booking.currencySymbol = booking.parser.getCurrencySymbol();
+        booking.markCountryFresh();
+        if (booking.parser.haveLoggedIn()) {
+          unawaited(booking.getAppointmentById());
+        } else {
+          booking.update();
+        }
+      }
+    } catch (_) {}
+    try {
+      if (Get.isRegistered<AccountController>()) {
+        Get.find<AccountController>().markCountryFresh();
+        Get.find<AccountController>().changeInfo();
+      }
+    } catch (_) {}
+
     _notifyAppUi();
   }
 
@@ -455,7 +517,18 @@ class LanguagesController extends GetxController implements GetxService {
 
   void showCountryPicker() => showLocaleSettings(initialTab: 1);
 
+  bool _ensureLoggedInForCountry() {
+    if (parser.haveLoggedIn()) return true;
+    if (Get.isBottomSheetOpen == true) {
+      Get.back();
+    }
+    Get.delete<LoginController>(force: true);
+    Get.toNamed(AppRouter.getLoginRoute());
+    return false;
+  }
+
   void showLocaleSettings({int initialTab = 0}) {
+    if (initialTab == 1 && !_ensureLoggedInForCountry()) return;
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       if (isClosed) return;
       // Checklist: call getActiveCountries on language/country screen
@@ -490,6 +563,16 @@ class _LocaleSettingsSheetState extends State<_LocaleSettingsSheet>
       vsync: this,
       initialIndex: widget.initialTab.clamp(0, 1),
     );
+    _tabController.addListener(() {
+      if (_tabController.index != 1) return;
+      if (!Get.isRegistered<LanguagesController>()) return;
+      final locale = Get.find<LanguagesController>();
+      if (locale.parser.haveLoggedIn()) return;
+      if (_tabController.index != 0) {
+        _tabController.index = 0;
+      }
+      locale.showLocaleSettings(initialTab: 1);
+    });
   }
 
   @override

@@ -53,9 +53,16 @@ class _SelectedServicesScreenState extends State<SelectedServicesScreen> {
                       ],
                     ),
                     const SizedBox(height: 12),
-                    ...value.servicesList.asMap().entries.map(
-                          (e) => _card(value, e.value, e.key),
-                        ),
+                    if (value.servicesList.isEmpty)
+                      const EliteApiUnavailable(
+                        minHeight: 160,
+                        title: 'No treatments available',
+                        icon: Icons.spa_outlined,
+                      )
+                    else
+                      ...value.servicesList.asMap().entries.map(
+                            (e) => _card(value, e.value, e.key),
+                          ),
                   ],
                 ),
           bottomNavigationBar: GetBuilder<ServiceCartController>(
@@ -123,17 +130,48 @@ class _SelectedServicesScreenState extends State<SelectedServicesScreen> {
 
   Widget _card(SelectedServicesController value, dynamic s, int index) {
     final selected = s.isChecked == true;
+    final hasOffer = (s.discount ?? 0) > 0;
+    final offerPrice = hasOffer ? s.off : s.price;
+    final rating = (s.rating ?? 0) as num;
+    final reviews = ((s.reviewCount ?? 0) > 0)
+        ? s.reviewCount
+        : (s.totalRating ?? 0);
     return EliteCard(
       padding: EdgeInsets.zero,
       borderColor: selected ? ThemeProvider.gold : null,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          EliteNetworkImage(
-            url: '${Environments.imageURL}${s.cover}',
-            height: 150,
-            width: double.infinity,
-            radius: const BorderRadius.vertical(top: Radius.circular(14)),
+          Stack(
+            children: [
+              EliteNetworkImage(
+                url: '${Environments.imageURL}${s.cover}',
+                height: 150,
+                width: double.infinity,
+                radius: const BorderRadius.vertical(top: Radius.circular(14)),
+              ),
+              if (hasOffer)
+                Positioned(
+                  top: 10,
+                  left: 10,
+                  child: Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: ThemeProvider.gold,
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Text(
+                      '${(s.discount as num).toStringAsFixed(0)}% OFF',
+                      style: ThemeProvider.sans(
+                        size: 11,
+                        weight: FontWeight.w700,
+                        color: ThemeProvider.backgroundColor,
+                      ),
+                    ),
+                  ),
+                ),
+            ],
           ),
           Padding(
             padding: const EdgeInsets.all(14),
@@ -141,25 +179,49 @@ class _SelectedServicesScreenState extends State<SelectedServicesScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Expanded(
                       child: Text(s.name ?? '',
                           style: ThemeProvider.serif(
                               size: 18, color: ThemeProvider.gold)),
                     ),
-                    Text(
-                      '${elitePrice(value.currencySide, value.currencySymbol, (s.discount ?? 0) > 0 ? s.off : s.price)} / session',
-                      style: ThemeProvider.sans(
-                          size: 12, color: Colors.white70),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Text(
+                          elitePrice(value.currencySide, value.currencySymbol,
+                              offerPrice),
+                          style: ThemeProvider.price(
+                            size: 16,
+                            weight: FontWeight.w700,
+                            color: ThemeProvider.gold,
+                          ),
+                        ),
+                        if (hasOffer)
+                          Text(
+                            elitePrice(value.currencySide, value.currencySymbol,
+                                s.price),
+                            style: ThemeProvider.sans(
+                              size: 11,
+                              color: ThemeProvider.greyColor,
+                            ).copyWith(
+                                decoration: TextDecoration.lineThrough),
+                          ),
+                      ],
                     ),
                   ],
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  '${rating.toStringAsFixed(1)} ($reviews Reviews)',
+                  style: ThemeProvider.sans(
+                      size: 12, color: ThemeProvider.gold),
                 ),
                 if ((s.descriptions ?? '').isNotEmpty) ...[
                   const SizedBox(height: 6),
                   Text(
                     s.descriptions!,
-                    maxLines: 3,
-                    overflow: TextOverflow.ellipsis,
                     style: ThemeProvider.sans(
                         size: 12, color: ThemeProvider.greyColor),
                   ),
