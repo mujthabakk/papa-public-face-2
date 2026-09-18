@@ -4,8 +4,10 @@ class FacebookService {
   static final FacebookAppEvents _facebookAppEvents = FacebookAppEvents();
 
   static Future<void> init() async {
-    // Basic initialization if needed
-    await _facebookAppEvents.setAdvertiserTracking(enabled: true);
+    try {
+      await _facebookAppEvents.setAdvertiserTracking(enabled: true);
+      await _facebookAppEvents.setAutoLogAppEventsEnabled(false);
+    } catch (_) {}
   }
 
   /// Logs a standard event when a user completes registration.

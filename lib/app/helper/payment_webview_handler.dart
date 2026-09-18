@@ -117,4 +117,24 @@ class PaymentWebViewHandler {
 
     return NavigationDecision.prevent;
   }
+
+  /// Subresource ORB/CORS failures must not hide the Razorpay page.
+  static bool shouldShowAsPageError(WebResourceError error) {
+    if (error.isForMainFrame == false) return false;
+    final text = '${error.description} ${error.url ?? ''}'.toUpperCase();
+    const ignore = [
+      'ERR_BLOCKED_BY_ORB',
+      'ERR_BLOCKED_BY_RESPONSE',
+      'ERR_BLOCKED_BY_CLIENT',
+      'ERR_UNKNOWN_URL_SCHEME',
+      'ERR_ABORTED',
+    ];
+    for (final token in ignore) {
+      if (text.contains(token)) return false;
+    }
+    if (error.errorType == WebResourceErrorType.unsupportedScheme) {
+      return false;
+    }
+    return true;
+  }
 }

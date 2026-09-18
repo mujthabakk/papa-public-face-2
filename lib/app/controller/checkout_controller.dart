@@ -89,7 +89,7 @@ class CheckoutController extends GetxController implements GetxService {
       return;
     }
     cart.onSaveCoupon(CouponsModel());
-    _syncCouponLabel();
+    syncCouponLabel();
     showToast(CouponParser.firstUserOnlyMessage.tr);
     refreshPricingFromApi();
     update();
@@ -105,7 +105,7 @@ class CheckoutController extends GetxController implements GetxService {
       cart.salonId.toString(),
       cart.totalPrice.toString(),
     ])?.then((_) {
-      _syncCouponLabel();
+      syncCouponLabel();
       refreshPricingFromApi();
     });
   }
@@ -122,13 +122,18 @@ class CheckoutController extends GetxController implements GetxService {
         return;
       }
       final couponParser = Get.find<CouponParser>();
+      final validated = await couponParser.validateApply(code: trimmed);
+      if (!validated.canApply) {
+        showToast(validated.message.isNotEmpty
+            ? validated.message
+            : CouponParser.firstUserOnlyMessage.tr);
+        return;
+      }
       final matched = await couponParser.findEligibleOffer(trimmed);
       if (matched == null) {
-        if (await couponParser.isBlockedFirstUserOffer(trimmed)) {
-          showToast(CouponParser.firstUserOnlyMessage.tr);
-        } else {
-          showToast('Invalid coupon code.');
-        }
+        showToast(validated.message.isNotEmpty
+            ? validated.message
+            : 'Invalid coupon code.');
         return;
       }
       final cart = Get.find<ServiceCartController>();
@@ -138,9 +143,11 @@ class CheckoutController extends GetxController implements GetxService {
         return;
       }
       cart.onSaveCoupon(matched);
-      _syncCouponLabel();
+      syncCouponLabel();
       await refreshPricingFromApi();
-      showToast('Coupon applied successfully.');
+      showToast(validated.message.isNotEmpty
+          ? validated.message
+          : 'Coupon applied successfully.');
       update();
     } catch (e) {
       debugPrint('applyCouponByCode: $e');
@@ -155,16 +162,31 @@ class CheckoutController extends GetxController implements GetxService {
     update();
   }
 
-  void _syncCouponLabel() {
+  void syncCouponLabel() {
     final coupon = Get.find<ServiceCartController>().selectedCoupon;
-    if ((coupon.code ?? '').isNotEmpty) {
-      appliedCouponLabel = coupon.code!;
-    } else if ((coupon.name ?? '').isNotEmpty) {
+    if ((coupon.name ?? '').isNotEmpty) {
       appliedCouponLabel = coupon.name!;
+    } else if ((coupon.code ?? '').isNotEmpty) {
+      appliedCouponLabel = coupon.code!;
     } else {
       appliedCouponLabel = '';
     }
     update();
+  }
+
+  String get appliedCouponName {
+    if (!Get.isRegistered<ServiceCartController>()) return '';
+    return Get.find<ServiceCartController>().selectedCoupon.name ?? '';
+  }
+
+  String get appliedCouponCode {
+    if (!Get.isRegistered<ServiceCartController>()) return '';
+    return Get.find<ServiceCartController>().selectedCoupon.code ?? '';
+  }
+
+  String get appliedCouponDeal {
+    if (!Get.isRegistered<ServiceCartController>()) return '';
+    return Get.find<ServiceCartController>().selectedCoupon.discountLabel;
   }
 
 //Lat ----9.591566799999999

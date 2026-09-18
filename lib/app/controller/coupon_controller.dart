@@ -461,6 +461,13 @@ class CouponController extends GetxController implements GetxService {
       showToast('Please enter a coupon code.');
       return;
     }
+    final validated = await parser.validateApply(code: trimmed);
+    if (!validated.canApply) {
+      showToast(validated.message.isNotEmpty
+          ? validated.message
+          : CouponParser.firstUserOnlyMessage.tr);
+      return;
+    }
     CouponsModel? matched;
     for (final coupon in _couponList) {
       final couponCode = (coupon.code ?? '').trim().toLowerCase();
@@ -472,11 +479,9 @@ class CouponController extends GetxController implements GetxService {
       }
     }
     if (matched == null) {
-      if (await parser.isBlockedFirstUserOffer(trimmed)) {
-        showToast(CouponController.alreadyUsedMessage.tr);
-      } else {
-        showToast('Invalid coupon code.');
-      }
+      showToast(validated.message.isNotEmpty
+          ? validated.message
+          : 'Invalid coupon code.');
       return;
     }
     if (!canUseOffer(matched)) return;
@@ -487,10 +492,10 @@ class CouponController extends GetxController implements GetxService {
     }
     selectedCouponCode = matched.id.toString();
     update();
-    onSaveCoupon();
+    await onSaveCoupon();
   }
 
-  void onSaveCoupon() {
+  Future<void> onSaveCoupon() async {
     if (action == 'browse') {
       Get.back();
       return;
@@ -508,6 +513,19 @@ class CouponController extends GetxController implements GetxService {
       return;
     }
     if (!canUseOffer(savedCoupon)) return;
+    final validated = await parser.validateApply(
+      code: savedCoupon.code,
+      id: savedCoupon.id,
+    );
+    if (!validated.canApply) {
+      showToast(validated.message.isNotEmpty
+          ? validated.message
+          : CouponParser.firstUserOnlyMessage.tr);
+      return;
+    }
+    if (validated.message.isNotEmpty) {
+      showToast(validated.message);
+    }
 
     if (Get.isRegistered<ServiceCartController>()) {
       Get.find<ServiceCartController>().onSaveCoupon(savedCoupon);

@@ -3,7 +3,6 @@ import 'package:get/get.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:salon_user/app/controller/product_cart_controller.dart';
 import 'package:salon_user/app/controller/product_payment_controller.dart';
-import 'package:salon_user/app/controller/service_cart_controller.dart';
 import 'package:salon_user/app/env.dart';
 import 'package:salon_user/app/helper/map_style.dart';
 import 'package:salon_user/app/util/theme.dart';
@@ -274,9 +273,7 @@ class _ProductPaymentScreenState extends State<ProductPaymentScreen> {
                     ),
                     Text(
                       elitePrice(value.currencySide, value.currencySymbol,
-                          (p.discount ?? 0) > 0
-                              ? (p.sellPrice ?? 0) * p.quantity
-                              : (p.originalPrice ?? 0) * p.quantity,
+                          p.unitPayPrice * p.quantity,
                           digits: 2),
                       style: ThemeProvider.sans(
                           size: 13, weight: FontWeight.w600),
@@ -303,17 +300,22 @@ class _ProductPaymentScreenState extends State<ProductPaymentScreen> {
               elitePrice(value.currencySide, value.currencySymbol,
                   value.deliveryPrice,
                   digits: 2)),
-          if (value.taxAmount > 0)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 8, top: 4),
-              child: Text(
-                'Taxable: ${elitePrice(value.currencySide, value.currencySymbol, value.taxableValue, digits: 2)} | ${Get.isRegistered<ServiceCartController>() ? Get.find<ServiceCartController>().taxTypeLabel : 'Tax'}: ${elitePrice(value.currencySide, value.currencySymbol, value.taxAmount, digits: 2)}',
-                style: ThemeProvider.sans(
-                  size: 11,
-                  color: ThemeProvider.greyColor,
-                ),
-              ),
-            ),
+          _row(
+              'Taxable',
+              elitePrice(
+                  value.currencySide,
+                  value.currencySymbol,
+                  value.taxableValue > 0
+                      ? value.taxableValue
+                      : cart.taxableValue,
+                  digits: 2)),
+          _row(
+              cart.taxTypeLabel,
+              elitePrice(
+                  value.currencySide,
+                  value.currencySymbol,
+                  value.taxAmount > 0 ? value.taxAmount : cart.taxAmount,
+                  digits: 2)),
           const Divider(color: Color(0xFF2A2A2A)),
           Text('TOTAL AMOUNT'.tr,
               style: ThemeProvider.sans(

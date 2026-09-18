@@ -17,6 +17,7 @@ class ProfileModel {
   int? status;
   String? createdAt;
   String? updatedAt;
+  UserPlan? plan;
 
   ProfileModel(
       {this.id,
@@ -35,7 +36,8 @@ class ProfileModel {
       this.preferredCountry,
       this.status,
       this.createdAt,
-      this.updatedAt});
+      this.updatedAt,
+      this.plan});
 
   ProfileModel.fromJson(Map<String, dynamic> json) {
     id = int.tryParse(json['id']?.toString() ?? '') ?? 0;
@@ -55,6 +57,10 @@ class ProfileModel {
     status = int.tryParse(json['status']?.toString() ?? '') ?? 1;
     createdAt = json['created_at']?.toString();
     updatedAt = json['updated_at']?.toString();
+    final planRaw = json['plan'];
+    if (planRaw is Map) {
+      plan = UserPlan.fromJson(Map<String, dynamic>.from(planRaw));
+    }
   }
 
   Map<String, dynamic> toJson() {
@@ -76,6 +82,40 @@ class ProfileModel {
     data['status'] = status;
     data['created_at'] = createdAt;
     data['updated_at'] = updatedAt;
+    if (plan != null) data['plan'] = plan!.toJson();
     return data;
+  }
+}
+
+class UserPlan {
+  String? code;
+  bool isPremium;
+  String? upgradeExpiresAt;
+  String? releasedAccess;
+
+  UserPlan({
+    this.code,
+    this.isPremium = false,
+    this.upgradeExpiresAt,
+    this.releasedAccess,
+  });
+
+  factory UserPlan.fromJson(Map<String, dynamic> json) {
+    return UserPlan(
+      code: json['code']?.toString(),
+      isPremium: json['is_premium'] == true ||
+          json['is_premium']?.toString() == '1',
+      upgradeExpiresAt: json['upgrade_expires_at']?.toString(),
+      releasedAccess: json['released_access']?.toString(),
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'code': code,
+      'is_premium': isPremium,
+      'upgrade_expires_at': upgradeExpiresAt,
+      'released_access': releasedAccess,
+    };
   }
 }

@@ -343,6 +343,20 @@ class ApiService extends GetxService {
     }
 
     absorb(body);
+    final prefCountry =
+        (body['preferred_country'] ?? body['preferredCountry'])
+            ?.toString()
+            .trim();
+    if (prefCountry != null &&
+        prefCountry.isNotEmpty &&
+        RegExp(r'^[A-Za-z]{2}$').hasMatch(prefCountry)) {
+      sharedPreferencesManager.putString(
+          LocaleHelper.prefCountry, prefCountry.toUpperCase());
+    }
+    final taxType = (body['tax_type'] ?? body['taxType'])?.toString().trim();
+    if (taxType != null && taxType.isNotEmpty) {
+      sharedPreferencesManager.putString('tax_type', taxType.toUpperCase());
+    }
     final conv = body['currency_conversion'];
     if (conv is Map) {
       final to = conv['to']?.toString().trim();

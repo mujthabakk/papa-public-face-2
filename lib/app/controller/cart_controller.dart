@@ -26,6 +26,12 @@ class CartController extends GetxController implements GetxService {
     currencySide = parser.getCurrencySide();
     currencySymbol = parser.getCurrencySymbol();
     _savedInCart = Get.find<ProductCartController>().savedInCart;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (isClosed) return;
+      Get.find<ProductCartController>().calcuate();
+      _savedInCart = Get.find<ProductCartController>().savedInCart;
+      update();
+    });
   }
 
   void deleteProductFromCart(int index) {

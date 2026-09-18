@@ -110,6 +110,7 @@ class LoginController extends GetxController implements GetxService {
           myMap['user']['email'].toString(),
           myMap['user']['mobile'].toString(),
         );
+        parser.savePlanFromUser(Map<String, dynamic>.from(myMap['user'] as Map));
         var updateParam = {
           "id": myMap['user']['id'].toString(),
           'fcm_token': parser.getFcmToken(),
@@ -119,6 +120,7 @@ class LoginController extends GetxController implements GetxService {
         await _applyPreferredLanguage(
           user: Map<String, dynamic>.from(myMap['user'] as Map),
           profileResponse: profileRes,
+          loginRoot: myMap,
         );
         onNavigate();
       } else {
@@ -151,14 +153,20 @@ class LoginController extends GetxController implements GetxService {
   Future<void> _applyPreferredLanguage({
     required Map<String, dynamic> user,
     Response? profileResponse,
+    Map<String, dynamic>? loginRoot,
   }) async {
     if (!Get.isRegistered<LanguagesController>()) return;
     final locale = Get.find<LanguagesController>();
-    Map<String, dynamic> source = user;
+    Map<String, dynamic> source = {
+      if (loginRoot != null) ...loginRoot,
+      ...user,
+    };
+    source.remove('user');
+    source.remove('token');
     final body = profileResponse?.body;
     if (body is Map && body['data'] is Map) {
       source = {
-        ...user,
+        ...source,
         ...Map<String, dynamic>.from(body['data'] as Map),
       };
     }
@@ -239,6 +247,7 @@ class LoginController extends GetxController implements GetxService {
           myMap['user']['email'].toString(),
           myMap['user']['mobile'].toString(),
         );
+        parser.savePlanFromUser(Map<String, dynamic>.from(myMap['user'] as Map));
         var updateParam = {
           "id": myMap['user']['id'].toString(),
           'fcm_token': parser.getFcmToken(),
@@ -248,6 +257,7 @@ class LoginController extends GetxController implements GetxService {
         await _applyPreferredLanguage(
           user: Map<String, dynamic>.from(myMap['user'] as Map),
           profileResponse: profileRes,
+          loginRoot: myMap,
         );
         onNavigate();
       } else {
@@ -591,6 +601,7 @@ class LoginController extends GetxController implements GetxService {
           myMap['user']['email'].toString(),
           myMap['user']['mobile'].toString(),
         );
+        parser.savePlanFromUser(Map<String, dynamic>.from(myMap['user'] as Map));
         var updateParam = {
           "id": myMap['user']['id'].toString(),
           'fcm_token': parser.getFcmToken(),
@@ -600,6 +611,7 @@ class LoginController extends GetxController implements GetxService {
         await _applyPreferredLanguage(
           user: Map<String, dynamic>.from(myMap['user'] as Map),
           profileResponse: profileRes,
+          loginRoot: myMap,
         );
         onNavigate();
       } else {

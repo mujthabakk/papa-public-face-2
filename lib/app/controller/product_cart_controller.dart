@@ -21,6 +21,9 @@ class ProductCartController extends GetxController implements GetxService {
   double _walletDiscount = 0.0;
   double get walletDiscount => _walletDiscount;
 
+  double taxAmount = 0.0;
+  double taxableValue = 0.0;
+  String taxTypeLabel = 'Tax';
   double _orderTax = 0.0;
   double get orderTax => _orderTax;
 
@@ -35,7 +38,6 @@ class ProductCartController extends GetxController implements GetxService {
 
   double _freeShipping = 0.0;
   double get freeShipping => _freeShipping;
-  double taxAmount = 0.0;
 
   String currencySide = AppConstants.defaultCurrencySide;
   String currencySymbol = AppConstants.defaultCurrencySymbol;
@@ -95,11 +97,7 @@ class ProductCartController extends GetxController implements GetxService {
     debugPrint(jsonEncode(_savedInCart));
     double total = 0;
     for (var element in _savedInCart) {
-      if (element.discount! > 0) {
-        total = total + element.sellPrice! * element.quantity;
-      } else {
-        total = total + element.originalPrice! * element.quantity;
-      }
+      total = total + element.unitPayPrice * element.quantity;
     }
     _totalPrice = total;
     debugPrint('total price mali');
@@ -109,13 +107,29 @@ class ProductCartController extends GetxController implements GetxService {
 
   calculateAllCharge() {
     _totalPrice = double.parse((_totalPrice).toStringAsFixed(2));
-    // double totalPrice = _totalPrice + serviceCharge;
     double totalPrice = _totalPrice;
     taxAmount = 0;
+    taxableValue = 0;
+    taxTypeLabel = 'Tax';
+    var rate = _orderTax;
+    for (final element in _savedInCart) {
+      element.hydrateTax(fallbackRate: _orderTax > 0 ? _orderTax : 5);
+      taxAmount += element.lineTaxAmount;
+      taxableValue += element.lineTaxableValue;
+      final itemRate = element.taxRate ?? 0;
+      if (itemRate > rate) rate = itemRate;
+      if (element.resolvedTaxType.isNotEmpty) {
+        taxTypeLabel = element.resolvedTaxType;
+      }
+    }
+    taxAmount = double.parse(taxAmount.toStringAsFixed(2));
+    taxableValue = double.parse(taxableValue.toStringAsFixed(2));
+    if (rate > 0) {
+      _orderTax = rate;
+    }
 
     _grandTotal = double.parse(
         (totalPrice + shippingMethod).toStringAsFixed(2));
-    //_grandTotal = double.parse((totalPrice).toStringAsFixed(2));
     update();
   }
 

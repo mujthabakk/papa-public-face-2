@@ -1,6 +1,7 @@
 /*Papabear*/
 import 'package:get/get.dart';
 import 'package:salon_user/app/backend/api/api.dart';
+import 'package:salon_user/app/backend/models/profile_model.dart';
 import 'package:salon_user/app/helper/shared_pref.dart';
 import 'package:salon_user/app/util/constant.dart';
 import 'package:image_picker/image_picker.dart';
@@ -41,6 +42,17 @@ class EditProfileParser {
 
   String getUID() {
     return sharedPreferencesManager.getString('uid') ?? '0';
+  }
+
+  void savePlan(UserPlan? plan) {
+    if (plan == null) return;
+    sharedPreferencesManager.putString('plan_code', plan.code ?? '');
+    sharedPreferencesManager.putString(
+        'plan_is_premium', plan.isPremium ? '1' : '0');
+    sharedPreferencesManager.putString(
+        'plan_expires', plan.upgradeExpiresAt ?? '');
+    sharedPreferencesManager.putString(
+        'plan_released_access', plan.releasedAccess ?? '');
   }
 
   setCover(String cover) {

@@ -6,6 +6,7 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:salon_user/app/backend/api/handler.dart';
 import 'package:salon_user/app/backend/models/google_places_model.dart';
 import 'package:salon_user/app/backend/parse/find_location_parse.dart';
+import 'package:salon_user/app/backend/parse/languages_parse.dart';
 import 'package:salon_user/app/controller/account_controller.dart';
 import 'package:salon_user/app/controller/booking_controller.dart';
 import 'package:salon_user/app/controller/categories_controller.dart';
@@ -266,6 +267,11 @@ class FindLocationController extends GetxController implements GetxService {
           "$name,$subLocality,$locality,$administrativeArea,$postalCode,$country";
       debugPrint(address);
       parser.saveLatLng(value.latitude, value.longitude, address);
+      await _persistLocationPrefs(
+        value.latitude,
+        value.longitude,
+        placeMark.isoCountryCode,
+      );
 
       Get.delete<TabsController>(force: true);
       Get.delete<HomeController>(force: true);
@@ -301,6 +307,19 @@ class FindLocationController extends GetxController implements GetxService {
               .tr);
     }
     return await Geolocator.getCurrentPosition();
+  }
+
+  Future<void> _persistLocationPrefs(
+    double lat,
+    double lng, [
+    String? countryIso,
+  ]) async {
+    if (!Get.isRegistered<LanguagesParser>()) return;
+    await Get.find<LanguagesParser>().persistGpsPreference(
+      lat: lat,
+      lng: lng,
+      countryIso: countryIso,
+    );
   }
 
   void onMapCreated(GoogleMapController controller) {
@@ -465,10 +484,19 @@ class FindLocationController extends GetxController implements GetxService {
     update();
   }
 
-  void onConfirmLocation() {
+  Future<void> onConfirmLocation() async {
     debugPrint(
         '[LOCATION_SAVE] lat=${myLat.value}, lng=${myLng.value}, address=${searchbarText.text}');
     parser.saveLatLng(myLat.value, myLng.value, searchbarText.text);
+    String? iso;
+    try {
+      final marks =
+          await placemarkFromCoordinates(myLat.value, myLng.value);
+      if (marks.isNotEmpty) {
+        iso = marks.first.isoCountryCode;
+      }
+    } catch (_) {}
+    await _persistLocationPrefs(myLat.value, myLng.value, iso);
     Get.delete<TabsController>(force: true);
     Get.delete<HomeController>(force: true);
     Get.delete<NearController>(force: true);

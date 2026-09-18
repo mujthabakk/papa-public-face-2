@@ -132,6 +132,8 @@ class LanguagesController extends GetxController implements GetxService {
       userId: uid,
       language: languageCode,
       country: countryCode,
+      lat: parser.getLat(),
+      lng: parser.getLng(),
     );
     final profile = await parser.updateProfileLocale(
       uid: uid,
@@ -183,11 +185,21 @@ class LanguagesController extends GetxController implements GetxService {
         countryName = match.displayName;
         parser.saveCountry(countryCode);
         parser.saveCountryName(countryName);
+      } else if (RegExp(r'^[A-Za-z]{2}$').hasMatch(countryRaw)) {
+        countryCode = countryRaw.toUpperCase();
+        parser.saveCountry(countryCode);
+        countryName = countryRaw;
+        parser.saveCountryName(countryName);
       } else {
         countryName = countryRaw;
         parser.saveCountryName(countryName);
       }
       _refreshLanguagesForCountry();
+    }
+
+    final taxType = (user['tax_type'] ?? user['taxType'])?.toString().trim();
+    if (taxType != null && taxType.isNotEmpty) {
+      parser.saveTaxType(taxType);
     }
 
     if (lang.isNotEmpty &&

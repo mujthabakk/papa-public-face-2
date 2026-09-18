@@ -535,11 +535,23 @@ class ProductPaymentController extends GetxController implements GetxService {
 
     if (result.success && result.data != null) {
       final data = result.data!;
-      taxAmount = data.tax;
-      taxableValue = data.taxableValue;
-      taxInclusive = data.taxInclusive;
+      final cart = Get.find<ProductCartController>();
+      if (cart.taxAmount > 0) {
+        taxAmount = cart.taxAmount;
+        taxableValue = cart.taxableValue;
+        taxInclusive = true;
+      } else {
+        taxAmount = data.tax;
+        taxableValue = data.taxableValue;
+        taxInclusive = data.taxInclusive;
+      }
       orderFields = data.orderFields;
-      _grandTotal = data.grandTotal;
+      final pay = _localPayAmount();
+      if (cart.taxAmount > 0 && (data.grandTotal - pay).abs() > 1) {
+        _grandTotal = pay;
+      } else {
+        _grandTotal = data.grandTotal;
+      }
     } else {
       _applyLocalPricingFallback();
     }
@@ -547,6 +559,14 @@ class ProductPaymentController extends GetxController implements GetxService {
   }
 
   void _applyLocalPricingFallback() {
+    _grandTotal = _localPayAmount();
+    final cart = Get.find<ProductCartController>();
+    taxAmount = cart.taxAmount;
+    taxableValue = cart.taxableValue > 0 ? cart.taxableValue : _grandTotal;
+    orderFields = null;
+  }
+
+  double _localPayAmount() {
     double totalPrice =
         Get.find<ProductCartController>().totalPrice + deliveryPrice;
 
@@ -558,11 +578,7 @@ class ProductPaymentController extends GetxController implements GetxService {
     } else {
       totalPrice -= walletDiscount;
     }
-
-    taxAmount = 0;
-    taxableValue = totalPrice;
-    orderFields = null;
-    _grandTotal = double.parse(totalPrice.toStringAsFixed(2));
+    return double.parse(totalPrice.clamp(0, double.infinity).toStringAsFixed(2));
   }
 
   void updateStatus() {

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:get/get.dart';
 import 'package:salon_user/app/backend/parse/choose_location_parse.dart';
+import 'package:salon_user/app/backend/parse/languages_parse.dart';
 import 'package:salon_user/app/controller/account_controller.dart';
 import 'package:salon_user/app/controller/booking_controller.dart';
 import 'package:salon_user/app/controller/categories_controller.dart';
@@ -22,7 +23,8 @@ class ChooseLocationController extends GetxController implements GetxService {
     Get.toNamed(AppRouter.getFindLocationRoutes());
   }
 
-  void continueLastLocation() {
+  Future<void> continueLastLocation() async {
+    await _persistLocationPrefs(parser.getLat(), parser.getLng());
     Get.delete<TabsController>(force: true);
     Get.delete<HomeController>(force: true);
     Get.delete<NearController>(force: true);
@@ -93,6 +95,11 @@ class ChooseLocationController extends GetxController implements GetxService {
           "$name,$subLocality,$locality,$administrativeArea,$postalCode,$country";
       debugPrint(address);
       parser.saveLatLng(value.latitude, value.longitude, address);
+      await _persistLocationPrefs(
+        value.latitude,
+        value.longitude,
+        placeMark.isoCountryCode,
+      );
 
       Get.delete<TabsController>(force: true);
       Get.delete<HomeController>(force: true);
@@ -135,6 +142,19 @@ class ChooseLocationController extends GetxController implements GetxService {
           'Location permissions are permanently denied, we cannot request permissions.');
     }
     return await Geolocator.getCurrentPosition();
+  }
+
+  Future<void> _persistLocationPrefs(
+    double lat,
+    double lng, [
+    String? countryIso,
+  ]) async {
+    if (!Get.isRegistered<LanguagesParser>()) return;
+    await Get.find<LanguagesParser>().persistGpsPreference(
+      lat: lat,
+      lng: lng,
+      countryIso: countryIso,
+    );
   }
 
   void saveLanguage(String code) {

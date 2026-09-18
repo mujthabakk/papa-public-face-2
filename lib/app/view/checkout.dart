@@ -25,7 +25,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       if ((coupon.code ?? '').isNotEmpty) {
         _couponCode.text = coupon.code!;
       }
-      controller.appliedCouponLabel = coupon.code ?? coupon.name ?? '';
+      controller.syncCouponLabel();
       controller.refreshPricingFromApi();
       controller.update();
     });
@@ -156,14 +156,35 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                     if (value.appliedCouponLabel.isNotEmpty) ...[
                       const SizedBox(height: 4),
                       Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Expanded(
-                            child: Text(
-                              'Applied: ${value.appliedCouponLabel}',
-                              style: ThemeProvider.sans(
-                                size: 12,
-                                color: Colors.white70,
-                              ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  value.appliedCouponName.isNotEmpty
+                                      ? value.appliedCouponName
+                                      : value.appliedCouponLabel,
+                                  style: ThemeProvider.serif(
+                                    size: 16,
+                                    color: ThemeProvider.gold,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  [
+                                    if (value.appliedCouponCode.isNotEmpty)
+                                      '${'Code'.tr}: ${value.appliedCouponCode}',
+                                    if (value.appliedCouponDeal.isNotEmpty)
+                                      value.appliedCouponDeal,
+                                  ].join('  •  '),
+                                  style: ThemeProvider.sans(
+                                    size: 12,
+                                    color: Colors.white70,
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
                           GestureDetector(
@@ -201,7 +222,9 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                     ),
                     if (value.couponDiscount > 0)
                       _bill(
-                        'Discount Amount'.tr,
+                        value.appliedCouponName.isNotEmpty
+                            ? value.appliedCouponName
+                            : 'Discount Amount'.tr,
                         '-${elitePrice(value.currencySide, value.currencySymbol, value.couponDiscount, digits: 2)}',
                         amountColor: ThemeProvider.gold,
                       ),

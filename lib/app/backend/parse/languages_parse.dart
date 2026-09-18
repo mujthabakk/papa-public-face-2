@@ -65,6 +65,18 @@ class LanguagesParser {
     return uid;
   }
 
+  void saveTaxType(String value) {
+    sharedPreferencesManager.putString('tax_type', value.toUpperCase());
+  }
+
+  double getLat() {
+    return sharedPreferencesManager.getDouble('lat') ?? 0.0;
+  }
+
+  double getLng() {
+    return sharedPreferencesManager.getDouble('lng') ?? 0.0;
+  }
+
   bool haveLoggedIn() {
     final uid = getUid();
     return uid != null && uid.isNotEmpty;
@@ -135,16 +147,35 @@ class LanguagesParser {
   Future<LocaleConfigResult> fetchConfig({
     required String lang,
     required String country,
+    double? lat,
+    double? lng,
+    String? source,
   }) async {
-    var response = await apiService.getPublic(
+    final qs = StringBuffer(
       '${AppConstants.getLocaleConfig}?lang=$lang&country=$country',
     );
+    if (source != null && source.isNotEmpty) {
+      qs.write('&source=$source');
+    }
+    if (lat != null && lng != null && lat != 0.0 && lng != 0.0) {
+      qs.write('&lat=$lat&lng=$lng&apply_location=1');
+    }
+    var response = await apiService.getPublic(qs.toString());
     var map = ApiBody.asMap(response.body);
     if (map == null) {
-      response = await apiService.postPublic(AppConstants.getLocaleConfig, {
+      final body = <String, dynamic>{
         'lang': lang,
         'country': country,
-      });
+      };
+      if (source != null && source.isNotEmpty) {
+        body['source'] = source;
+      }
+      if (lat != null && lng != null && lat != 0.0 && lng != 0.0) {
+        body['lat'] = lat;
+        body['lng'] = lng;
+        body['apply_location'] = 1;
+      }
+      response = await apiService.postPublic(AppConstants.getLocaleConfig, body);
       map = ApiBody.asMap(response.body);
     }
     if (map == null) {
@@ -169,6 +200,14 @@ class LanguagesParser {
     if (config.currencySymbol.isNotEmpty) {
       sharedPreferencesManager.putString(
           'currencySymbol', config.currencySymbol);
+    }
+    final taxSrc = data is Map
+        ? {...map, ...Map<String, dynamic>.from(data)}
+        : map;
+    final taxType =
+        (taxSrc['tax_type'] ?? taxSrc['taxType'])?.toString().trim();
+    if (taxType != null && taxType.isNotEmpty) {
+      sharedPreferencesManager.putString('tax_type', taxType.toUpperCase());
     }
     return LocaleConfigResult(meta: meta, config: config);
   }
@@ -204,6 +243,9 @@ class LanguagesParser {
     required String userId,
     required String language,
     required String country,
+    double? lat,
+    double? lng,
+    int? cityId,
   }) async {
     final uid = int.tryParse(userId) ?? userId;
     final payload = <String, dynamic>{
@@ -212,6 +254,13 @@ class LanguagesParser {
       'country': country,
       'language': language,
     };
+    if (lat != null && lng != null && lat != 0.0 && lng != 0.0) {
+      payload['lat'] = lat;
+      payload['lng'] = lng;
+    }
+    if (cityId != null && cityId > 0) {
+      payload['city_id'] = cityId;
+    }
     final token = sharedPreferencesManager.getString('token') ?? '';
     final response = token.isNotEmpty
         ? await apiService.postPrivate(
@@ -222,6 +271,39 @@ class LanguagesParser {
         : await apiService.postPublic(AppConstants.saveUserPreference, payload);
     final map = ApiBody.asMap(response.body);
     return response.statusCode == 200 && map?['success'] == true;
+  }
+
+  /// Persist GPS/map confirm immediately (do not wait for next home load).
+  Future<void> persistGpsPreference({
+    required double lat,
+    required double lng,
+    String? countryIso,
+  }) async {
+    if (lat == 0.0 && lng == 0.0) return;
+    var iso = (countryIso ?? '').trim().toUpperCase();
+    if (iso.length != 2) {
+      iso = getCountry();
+    } else {
+      saveCountry(iso);
+    }
+    final uid = getUid();
+    if (uid == null) return;
+    await saveUserPreference(
+      userId: uid,
+      language: getDefault(),
+      country: iso,
+      lat: lat,
+      lng: lng,
+    );
+    try {
+      await fetchConfig(
+        lang: getDefault(),
+        country: iso,
+        lat: lat,
+        lng: lng,
+        source: 'location',
+      );
+    } catch (_) {}
   }
 
   Future<List<LocaleCountryItem>> fetchCountries() async {

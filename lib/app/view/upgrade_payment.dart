@@ -35,7 +35,7 @@ class UpgradePaymentScreen extends StatefulWidget {
 
 class _UpgradePaymentScreenState extends State<UpgradePaymentScreen>
     with WidgetsBindingObserver {
-  late final WebViewController _controller;
+  WebViewController? _controller;
   bool _loading = true;
   bool _verifying = false;
   int _progress = 0;
@@ -99,10 +99,15 @@ class _UpgradePaymentScreenState extends State<UpgradePaymentScreen>
             if (mounted) setState(() => _loading = false);
           },
           onWebResourceError: (error) {
-            if (mounted && _error == null) {
+            if (!mounted) return;
+            if (!PaymentWebViewHandler.shouldShowAsPageError(error)) {
+              return;
+            }
+            if (_error == null) {
               setState(() {
                 _loading = false;
-                _error = error.description;
+                _error =
+                    'Could not load the payment page. Check your connection and tap Retry.';
               });
             }
           },
@@ -121,15 +126,21 @@ class _UpgradePaymentScreenState extends State<UpgradePaymentScreen>
         ),
       );
 
+    _controller = controller;
     if (controller.platform is AndroidWebViewController) {
       final android = controller.platform as AndroidWebViewController;
       if (kDebugMode) {
         AndroidWebViewController.enableDebugging(true);
       }
       await android.setMediaPlaybackRequiresUserGesture(false);
+      await android.setMixedContentMode(MixedContentMode.compatibilityMode);
+      final cookies = WebViewCookieManager();
+      if (cookies.platform is AndroidWebViewCookieManager) {
+        await (cookies.platform as AndroidWebViewCookieManager)
+            .setAcceptThirdPartyCookies(android, true);
+      }
     }
 
-    _controller = controller;
     await _loadPaymentUrl();
     if (mounted) setState(() {});
   }
@@ -144,13 +155,9 @@ class _UpgradePaymentScreenState extends State<UpgradePaymentScreen>
       return;
     }
     try {
-      await _controller.loadRequest(
-        Uri.parse(url),
-        headers: const {
-          'Accept':
-              'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-        },
-      );
+      final web = _controller;
+      if (web == null) return;
+      await web.loadRequest(Uri.parse(url));
     } catch (e) {
       setState(() {
         _loading = false;
@@ -324,7 +331,8 @@ class _UpgradePaymentScreenState extends State<UpgradePaymentScreen>
             Expanded(
               child: Stack(
                 children: [
-                  if (_error == null) WebViewWidget(controller: _controller),
+                  if (_error == null && _controller != null)
+                    WebViewWidget(controller: _controller!),
                   if (_error != null)
                     Center(
                       child: Padding(

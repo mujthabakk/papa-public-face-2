@@ -34,6 +34,13 @@ class ProductsListModel {
   int? status;
   String? extraField;
   late int quantity;
+  double? shopPrice;
+  double? taxableValue;
+  double? taxableAmount;
+  double? customerPays;
+  double? taxRate;
+  String taxType = '';
+  bool taxInclusive = false;
 
   ProductsListModel({
     this.id,
@@ -69,6 +76,13 @@ class ProductsListModel {
     this.status,
     this.extraField,
     this.quantity = 0,
+    this.shopPrice,
+    this.taxableValue,
+    this.taxableAmount,
+    this.customerPays,
+    this.taxRate,
+    this.taxType = '',
+    this.taxInclusive = false,
   });
 
   ProductsListModel.fromJson(Map<String, dynamic> json) {
@@ -115,6 +129,25 @@ class ProductsListModel {
     totalRating = int.tryParse(json['total_rating'].toString());
     status = int.tryParse(json['status'].toString());
     extraField = json['extra_field'];
+    shopPrice = double.tryParse(json['shop_price']?.toString() ?? '') ?? 0;
+    taxableValue =
+        double.tryParse(json['taxable_value']?.toString() ?? '') ?? 0;
+    taxableAmount = double.tryParse(
+          json['taxable_amount']?.toString() ??
+              json['tax_amount']?.toString() ??
+              json['vat_amount']?.toString() ??
+              json['gst_amount']?.toString() ??
+              '',
+        ) ??
+        0;
+    customerPays =
+        double.tryParse(json['customer_pays']?.toString() ?? '') ?? 0;
+    taxRate = double.tryParse(json['tax_rate']?.toString() ?? '') ?? 0;
+    taxType = (json['tax_type'] ?? json['taxType'] ?? '').toString().trim();
+    taxInclusive = json['tax_inclusive'] == true ||
+        json['tax_inclusive']?.toString() == '1' ||
+        json['tax_mode']?.toString() == 'inclusive';
+    hydrateTax();
 
     if (json['quantity'] != null &&
         json['quantity'] != 0 &&
@@ -160,6 +193,55 @@ class ProductsListModel {
     data['status'] = status;
     data['extra_field'] = extraField;
     data['quantity'] = quantity;
+    data['shop_price'] = shopPrice;
+    data['taxable_value'] = taxableValue;
+    data['taxable_amount'] = taxableAmount;
+    data['customer_pays'] = customerPays;
+    data['tax_rate'] = taxRate;
+    data['tax_type'] = taxType;
+    data['tax_inclusive'] = taxInclusive;
     return data;
+  }
+
+  double get unitPayPrice {
+    if ((customerPays ?? 0) > 0) return customerPays!;
+    if ((shopPrice ?? 0) > 0) return shopPrice!;
+    if ((discount ?? 0) > 0) return sellPrice ?? 0;
+    return originalPrice ?? 0;
+  }
+
+  int get _qty => quantity < 1 ? 1 : quantity;
+
+  double get lineTaxableValue {
+    hydrateTax();
+    return (taxableValue ?? 0) * _qty;
+  }
+
+  double get lineTaxAmount {
+    hydrateTax();
+    return (taxableAmount ?? 0) * _qty;
+  }
+
+  String get resolvedTaxType {
+    if (taxType.isNotEmpty) return taxType;
+    return 'VAT';
+  }
+
+  void hydrateTax({double fallbackRate = 0}) {
+    if ((taxableAmount ?? 0) > 0 && (taxableValue ?? 0) > 0) {
+      if (taxType.isEmpty) taxType = 'VAT';
+      return;
+    }
+    final rate = (taxRate ?? 0) > 0 ? taxRate! : fallbackRate;
+    final pay = unitPayPrice;
+    if (rate <= 0 || pay <= 0) return;
+    taxRate = rate;
+    if (taxType.isEmpty) taxType = 'VAT';
+    if (taxInclusive || rate > 0) {
+      taxInclusive = true;
+      final net = pay / (1 + rate / 100);
+      taxableValue = double.parse(net.toStringAsFixed(2));
+      taxableAmount = double.parse((pay - net).toStringAsFixed(2));
+    }
   }
 }

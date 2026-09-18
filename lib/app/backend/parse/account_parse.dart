@@ -55,5 +55,9 @@ class AccountParser {
     sharedPreferencesManager.clearKey('uid');
     sharedPreferencesManager.clearKey('email');
     sharedPreferencesManager.clearKey('cover');
+    sharedPreferencesManager.clearKey('plan_code');
+    sharedPreferencesManager.clearKey('plan_is_premium');
+    sharedPreferencesManager.clearKey('plan_expires');
+    sharedPreferencesManager.clearKey('plan_released_access');
   }
 }

@@ -24,25 +24,76 @@ class CouponParser {
     return value.isNotEmpty && value != '0';
   }
 
+  Map<String, dynamic> listingBody() {
+    return {
+      'lat': sharedPreferencesManager.getDouble('lat') ?? 0.0,
+      'lng': sharedPreferencesManager.getDouble('lng') ?? 0.0,
+    };
+  }
+
+  String listingQuery(String uri) {
+    final lat = sharedPreferencesManager.getDouble('lat') ?? 0.0;
+    final lng = sharedPreferencesManager.getDouble('lng') ?? 0.0;
+    final sep = uri.contains('?') ? '&' : '?';
+    return '$uri${sep}lat=$lat&lng=$lng';
+  }
+
   Future<Response> getCouponCodes({bool includeUid = true}) async {
-    return apiService.getPrivate(
+    if (!includeUid) {
+      return apiService.getPublic(
+        listingQuery(AppConstants.getCoupons),
+        includeUid: false,
+      );
+    }
+    return apiService.postPrivate(
       AppConstants.getCoupons,
+      listingBody(),
       sharedPreferencesManager.getString('token') ?? '',
-      includeUid: includeUid,
     );
   }
 
   Future<Response> getPublicHomeOffers({bool includeUid = true}) {
-    return apiService.getPublic(
+    if (!includeUid) {
+      return apiService.getPublic(
+        listingQuery(AppConstants.getPublicHomeOffers),
+        includeUid: false,
+      );
+    }
+    return apiService.postPublic(
       AppConstants.getPublicHomeOffers,
-      includeUid: includeUid,
+      listingBody(),
     );
   }
 
   Future<Response> getAllOffers({bool includeUid = true}) {
-    return apiService.getPublic(
-      AppConstants.getAllOffers,
-      includeUid: includeUid,
+    if (!includeUid) {
+      return apiService.getPublic(
+        listingQuery(AppConstants.getAllOffers),
+        includeUid: false,
+      );
+    }
+    return apiService.postPublic(AppConstants.getAllOffers, listingBody());
+  }
+
+  Future<({bool canApply, String message, bool isFirstUser})> validateApply({
+    String? code,
+    int? id,
+  }) async {
+    final body = <String, dynamic>{};
+    final trimmed = (code ?? '').trim();
+    if (trimmed.isNotEmpty) body['code'] = trimmed;
+    if (id != null && id > 0) body['id'] = id;
+    final response =
+        await apiService.postPublic(AppConstants.validateApplyOffer, body);
+    final map = ApiBody.asMap(response.body) ?? {};
+    final message = (map['message'] ?? ApiBody.message(response) ?? '')
+        .toString()
+        .trim();
+    final canApply = map['success'] == true && map['can_apply'] == true;
+    return (
+      canApply: canApply,
+      message: message,
+      isFirstUser: map['is_first_user'] == true,
     );
   }
 

@@ -9,6 +9,7 @@ import 'package:salon_user/app/backend/parse/products_details_parse.dart';
 import 'package:salon_user/app/controller/cart_controller.dart';
 import 'package:salon_user/app/controller/home_controller.dart';
 import 'package:salon_user/app/controller/product_cart_controller.dart';
+import 'package:salon_user/app/controller/products_controller.dart';
 import 'package:salon_user/app/controller/top_products_controller.dart';
 import 'package:salon_user/app/helper/router.dart';
 import 'package:salon_user/app/util/constant.dart';
@@ -123,11 +124,22 @@ class ProductsDetailsController extends GetxController implements GetxService {
     Get.toNamed(AppRouter.getCartRoutes());
   }
 
+  void _syncCartBadges() {
+    if (Get.isRegistered<HomeController>()) {
+      Get.find<HomeController>().checkCartData();
+    }
+    if (Get.isRegistered<TopProductsControllrer>()) {
+      Get.find<TopProductsControllrer>().checkCartData();
+    }
+    if (Get.isRegistered<ProductsController>()) {
+      Get.find<ProductsController>().checkCartData();
+    }
+  }
+
   void updateProductQuantity() {
     _productsList.quantity = _productsList.quantity + 1;
     Get.find<ProductCartController>().addQuantity(_productsList);
-    Get.find<HomeController>().checkCartData();
-    Get.find<TopProductsControllrer>().checkCartData();
+    _syncCartBadges();
     update();
   }
 
@@ -139,8 +151,7 @@ class ProductsDetailsController extends GetxController implements GetxService {
       _productsList.quantity = _productsList.quantity - 1;
       Get.find<ProductCartController>().addQuantity(_productsList);
     }
-    Get.find<HomeController>().checkCartData();
-    Get.find<TopProductsControllrer>().checkCartData();
+    _syncCartBadges();
     update();
   }
 
@@ -154,8 +165,7 @@ class ProductsDetailsController extends GetxController implements GetxService {
     if (Get.find<ProductCartController>().savedInCart.isEmpty) {
       _productsList.quantity = 1;
       Get.find<ProductCartController>().addItem(_productsList);
-      Get.find<HomeController>().checkCartData();
-      Get.find<TopProductsControllrer>().checkCartData();
+      _syncCartBadges();
       update();
     } else {
       int freelancerId =
@@ -163,8 +173,7 @@ class ProductsDetailsController extends GetxController implements GetxService {
       if (freelancerId == _productsList.freelacerId) {
         _productsList.quantity = 1;
         Get.find<ProductCartController>().addItem(_productsList);
-        Get.find<HomeController>().checkCartData();
-        Get.find<TopProductsControllrer>().checkCartData();
+        _syncCartBadges();
         update();
       } else {
         showToast('We already have product with other freelancer'.tr);

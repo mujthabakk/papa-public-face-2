@@ -25,11 +25,17 @@ class HomeParser {
   }
 
   Future<Response> getAllOffers() {
-    return apiService.getPublic(AppConstants.getAllOffers);
+    return apiService.postPublic(AppConstants.getAllOffers, {
+      'lat': getLat(),
+      'lng': getLng(),
+    });
   }
 
   Future<Response> getPublicHomeOffers() {
-    return apiService.getPublic(AppConstants.getPublicHomeOffers);
+    return apiService.postPublic(AppConstants.getPublicHomeOffers, {
+      'lat': getLat(),
+      'lng': getLng(),
+    });
   }
 
   Future<Response> getTopSalon(var body) {

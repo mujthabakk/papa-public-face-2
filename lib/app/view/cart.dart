@@ -278,32 +278,54 @@ class _CartScreenState extends State<CartScreen> {
             ),
           ),
           const SizedBox(height: 16),
-          _bill('Subtotal',
-              elitePrice(value.currencySide, value.currencySymbol,
-                  productCart.totalPrice,
-                  digits: 2)),
-          const SizedBox(height: 10),
-          Text('TOTAL AMOUNT'.tr,
-              style: ThemeProvider.sans(
-                  size: 10, color: ThemeProvider.greyColor, letterSpacing: 1)),
-          Row(
-            children: [
-              Text(
-                elitePrice(value.currencySide, value.currencySymbol,
-                    productCart.grandTotal,
-                    digits: 2),
-                style: ThemeProvider.price(
-                    size: 28,
-                    weight: FontWeight.w700,
-                    color: ThemeProvider.gold),
-              ),
-              const SizedBox(width: 8),
-              const CircleAvatar(
-                radius: 10,
-                backgroundColor: ThemeProvider.gold,
-                child: Icon(Icons.check, size: 12, color: Colors.black),
-              ),
-            ],
+          GetBuilder<ProductCartController>(
+            builder: (productCart) {
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _bill(
+                      'Subtotal',
+                      elitePrice(value.currencySide, value.currencySymbol,
+                          productCart.totalPrice,
+                          digits: 2)),
+                  _bill(
+                      'Taxable',
+                      elitePrice(value.currencySide, value.currencySymbol,
+                          productCart.taxableValue,
+                          digits: 2)),
+                  _bill(
+                      productCart.taxTypeLabel,
+                      elitePrice(value.currencySide, value.currencySymbol,
+                          productCart.taxAmount,
+                          digits: 2)),
+                  const SizedBox(height: 10),
+                  Text('TOTAL AMOUNT'.tr,
+                      style: ThemeProvider.sans(
+                          size: 10,
+                          color: ThemeProvider.greyColor,
+                          letterSpacing: 1)),
+                  Row(
+                    children: [
+                      Text(
+                        elitePrice(value.currencySide, value.currencySymbol,
+                            productCart.grandTotal,
+                            digits: 2),
+                        style: ThemeProvider.price(
+                            size: 28,
+                            weight: FontWeight.w700,
+                            color: ThemeProvider.gold),
+                      ),
+                      const SizedBox(width: 8),
+                      const CircleAvatar(
+                        radius: 10,
+                        backgroundColor: ThemeProvider.gold,
+                        child: Icon(Icons.check, size: 12, color: Colors.black),
+                      ),
+                    ],
+                  ),
+                ],
+              );
+            },
           ),
           const SizedBox(height: 12),
           Container(

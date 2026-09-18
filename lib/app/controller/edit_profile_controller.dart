@@ -45,6 +45,7 @@ class EditProfileController extends GetxController implements GetxService {
       var body = myMap['data'];
       ProfileModel data = ProfileModel.fromJson(body);
       _profileInfo = data;
+      parser.savePlan(data.plan);
 
       firstNameTextEditor.text = _profileInfo.firstName.toString();
       lastNameTextEditor.text = _profileInfo.lastName.toString();

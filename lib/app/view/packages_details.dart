@@ -48,8 +48,11 @@ class _PackagesDetailsScreenState extends State<PackagesDetailsScreen> {
     return GetBuilder<PackagesDetailsController>(
       builder: (controller) {
         if (!controller.apiCalled) {
-          return const Center(
-            child: CircularProgressIndicator(color: ThemeProvider.gold),
+          return const Scaffold(
+            backgroundColor: ThemeProvider.backgroundColor,
+            body: Center(
+              child: CircularProgressIndicator(color: ThemeProvider.gold),
+            ),
           );
         }
 
@@ -62,93 +65,104 @@ class _PackagesDetailsScreenState extends State<PackagesDetailsScreen> {
                 backgroundColor: ThemeProvider.backgroundColor,
                 pinned: true,
                 expandedHeight: 250.0,
-                iconTheme: const IconThemeData(color: Colors.black),
+                iconTheme: const IconThemeData(color: ThemeProvider.gold),
                 leading: IconButton(
-                  icon: Icon(
-                    Icons.arrow_back,
-                    color: isShrink
-                        ? ThemeProvider.blackColor
-                        : ThemeProvider.whiteColor,
-                  ),
+                  icon: const Icon(Icons.arrow_back, color: ThemeProvider.gold),
                   onPressed: controller.onBack,
                 ),
                 title: Text(
                   'Packages Details'.tr,
-                  style: TextStyle(
-                    color: isShrink
-                        ? ThemeProvider.blackColor
-                        : ThemeProvider.whiteColor,
-                    fontFamily: 'bold',
-                    fontSize: 18,
+                  style: ThemeProvider.serif(
+                    size: 18,
+                    color: ThemeProvider.gold,
                   ),
                 ),
                 flexibleSpace: FlexibleSpaceBar(
-                  background: Container(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [
-                          Colors.black.withOpacity(0.7),
-                          Colors.transparent,
-                        ],
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
+                  background: Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      Image.network(
+                        '${Environments.imageURL}${controller.packagesDetails.cover}',
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) =>
+                            Image.asset('assets/images/notfound.png',
+                                fit: BoxFit.cover),
                       ),
-                    ),
-                    child: Image.network(
-                      '${Environments.imageURL}${controller.packagesDetails.cover}',
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) => Image.asset(
-                          'assets/images/notfound.png',
-                          fit: BoxFit.cover),
-                    ),
+                      const DecoratedBox(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [Colors.black87, Colors.transparent],
+                            begin: Alignment.topCenter,
+                            end: Alignment.center,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ),
             ],
-            body: SingleChildScrollView(
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildSectionTitle('Services Included'.tr, Icons.spa),
-                  _buildCard(_buildServicesList(controller)),
-                  _buildSectionTitle('Specialist'.tr, Icons.people_alt),
-                  _buildCard(_buildSpecialistList(controller)),
-                  _buildSectionTitle('Package Details'.tr, Icons.info),
-                  _buildCard(_buildPackageDetails(controller)),
-                  _buildSectionTitle('About'.tr, Icons.description),
-                  _buildCard(
-                    Text(
-                      controller.packagesDetails.descriptions!,
-                      style: const TextStyle(
-                          fontSize: 15, color: ThemeProvider.blackColor),
+            body: ListView(
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+              children: [
+                Text(
+                  controller.packagesDetails.name ?? '',
+                  style: ThemeProvider.serif(
+                    size: 24,
+                    color: ThemeProvider.gold,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                _sectionTitle('Services Included'.tr, Icons.spa_outlined),
+                EliteCard(child: _servicesList(controller)),
+                const SizedBox(height: 16),
+                _sectionTitle('Specialist'.tr, Icons.people_alt_outlined),
+                EliteCard(child: _specialistList(controller)),
+                const SizedBox(height: 16),
+                _sectionTitle('Package Details'.tr, Icons.info_outline),
+                EliteCard(child: _packageMeta(controller)),
+                if ((controller.packagesDetails.descriptions ?? '')
+                    .isNotEmpty) ...[
+                  const SizedBox(height: 16),
+                  _sectionTitle('About'.tr, Icons.description_outlined),
+                  EliteCard(
+                    child: Text(
+                      controller.packagesDetails.descriptions ?? '',
+                      style: ThemeProvider.sans(
+                        size: 14,
+                        color: Colors.white70,
+                      ),
                     ),
                   ),
-                  _buildSectionTitle('Photos'.tr, Icons.photo_library),
-                  _buildGallery(controller),
                 ],
-              ),
+                if (controller.gallery.isNotEmpty) ...[
+                  const SizedBox(height: 16),
+                  _sectionTitle('Photos'.tr, Icons.photo_library_outlined),
+                  _gallery(controller),
+                ],
+              ],
             ),
           ),
-          bottomNavigationBar: _buildBottomNavBar(controller),
+          bottomNavigationBar: _bottomBar(controller),
         );
       },
     );
   }
 
-  Widget _buildSectionTitle(String title, IconData icon) {
+  Widget _sectionTitle(String title, IconData icon) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 10.0),
+      padding: const EdgeInsets.only(bottom: 10),
       child: Row(
         children: [
-          Icon(icon, size: 22, color: ThemeProvider.appColor),
+          Icon(icon, size: 18, color: ThemeProvider.gold),
           const SizedBox(width: 8),
           Text(
             title,
-            style: const TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: ThemeProvider.blackColor,
+            style: ThemeProvider.sans(
+              size: 12,
+              weight: FontWeight.w700,
+              color: ThemeProvider.gold,
+              letterSpacing: 1.1,
             ),
           ),
         ],
@@ -156,53 +170,88 @@ class _PackagesDetailsScreenState extends State<PackagesDetailsScreen> {
     );
   }
 
-  Widget _buildPackageDetails(PackagesDetailsController controller) {
+  Widget _packageMeta(PackagesDetailsController controller) {
     return Column(
       children: [
-        _buildDetailRow(
-          Icons.assignment,
-          controller.packagesDetails.name!,
-          backgroundColor: Colors.purple.shade50,
-          iconColor: Colors.purple,
+        _metaRow(
+          Icons.assignment_outlined,
+          controller.packagesDetails.name ?? '',
         ),
-        const SizedBox(height: 12),
-        _buildDetailRow(
-          Icons.timer,
-          '${controller.packagesDetails.duration} min',
-          backgroundColor: Colors.blue.shade50,
-          iconColor: Colors.blue,
+        const SizedBox(height: 10),
+        _metaRow(
+          Icons.timer_outlined,
+          '${controller.packagesDetails.duration ?? 0} min',
         ),
-        const SizedBox(height: 12),
-        _buildPriceRow(controller),
+        const SizedBox(height: 10),
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 14),
+          decoration: BoxDecoration(
+            color: const Color(0xFF1A1A1A),
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: ThemeProvider.gold.withValues(alpha: 0.35)),
+          ),
+          child: Row(
+            children: [
+              const Icon(Icons.payments_outlined,
+                  color: ThemeProvider.gold, size: 22),
+              const SizedBox(width: 12),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if ((controller.packagesDetails.price ?? 0) >
+                      (controller.packagesDetails.off ?? 0))
+                    Text(
+                      elitePrice(
+                          controller.currencySide,
+                          controller.currencySymbol,
+                          controller.packagesDetails.price,
+                          digits: 2),
+                      style: ThemeProvider.sans(
+                        size: 12,
+                        color: ThemeProvider.greyColor,
+                      ).copyWith(decoration: TextDecoration.lineThrough),
+                    ),
+                  Text(
+                    elitePrice(
+                        controller.currencySide,
+                        controller.currencySymbol,
+                        (controller.packagesDetails.off ?? 0) > 0
+                            ? controller.packagesDetails.off
+                            : controller.packagesDetails.price,
+                        digits: 2),
+                    style: ThemeProvider.price(
+                      size: 18,
+                      weight: FontWeight.w700,
+                      color: ThemeProvider.gold,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
       ],
     );
   }
 
-  Widget _buildDetailRow(
-    IconData icon,
-    String label, {
-    Color? backgroundColor,
-    Color iconColor = Colors.black,
-  }) {
+  Widget _metaRow(IconData icon, String label) {
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 14),
       decoration: BoxDecoration(
-        color: backgroundColor,
+        color: const Color(0xFF1A1A1A),
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: iconColor.withOpacity(0.3)),
+        border: Border.all(color: const Color(0xFF2A2A2A)),
       ),
       child: Row(
         children: [
-          Icon(icon, color: iconColor, size: 28),
+          Icon(icon, color: ThemeProvider.gold, size: 20),
           const SizedBox(width: 12),
           Expanded(
             child: Text(
               label,
-              style: TextStyle(
-                fontWeight: FontWeight.w600,
-                fontSize: 16,
-                color: iconColor,
-              ),
+              style: ThemeProvider.sans(size: 14, color: Colors.white),
             ),
           ),
         ],
@@ -210,285 +259,173 @@ class _PackagesDetailsScreenState extends State<PackagesDetailsScreen> {
     );
   }
 
-  Widget _buildPriceRow(PackagesDetailsController controller) {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-      decoration: BoxDecoration(
-        color: Colors.green.shade50,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.green.withOpacity(0.3)),
-      ),
-      child: Row(
-        children: [
-          Icon(Icons.currency_rupee, color: Colors.green, size: 28),
-          const SizedBox(width: 12),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+  Widget _servicesList(PackagesDetailsController controller) {
+    final services = controller.packagesDetails.services ?? [];
+    return Column(
+      children: services.map((service) {
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 12),
+          child: Row(
             children: [
-              Text(
-                elitePrice(controller.currencySide, controller.currencySymbol,
-                    controller.packagesDetails.price),
-                style: TextStyle(
-                  fontSize: 14,
-                  color: Colors.grey,
-                  decoration: TextDecoration.lineThrough,
-                ),
-              ),
-              Text(
-                elitePrice(controller.currencySide, controller.currencySymbol,
-                    controller.packagesDetails.off),
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.green.shade800,
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-//   Widget _buildDetailRow(
-//     IconData icon,
-//     String label, {
-//     Color color = Colors.black,
-//     Color? backgroundColor,
-//     Color iconColor = Colors.black,
-//     TextStyle? textStyle,
-//   }) {
-//     return Container(
-//       padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-//       decoration: BoxDecoration(
-//         color: backgroundColor ?? Colors.transparent,
-//         borderRadius: BorderRadius.circular(8),
-//         border: Border.all(color: color.withOpacity(0.3)),
-//       ),
-//       child: Row(
-//         children: [
-//           Icon(
-//             icon,
-//             color: iconColor,
-//             size: 28,
-//           ),
-//           const SizedBox(width: 12),
-//           Expanded(
-//             child: Text(
-//               label,
-//               style: textStyle ??
-//                   TextStyle(
-//                     fontWeight: FontWeight.w600,
-//                     fontSize: 16,
-//                     color: color,
-//                   ),
-//             ),
-//           ),
-//         ],
-//       ),
-//     );
-//   }
-// }
-
-Widget _buildCard(Widget child) {
-  return SizedBox(
-    width: double.infinity,
-    child: Card(
-      color: const Color.fromARGB(255, 248, 248, 248),
-      elevation: 1,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-      child: Padding(
-        padding: const EdgeInsets.all(12.0),
-        child: child,
-      ),
-    ),
-  );
-}
-
-Widget _buildServicesList(PackagesDetailsController controller) {
-  return Column(
-    children: controller.packagesDetails.services!.map((service) {
-      return ListTile(
-        leading: const Icon(Icons.assignment, color: ThemeProvider.appColor),
-        title: Row(
-          children: [
-            Expanded(
-              child: Text(service.name!,
+              const Icon(Icons.spa_outlined,
+                  color: ThemeProvider.gold, size: 18),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  service.name ?? '',
                   maxLines: 3,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                  )),
-            ),
-            const SizedBox(width: 10),
-            _buildGenderIcon(service.gender),
-            const SizedBox(width: 5),
-          ],
-        ),
-        trailing: Text(
-          elitePrice(controller.currencySide, controller.currencySymbol,
-              service.price),
-          style: const TextStyle(fontWeight: FontWeight.bold),
-        ),
-      );
-    }).toList(),
-  );
-}
-
-Widget _buildGenderIcon(int? gender) {
-  if (gender == null) return const SizedBox.shrink();
-  switch (gender) {
-    case 0:
-      return const Icon(Icons.child_care, size: 16, color: Colors.orange);
-    case 1:
-      return const Icon(Icons.male, size: 16, color: Colors.blue);
-    case 2:
-      return const Icon(Icons.female, size: 16, color: Colors.pink);
-    default:
-      return const Icon(Icons.group, size: 16, color: Colors.green);
-  }
-}
-
-Widget _buildSpecialistList(PackagesDetailsController controller) {
-  return SizedBox(
-    height: 100,
-    child: ListView.builder(
-      scrollDirection: Axis.horizontal,
-      itemCount: controller.packagesDetails.specialist!.length,
-      itemBuilder: (context, index) {
-        final specialist = controller.packagesDetails.specialist![index];
-        return Padding(
-          padding: const EdgeInsets.all(8.0),
-          child: Column(
-            children: [
-              CircleAvatar(
-                radius: 30,
-                backgroundColor: ThemeProvider.appColor.withOpacity(0.1),
-                child: CircleAvatar(
-                  radius: 25,
-                  backgroundImage: NetworkImage(
-                    '${Environments.imageURL}${specialist.cover}',
-                  ),
-                  onBackgroundImageError: (_, __) => const Icon(Icons.person),
+                  style: ThemeProvider.sans(size: 14, color: Colors.white),
                 ),
               ),
-              const SizedBox(height: 4),
-              Text('${specialist.firstName} ${specialist.lastName}',
-                  style: const TextStyle(fontSize: 12)),
+              _genderIcon(service.gender),
+              const SizedBox(width: 8),
+              Text(
+                elitePrice(controller.currencySide, controller.currencySymbol,
+                    service.price,
+                    digits: 2),
+                style: ThemeProvider.price(
+                  size: 13,
+                  weight: FontWeight.w700,
+                  color: ThemeProvider.gold,
+                ),
+              ),
             ],
           ),
         );
-      },
-    ),
-  );
-}
+      }).toList(),
+    );
+  }
 
-Widget _buildGallery(PackagesDetailsController controller) {
-  return SizedBox(
-    height: 100,
-    child: ListView.builder(
-      scrollDirection: Axis.horizontal,
-      itemCount: controller.gallery.length,
-      itemBuilder: (context, index) {
-        return GestureDetector(
-          onTap: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => ImageGalleryScreen(
-                  gallery: controller.gallery,
-                  initialIndex: index,
+  Widget _genderIcon(int? gender) {
+    if (gender == null) return const SizedBox.shrink();
+    switch (gender) {
+      case 0:
+        return const Icon(Icons.child_care, size: 16, color: ThemeProvider.gold);
+      case 1:
+        return const Icon(Icons.male, size: 16, color: ThemeProvider.gold);
+      case 2:
+        return const Icon(Icons.female, size: 16, color: ThemeProvider.gold);
+      default:
+        return const Icon(Icons.group, size: 16, color: ThemeProvider.gold);
+    }
+  }
+
+  Widget _specialistList(PackagesDetailsController controller) {
+    final specialists = controller.packagesDetails.specialist ?? [];
+    if (specialists.isEmpty) {
+      return Text('No specialist listed'.tr,
+          style: ThemeProvider.sans(size: 13, color: ThemeProvider.greyColor));
+    }
+    return SizedBox(
+      height: 96,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        itemCount: specialists.length,
+        separatorBuilder: (_, __) => const SizedBox(width: 12),
+        itemBuilder: (context, index) {
+          final specialist = specialists[index];
+          return SizedBox(
+            width: 84,
+            child: Column(
+              children: [
+                CircleAvatar(
+                  radius: 28,
+                  backgroundColor: ThemeProvider.gold.withValues(alpha: 0.2),
+                  backgroundImage: NetworkImage(
+                    '${Environments.imageURL}${specialist.cover}',
+                  ),
                 ),
-              ),
-            );
-          },
-          child: Padding(
-            padding: const EdgeInsets.all(8.0),
+                const SizedBox(height: 6),
+                Text(
+                  '${specialist.firstName ?? ''} ${specialist.lastName ?? ''}'
+                      .trim(),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.center,
+                  style: ThemeProvider.sans(size: 11, color: Colors.white70),
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _gallery(PackagesDetailsController controller) {
+    return SizedBox(
+      height: 100,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        itemCount: controller.gallery.length,
+        separatorBuilder: (_, __) => const SizedBox(width: 10),
+        itemBuilder: (context, index) {
+          return GestureDetector(
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => ImageGalleryScreen(
+                    gallery: controller.gallery,
+                    initialIndex: index,
+                  ),
+                ),
+              );
+            },
             child: ClipRRect(
               borderRadius: BorderRadius.circular(10),
               child: Image.network(
                 '${Environments.imageURL}${controller.gallery[index]}',
                 width: 100,
+                height: 100,
                 fit: BoxFit.cover,
                 errorBuilder: (context, error, stackTrace) => Container(
                   width: 100,
-                  color: Colors.grey[200],
-                  child: const Icon(Icons.broken_image, color: Colors.grey),
+                  color: const Color(0xFF2A2A2A),
+                  child: const Icon(Icons.broken_image,
+                      color: ThemeProvider.greyColor),
                 ),
               ),
             ),
-          ),
-        );
-      },
-    ),
-  );
-}
+          );
+        },
+      ),
+    );
+  }
 
-Widget _buildBottomNavBar(PackagesDetailsController controller) {
-  return controller.packagesDetails.isBooked!
-      ? Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Row(
-            children: [
-              Expanded(
-                child: ElevatedButton.icon(
-                  icon: const Icon(Icons.remove_shopping_cart,
-                      color: Colors.white),
-                  label: Text('Remove Package'.tr,
-                      style: const TextStyle(color: Colors.white)),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: ThemeProvider.blackColor,
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12)),
+  Widget _bottomBar(PackagesDetailsController controller) {
+    final booked = controller.packagesDetails.isBooked == true;
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+        child: booked
+            ? Row(
+                children: [
+                  Expanded(
+                    child: EliteGoldButton(
+                      outlined: true,
+                      label: 'Remove Package'.tr,
+                      icon: Icons.remove_shopping_cart_outlined,
+                      onTap: controller.removePackageFromCart,
+                    ),
                   ),
-                  onPressed: controller.removePackageFromCart,
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: ElevatedButton.icon(
-                  icon: const Icon(Icons.shopping_cart_checkout,
-                      color: Colors.white),
-                  label: Text('Checkout'.tr,
-                      style: const TextStyle(color: Colors.white)),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: ThemeProvider.pink,
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12)),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: EliteGoldButton(
+                      label: 'Checkout'.tr,
+                      icon: Icons.shopping_cart_checkout,
+                      onTap: controller.onCheckout,
+                    ),
                   ),
-                  onPressed: controller.onCheckout,
-                ),
+                ],
+              )
+            : EliteGoldButton(
+                label: 'Book Now'.tr,
+                icon: Icons.shopping_cart_outlined,
+                onTap: controller.addPackageToCart,
               ),
-            ],
-          ),
-        )
-      : Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: ElevatedButton.icon(
-            icon: Icon(
-              controller.packagesDetails.isBooked!
-                  ? Icons.remove_shopping_cart
-                  : Icons.shopping_cart_checkout,
-              color: Colors.white,
-            ),
-            label: Text(
-              'Book Now'.tr,
-              style: const TextStyle(
-                  fontSize: 16,
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold),
-            ),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: ThemeProvider.appColor,
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12)),
-              padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
-            ),
-            onPressed: controller.addPackageToCart,
-          ),
-        );
+      ),
+    );
+  }
 }

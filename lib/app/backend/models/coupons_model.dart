@@ -238,7 +238,8 @@ class CouponsModel {
         _truthy(json['for_first_user']);
     alreadyUsed = _truthy(json['already_used']) ||
         _truthy(json['used']) ||
-        json['eligible'] == false;
+        json['eligible'] == false ||
+        json['can_apply'] == false;
 
     try {
       final rawPartners = json['partners'];
