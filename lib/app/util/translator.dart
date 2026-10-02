@@ -340,7 +340,7 @@ class LocaleString extends Translations {
           "Cancelled": "Cancelled",
           "Refunded": "Refunded",
           "Delayed": "Delayed",
-          "Panding Payment": "Panding Payment",
+          "Panding Payment": "Pending Payment",
           "Status Updated": "Status Updated",
           "Rate Your Appointment": "Rate Your Appointment",
           "Owner": "Owner",

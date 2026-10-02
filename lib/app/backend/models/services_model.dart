@@ -178,6 +178,27 @@ class ServicesModel {
     return 0;
   }
 
+  double get amountWithTax {
+    if ((customerPays ?? 0) > 0) return customerPays!;
+    final net = amountWithoutTax;
+    final tax = resolvedTaxAmount;
+    if (net > 0 && tax > 0) {
+      return double.parse((net + tax).toStringAsFixed(2));
+    }
+    return (discount ?? 0) > 0 ? (off ?? price ?? 0) : (price ?? 0);
+  }
+
+  double get amountWithoutTax {
+    if ((taxableValue ?? 0) > 0) return taxableValue!;
+    final inclusive =
+        (discount ?? 0) > 0 ? (off ?? price ?? 0) : (price ?? 0);
+    final tax = resolvedTaxAmount;
+    if (tax > 0 && inclusive > tax) {
+      return double.parse((inclusive - tax).toStringAsFixed(2));
+    }
+    return inclusive;
+  }
+
   String get resolvedTaxType {
     if (taxType.isNotEmpty) return taxType;
     if ((vatAmount ?? 0) > 0) return 'VAT';

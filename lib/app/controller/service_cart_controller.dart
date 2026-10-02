@@ -5,6 +5,8 @@ import 'package:salon_user/app/backend/models/packages_details_model.dart';
 import 'package:salon_user/app/backend/models/service_cart_model.dart';
 import 'package:salon_user/app/backend/models/services_model.dart';
 import 'package:salon_user/app/backend/parse/service_cart_parse.dart';
+import 'package:salon_user/app/helper/discount_rules.dart';
+import 'package:salon_user/app/helper/tax_availability.dart';
 import 'package:salon_user/app/util/constant.dart';
 import 'package:salon_user/app/util/facebook_service.dart';
 
@@ -27,36 +29,12 @@ class ServiceCartController extends GetxController implements GetxService {
   double get payAmount => _payAmount > 0 ? _payAmount : _grandTotal;
 
   double couponDiscountAmount() {
-    final value = _selectedCoupon.discount ?? 0;
-    if (value <= 0) return 0;
-    if (_listingPricesAlreadyIncludeOffer()) return 0;
-    double amount;
-    if ((_selectedCoupon.type ?? 1) == 1) {
-      amount = _totalPrice * (value / 100);
-      if (_selectedCoupon.upto != null &&
-          _selectedCoupon.upto! > 0 &&
-          amount > _selectedCoupon.upto!) {
-        amount = _selectedCoupon.upto!;
-      }
-    } else {
-      amount = value;
-    }
-    if (amount > _totalPrice) amount = _totalPrice;
-    return amount;
-  }
-
-  bool _listingPricesAlreadyIncludeOffer() {
-    for (final item in _savedInCart.services ?? []) {
-      final price = item.price ?? 0;
-      final off = item.off ?? 0;
-      if ((item.discount ?? 0) > 0 && off > 0 && off < price) return true;
-    }
-    for (final item in _savedInCart.packages ?? []) {
-      final price = item.price ?? 0;
-      final off = item.off ?? 0;
-      if ((item.discount ?? 0) > 0 && off > 0 && off < price) return true;
-    }
-    return false;
+    return DiscountRules.couponOff(
+      type: _selectedCoupon.type ?? 1,
+      value: _selectedCoupon.discount ?? 0,
+      upto: _selectedCoupon.upto ?? 0,
+      base: _totalPrice,
+    ).amount;
   }
 
   void applyApiPayAmount(double amount) {
@@ -259,6 +237,9 @@ class ServiceCartController extends GetxController implements GetxService {
     taxableValue = double.parse(taxableValue.toStringAsFixed(2));
     if (gstRate > 0) {
       _orderTax = gstRate;
+    }
+    if (TaxAvailability.taxType.isNotEmpty) {
+      taxTypeLabel = TaxAvailability.taxTypeLabel;
     }
 
     _serviceChargeAmount = _totalPrice * (_serviceCharge / 100);

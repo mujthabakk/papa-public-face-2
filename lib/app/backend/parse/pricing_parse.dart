@@ -2,6 +2,7 @@ import 'package:salon_user/app/backend/api/api.dart';
 import 'package:salon_user/app/backend/api/api_response.dart';
 import 'package:salon_user/app/backend/models/pricing_model.dart';
 import 'package:salon_user/app/helper/shared_pref.dart';
+import 'package:salon_user/app/helper/tax_availability.dart';
 import 'package:salon_user/app/util/constant.dart';
 
 class PricingParser {
@@ -25,6 +26,62 @@ class PricingParser {
     final response =
         await apiService.getPublic(AppConstants.pricingGetTaxSettings);
     return _parseTaxSettings(response.body);
+  }
+
+  /// GET|POST /api/v1/pricing/getTaxAvailability — body `{ "uid": 1642 }` is enough.
+  Future<({bool success, String message, TaxAvailabilityData? data})>
+      fetchTaxAvailability({int? uid}) async {
+    final body = <String, dynamic>{};
+    final rawUid = uid?.toString() ??
+        sharedPreferencesManager.getString('uid') ??
+        '';
+    if (rawUid.isNotEmpty && rawUid != '0') {
+      body['uid'] = int.tryParse(rawUid) ?? rawUid;
+    }
+    var response = await apiService.postPublic(
+      AppConstants.pricingGetTaxAvailability,
+      body,
+    );
+    var parsed = _parseTaxAvailability(response.body);
+    if (!parsed.success) {
+      final qs = body.isEmpty
+          ? AppConstants.pricingGetTaxAvailability
+          : '${AppConstants.pricingGetTaxAvailability}?uid=${body['uid']}';
+      response = await apiService.getPublic(qs);
+      parsed = _parseTaxAvailability(response.body);
+    }
+    if (parsed.success && parsed.data != null) {
+      TaxAvailability.apply(
+        available: parsed.data!.taxAvailable,
+        taxType: parsed.data!.taxType,
+      );
+    }
+    return parsed;
+  }
+
+  ({bool success, String message, TaxAvailabilityData? data})
+      _parseTaxAvailability(dynamic body) {
+    final map = ApiBody.asMap(body);
+    if (map == null) {
+      return (
+        success: false,
+        message: ApiService.connectionIssue,
+        data: null,
+      );
+    }
+    final message = map['message']?.toString() ?? '';
+    if (map['success'] != true) {
+      return (success: false, message: message, data: null);
+    }
+    final data = map['data'];
+    if (data is! Map) {
+      return (success: false, message: message, data: null);
+    }
+    return (
+      success: true,
+      message: message,
+      data: TaxAvailabilityData.fromJson(Map<String, dynamic>.from(data)),
+    );
   }
 
   ({bool success, String message, TaxSettingsData? data}) _parseTaxSettings(

@@ -32,8 +32,13 @@ class ProductsController extends GetxController implements GetxService {
   @override
   void onInit() {
     super.onInit();
-    selectedCateId = Get.arguments[0].toString();
-    selectedSubCateId = Get.arguments[1].toString();
+    final args = Get.arguments;
+    if (args is List && args.isNotEmpty) {
+      selectedCateId = args[0]?.toString() ?? '';
+      if (args.length > 1) {
+        selectedSubCateId = args[1]?.toString() ?? '';
+      }
+    }
     update();
     debugPrint('cate id == $selectedCateId');
     debugPrint('sub cate id == $selectedSubCateId');
@@ -55,10 +60,14 @@ class ProductsController extends GetxController implements GetxService {
       var body = myMap['data'];
 
       _productsList = [];
-      body.forEach((data) {
-        ProductsListModel products = ProductsListModel.fromJson(data);
-        _productsList.add(products);
-      });
+      if (body is List) {
+        for (final data in body) {
+          if (data is! Map) continue;
+          _productsList.add(
+            ProductsListModel.fromJson(Map<String, dynamic>.from(data)),
+          );
+        }
+      }
       _productsList.removeWhere((product) => product.status == 0);
 
       checkCartData();

@@ -22,6 +22,27 @@ class TaxSettingsData {
   }
 }
 
+class TaxAvailabilityData {
+  final String taxType;
+  final bool taxAvailable;
+
+  TaxAvailabilityData({
+    required this.taxType,
+    required this.taxAvailable,
+  });
+
+  factory TaxAvailabilityData.fromJson(Map<String, dynamic> json) {
+    final raw = json['tax_available'];
+    final available = raw == true ||
+        raw?.toString() == '1' ||
+        raw?.toString().toLowerCase() == 'true';
+    return TaxAvailabilityData(
+      taxType: (json['tax_type'] ?? json['taxType'] ?? '').toString().trim(),
+      taxAvailable: available,
+    );
+  }
+}
+
 class PricingBookingFields {
   final double total;
   final double serviceTax;

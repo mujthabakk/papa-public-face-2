@@ -6,35 +6,48 @@ class PaymentModel {
   int? status;
   String? currencyCode;
   String? extraField;
+  String? type;
 
-  PaymentModel(
-      {this.id,
-      this.name,
-      this.cover,
-      this.env,
-      this.status,
-      this.currencyCode,
-      this.extraField});
+  PaymentModel({
+    this.id,
+    this.name,
+    this.cover,
+    this.env,
+    this.status,
+    this.currencyCode,
+    this.extraField,
+    this.type,
+  });
+
+  bool get isCod {
+    final t = (type ?? '').toLowerCase();
+    if (t == 'cod') return true;
+    return id == 1;
+  }
+
+  bool get isOnline => !isCod;
 
   PaymentModel.fromJson(Map<String, dynamic> json) {
-    id = int.parse(json['id'].toString());
-    name = json['name'];
-    cover = json['cover'];
-    env = int.parse(json['env'].toString());
-    status = int.parse(json['status'].toString());
-    currencyCode = json['currency_code'];
-    extraField = json['extra_field'];
+    id = int.tryParse(json['id']?.toString() ?? '') ?? 0;
+    name = json['name']?.toString();
+    cover = json['cover']?.toString();
+    env = int.tryParse(json['env']?.toString() ?? '');
+    status = int.tryParse(json['status']?.toString() ?? '') ?? 1;
+    currencyCode = json['currency_code']?.toString();
+    extraField = json['extra_field']?.toString();
+    type = json['type']?.toString();
   }
 
   Map<String, dynamic> toJson() {
-    final Map<String, dynamic> data = <String, dynamic>{};
-    data['id'] = id;
-    data['name'] = name;
-    data['cover'] = cover;
-    data['env'] = env;
-    data['status'] = status;
-    data['currency_code'] = currencyCode;
-    data['extra_field'] = extraField;
-    return data;
+    return {
+      'id': id,
+      'name': name,
+      'cover': cover,
+      'env': env,
+      'status': status,
+      'currency_code': currencyCode,
+      'extra_field': extraField,
+      'type': type,
+    };
   }
 }

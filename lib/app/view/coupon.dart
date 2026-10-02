@@ -321,9 +321,8 @@ class _CouponScreenState extends State<CouponScreen> {
                         onTap: () => value.bookOffer(coupon),
                       ),
                     ],
-                    if (!coupon.canBook || value.action != 'browse') ...[
-                      const SizedBox(height: 12),
-                      Container(
+                    const SizedBox(height: 12),
+                    Container(
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
                           color: ThemeProvider.backgroundColor,
@@ -353,14 +352,9 @@ class _CouponScreenState extends State<CouponScreen> {
                             ),
                             OutlinedButton.icon(
                               onPressed: () {
-                                if (!value.canUseOffer(coupon)) return;
                                 Clipboard.setData(
                                     ClipboardData(text: coupon.code ?? ''));
                                 successToast('Code copied');
-                                if (value.action != 'browse' &&
-                                    coupon.id != null) {
-                                  value.saveCoupon(coupon.id!);
-                                }
                               },
                               icon: const Icon(Icons.copy, size: 14),
                               label: Text('Copy Code'.tr,
@@ -377,7 +371,6 @@ class _CouponScreenState extends State<CouponScreen> {
                           ],
                         ),
                       ),
-                    ],
                   ],
                 ),
           ),

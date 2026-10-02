@@ -83,13 +83,17 @@ class EliteAppBar extends StatelessWidget implements PreferredSizeWidget {
                           Scaffold.maybeOf(context)?.openDrawer();
                         }),
               ),
-        title: Text(
-          title ?? 'PAPA BEAR',
-          style: ThemeProvider.serif(
-            size: 20,
-            weight: FontWeight.w700,
-            color: ThemeProvider.gold,
-            letterSpacing: 2.4,
+        title: FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Text(
+            title ?? 'PAPA BEAR',
+            maxLines: 1,
+            style: ThemeProvider.serif(
+              size: (title ?? 'PAPA BEAR') == 'PAPA BEAR' ? 20 : 17,
+              weight: FontWeight.w700,
+              color: ThemeProvider.gold,
+              letterSpacing: (title ?? 'PAPA BEAR') == 'PAPA BEAR' ? 2.4 : 0.2,
+            ),
           ),
         ),
         actions: [

@@ -2,6 +2,7 @@ import 'package:carousel_slider/carousel_slider.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:salon_user/app/controller/home_controller.dart';
+import 'package:salon_user/app/helper/shared_pref.dart';
 import 'package:salon_user/app/controller/languages_controller.dart';
 import 'package:salon_user/app/controller/common_notification_controller.dart';
 import 'package:salon_user/app/controller/service_cart_controller.dart';
@@ -23,6 +24,16 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   bool _spinShown = false;
+
+  String _hiName() {
+    if (!Get.isRegistered<SharedPreferencesManager>()) return 'Hi';
+    final prefs = Get.find<SharedPreferencesManager>();
+    final name =
+        '${prefs.getString('first_name') ?? ''} ${prefs.getString('last_name') ?? ''}'
+            .trim();
+    if (name.isEmpty) return 'Hi';
+    return 'Hi $name';
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -48,6 +59,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           bottom: false,
                           child: GetBuilder<CommonNotificationController>(
                             builder: (notify) => EliteAppBar(
+                              title: _hiName(),
                               onMenu: () =>
                                   _scaffoldKey.currentState?.openDrawer(),
                               onNotification: () => Get.toNamed(

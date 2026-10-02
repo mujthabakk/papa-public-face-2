@@ -5,6 +5,7 @@ import 'package:salon_user/app/controller/product_cart_controller.dart';
 import 'package:salon_user/app/controller/product_payment_controller.dart';
 import 'package:salon_user/app/env.dart';
 import 'package:salon_user/app/helper/map_style.dart';
+import 'package:salon_user/app/helper/tax_availability.dart';
 import 'package:salon_user/app/util/theme.dart';
 import 'package:salon_user/app/view/widgets/elite_ui.dart';
 
@@ -16,6 +17,17 @@ class ProductPaymentScreen extends StatefulWidget {
 }
 
 class _ProductPaymentScreenState extends State<ProductPaymentScreen> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      if (Get.isRegistered<ProductPaymentController>()) {
+        Get.find<ProductPaymentController>().getPaymentMethods();
+      }
+    });
+  }
+
   String _addrTitle(int? t) {
     switch (t) {
       case 1:
@@ -174,6 +186,18 @@ class _ProductPaymentScreenState extends State<ProductPaymentScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _header(Icons.account_balance_wallet_outlined, 'Payment Method'),
+        if (value.paymentList.isEmpty)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: Text(
+              'No payment methods available for this country.'.tr,
+              style: ThemeProvider.sans(
+                size: 13,
+                color: ThemeProvider.greyColor,
+              ),
+            ),
+          )
+        else
         ...List.generate(value.paymentList.length, (i) {
           final p = value.paymentList[i];
           final selected = p.id == value.paymentId;
@@ -272,10 +296,14 @@ class _ProductPaymentScreenState extends State<ProductPaymentScreen> {
                           style: ThemeProvider.sans(size: 13)),
                     ),
                     Text(
-                      elitePrice(value.currencySide, value.currencySymbol,
-                          p.unitPayPrice * p.quantity,
+                      elitePrice(
+                          value.currencySide,
+                          value.currencySymbol,
+                          TaxAvailability.showTax && p.lineTaxableValue > 0
+                              ? p.lineTaxableValue
+                              : p.unitPayPrice * p.quantity,
                           digits: 2),
-                      style: ThemeProvider.sans(
+                      style: ThemeProvider.price(
                           size: 13, weight: FontWeight.w600),
                     ),
                   ],
@@ -283,9 +311,13 @@ class _ProductPaymentScreenState extends State<ProductPaymentScreen> {
               )),
           const Divider(color: Color(0xFF2A2A2A)),
           _row(
-              'Subtotal',
-              elitePrice(value.currencySide, value.currencySymbol,
-                  cart.totalPrice,
+              'Original Amount'.tr,
+              elitePrice(
+                  value.currencySide,
+                  value.currencySymbol,
+                  TaxAvailability.showTax && cart.taxableValue > 0
+                      ? cart.taxableValue
+                      : cart.totalPrice,
                   digits: 2)),
           if (value.discount > 0)
             _row(
@@ -300,22 +332,24 @@ class _ProductPaymentScreenState extends State<ProductPaymentScreen> {
               elitePrice(value.currencySide, value.currencySymbol,
                   value.deliveryPrice,
                   digits: 2)),
-          _row(
-              'Taxable',
-              elitePrice(
-                  value.currencySide,
-                  value.currencySymbol,
-                  value.taxableValue > 0
-                      ? value.taxableValue
-                      : cart.taxableValue,
-                  digits: 2)),
-          _row(
-              cart.taxTypeLabel,
-              elitePrice(
-                  value.currencySide,
-                  value.currencySymbol,
-                  value.taxAmount > 0 ? value.taxAmount : cart.taxAmount,
-                  digits: 2)),
+          if (TaxAvailability.showTax) ...[
+            _row(
+                'Taxable',
+                elitePrice(
+                    value.currencySide,
+                    value.currencySymbol,
+                    value.taxableValue > 0
+                        ? value.taxableValue
+                        : cart.taxableValue,
+                    digits: 2)),
+            _row(
+                cart.taxTypeLabel,
+                elitePrice(
+                    value.currencySide,
+                    value.currencySymbol,
+                    value.taxAmount > 0 ? value.taxAmount : cart.taxAmount,
+                    digits: 2)),
+          ],
           const Divider(color: Color(0xFF2A2A2A)),
           Text('TOTAL AMOUNT'.tr,
               style: ThemeProvider.sans(
@@ -351,7 +385,8 @@ class _ProductPaymentScreenState extends State<ProductPaymentScreen> {
                 children: [
                   const Icon(Icons.lock_outline, size: 16),
                   const SizedBox(width: 8),
-                  Text('Pay Now'.tr,
+                  Text(
+                      value.isCodSelected ? 'Book Now'.tr : 'Pay Now'.tr,
                       style:
                           ThemeProvider.serif(size: 18, color: Colors.black)),
                 ],
@@ -371,7 +406,7 @@ class _ProductPaymentScreenState extends State<ProductPaymentScreen> {
           Text(label, style: ThemeProvider.sans(size: 13)),
           const Spacer(),
           Text(amount,
-              style: ThemeProvider.sans(size: 13, weight: FontWeight.w600)),
+              style: ThemeProvider.price(size: 13, weight: FontWeight.w600)),
         ],
       ),
     );

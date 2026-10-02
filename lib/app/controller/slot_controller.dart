@@ -16,6 +16,7 @@ import 'package:salon_user/app/controller/payment_controller.dart';
 import 'package:salon_user/app/controller/service_cart_controller.dart';
 import 'package:salon_user/app/controller/services_controller.dart';
 import 'package:salon_user/app/helper/router.dart';
+import 'package:salon_user/app/helper/slot_time.dart';
 import 'package:salon_user/app/util/theme.dart';
 import 'package:salon_user/app/util/toast.dart';
 
@@ -185,24 +186,8 @@ class SlotController extends GetxController implements GetxService {
         String todayDate = DateFormat('yyyy-MM-dd').format(now);
 
         if (date == todayDate) {
-          // Debugging: Print current time
-          print("Current time: ${DateFormat('hh:mm a').format(now)}");
-
-          // Filter out past slots
           datas.slots = datas.slots!.where((slot) {
-            try {
-              DateTime slotTime = DateFormat('hh:mm a').parse(slot.startTime!);
-              DateTime currentTime = DateFormat('hh:mm a')
-                  .parse(DateFormat('hh:mm a').format(now));
-
-              bool isFutureSlot = slotTime.isAfter(currentTime);
-              print(
-                  "Checking slot: ${slot.startTime} => Allowed: $isFutureSlot");
-              return isFutureSlot;
-            } catch (e) {
-              print("Error parsing time: ${slot.startTime}, Error: $e");
-              return false; // If parsing fails, ignore this slot
-            }
+            return SlotTime.isAfterNow(start: slot.startTime, date: date);
           }).toList();
         }
 

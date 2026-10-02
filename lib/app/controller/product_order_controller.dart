@@ -36,7 +36,7 @@ class ProductOrderController extends GetxController
     'Cancelled',
     'Refunded',
     'Delayed',
-    'Panding Payment',
+    'Pending Payment',
   ];
   ProductOrderController({required this.parser});
 

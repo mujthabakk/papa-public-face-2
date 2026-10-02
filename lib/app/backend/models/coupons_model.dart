@@ -212,7 +212,20 @@ class CouponsModel {
         _offerString(json['offer_code']);
     type = int.tryParse(json['type']?.toString() ?? '') ?? 1;
     forWhome = int.tryParse(json['for']?.toString() ?? '');
-    discount = double.tryParse(json['discount']?.toString() ?? '') ?? 0;
+    discount = double.tryParse(json['discount']?.toString() ?? '') ??
+        double.tryParse(json['off']?.toString() ?? '') ??
+        double.tryParse(json['percent']?.toString() ?? '') ??
+        double.tryParse(json['percentage']?.toString() ?? '') ??
+        0;
+    if ((discount ?? 0) <= 0) {
+      final blob =
+          '${json['name'] ?? ''} ${json['short_descriptions'] ?? ''} ${json['description'] ?? ''}';
+      final match = RegExp(r'(\d+(?:\.\d+)?)\s*%').firstMatch(blob);
+      if (match != null) {
+        discount = double.tryParse(match.group(1) ?? '') ?? 0;
+        type = 1;
+      }
+    }
     upto = double.tryParse(json['upto']?.toString() ?? '') ?? 0;
     startDate = _offerString(json['start_date']);
     expire = _offerString(json['expire']);

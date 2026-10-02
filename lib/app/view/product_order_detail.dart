@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import 'package:salon_user/app/controller/product_order_detail_controller.dart';
 import 'package:salon_user/app/env.dart';
 import 'package:salon_user/app/helper/router.dart';
+import 'package:salon_user/app/helper/tax_availability.dart';
 import 'package:salon_user/app/util/theme.dart';
 import 'package:salon_user/app/view/widgets/elite_ui.dart';
 
@@ -164,8 +165,13 @@ class _ProductOrderDetailState extends State<ProductOrderDetail> {
             _itemRow('Delivery'.tr, 'Shipping'.tr,
                 _money(value.distanceCost, value),
                 muted: true),
-          if (_positive(value.serviceTax))
-            _itemRow('Taxes'.tr, 'VAT'.tr, _money(value.serviceTax, value),
+          if (TaxAvailability.showTax && _positive(value.serviceTax))
+            _itemRow(
+                'Taxes'.tr,
+                TaxAvailability.taxTypeLabel == 'Tax'
+                    ? 'VAT'.tr
+                    : TaxAvailability.taxTypeLabel,
+                _money(value.serviceTax, value),
                 muted: true),
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 12),

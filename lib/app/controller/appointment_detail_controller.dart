@@ -137,7 +137,7 @@ class AppointmentDetailController extends GetxController
       } else if (appointmentInfo.status == 7) {
         orderStatus = 'Delayed'.tr;
       } else if (appointmentInfo.status == 8) {
-        orderStatus = 'Panding Payment'.tr;
+        orderStatus = 'Pending Payment'.tr;
       }
       debugPrint(orderStatus);
       if (appointmentInfo.salonId != 0) {

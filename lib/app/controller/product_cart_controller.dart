@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import 'package:salon_user/app/backend/models/products_list_model.dart';
 import 'package:salon_user/app/backend/parse/product_cart_parse.dart';
 import 'package:salon_user/app/controller/tabs_controller.dart';
+import 'package:salon_user/app/helper/tax_availability.dart';
 import 'package:salon_user/app/util/constant.dart';
 
 class ProductCartController extends GetxController implements GetxService {
@@ -126,6 +127,9 @@ class ProductCartController extends GetxController implements GetxService {
     taxableValue = double.parse(taxableValue.toStringAsFixed(2));
     if (rate > 0) {
       _orderTax = rate;
+    }
+    if (TaxAvailability.taxType.isNotEmpty) {
+      taxTypeLabel = TaxAvailability.taxTypeLabel;
     }
 
     _grandTotal = double.parse(

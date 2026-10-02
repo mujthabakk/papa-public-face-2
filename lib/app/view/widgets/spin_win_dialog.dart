@@ -649,7 +649,7 @@ class _SpinnerRewardPopupState extends State<_SpinnerRewardPopup>
                   const SizedBox(height: 6),
                   Text(
                     amountText,
-                    style: ThemeProvider.serif(
+                    style: ThemeProvider.price(
                       size: 44,
                       weight: FontWeight.w800,
                       color: Colors.white,
@@ -734,7 +734,7 @@ class _SpinnerRewardPopupState extends State<_SpinnerRewardPopup>
                         widget.subtitle ??
                             'Reward is pending. Tap Redeem to move it to your wallet.',
                         textAlign: TextAlign.center,
-                        style: ThemeProvider.sans(
+                        style: ThemeProvider.price(
                           size: 11,
                           color: Colors.white70,
                         ).copyWith(height: 1.4),

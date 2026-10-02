@@ -5,6 +5,7 @@ import 'package:salon_user/app/controller/product_cart_controller.dart';
 import 'package:salon_user/app/controller/tabs_controller.dart';
 import 'package:salon_user/app/env.dart';
 import 'package:salon_user/app/helper/router.dart';
+import 'package:salon_user/app/helper/tax_availability.dart';
 import 'package:salon_user/app/util/theme.dart';
 import 'package:salon_user/app/view/widgets/elite_ui.dart';
 
@@ -284,20 +285,27 @@ class _CartScreenState extends State<CartScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   _bill(
-                      'Subtotal',
-                      elitePrice(value.currencySide, value.currencySymbol,
-                          productCart.totalPrice,
+                      'Original Amount'.tr,
+                      elitePrice(
+                          value.currencySide,
+                          value.currencySymbol,
+                          TaxAvailability.showTax &&
+                                  productCart.taxableValue > 0
+                              ? productCart.taxableValue
+                              : productCart.totalPrice,
                           digits: 2)),
-                  _bill(
-                      'Taxable',
-                      elitePrice(value.currencySide, value.currencySymbol,
-                          productCart.taxableValue,
-                          digits: 2)),
-                  _bill(
-                      productCart.taxTypeLabel,
-                      elitePrice(value.currencySide, value.currencySymbol,
-                          productCart.taxAmount,
-                          digits: 2)),
+                  if (TaxAvailability.showTax) ...[
+                    _bill(
+                        'Taxable',
+                        elitePrice(value.currencySide, value.currencySymbol,
+                            productCart.taxableValue,
+                            digits: 2)),
+                    _bill(
+                        productCart.taxTypeLabel,
+                        elitePrice(value.currencySide, value.currencySymbol,
+                            productCart.taxAmount,
+                            digits: 2)),
+                  ],
                   const SizedBox(height: 10),
                   Text('TOTAL AMOUNT'.tr,
                       style: ThemeProvider.sans(
@@ -373,7 +381,7 @@ class _CartScreenState extends State<CartScreen> {
           Text(label, style: ThemeProvider.sans(size: 13)),
           const Spacer(),
           Text(amount,
-              style: ThemeProvider.sans(size: 13, weight: FontWeight.w600)),
+              style: ThemeProvider.price(size: 13, weight: FontWeight.w600)),
         ],
       ),
     );

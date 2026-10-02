@@ -164,12 +164,6 @@ class TimedOfferController extends GetxController implements GetxService {
   }
 
   void copyCode(TimedOfferRow row) {
-    if (!row.isScheduleActive) {
-      showToast(row.scheduleHint.isNotEmpty
-          ? row.scheduleHint
-          : 'Offer is not live now');
-      return;
-    }
     if (row.displayCode.isEmpty) {
       showToast('Data is not available'.tr);
       return;

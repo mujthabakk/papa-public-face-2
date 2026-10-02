@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import 'package:salon_user/app/controller/checkout_controller.dart';
 import 'package:salon_user/app/controller/service_cart_controller.dart';
 import 'package:salon_user/app/env.dart';
+import 'package:salon_user/app/helper/tax_availability.dart';
 import 'package:salon_user/app/util/theme.dart';
 import 'package:salon_user/app/view/widgets/elite_ui.dart';
 
@@ -69,7 +70,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                       price: elitePrice(
                         value.currencySide,
                         value.currencySymbol,
-                        (e.value.discount ?? 0) > 0 ? e.value.off : e.value.price,
+                        e.value.amountWithTax,
                         digits: 2,
                       ),
                       badge: 'SERVICE',
@@ -211,15 +212,18 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                         elitePrice(value.currencySide, value.currencySymbol,
                             cart.serviceChargeAmount,
                             digits: 2)),
-                    _bill(
-                      '${cart.taxTypeLabel} (${cart.orderTax}%)',
-                      elitePrice(
-                        value.currencySide,
-                        value.currencySymbol,
-                        value.taxAmount > 0 ? value.taxAmount : cart.taxAmount,
-                        digits: 2,
+                    if (TaxAvailability.showTax)
+                      _bill(
+                        '${cart.taxTypeLabel} (${cart.orderTax}%)',
+                        elitePrice(
+                          value.currencySide,
+                          value.currencySymbol,
+                          value.taxAmount > 0
+                              ? value.taxAmount
+                              : cart.taxAmount,
+                          digits: 2,
+                        ),
                       ),
-                    ),
                     if (value.couponDiscount > 0)
                       _bill(
                         value.appliedCouponName.isNotEmpty
@@ -228,8 +232,10 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                         '-${elitePrice(value.currencySide, value.currencySymbol, value.couponDiscount, digits: 2)}',
                         amountColor: ThemeProvider.gold,
                       ),
-                    if (value.taxAmount > 0 ||
-                        Get.find<ServiceCartController>().taxAmount > 0) ...[
+                    if (TaxAvailability.showTax &&
+                        (value.taxAmount > 0 ||
+                            Get.find<ServiceCartController>().taxAmount >
+                                0)) ...[
                       const SizedBox(height: 6),
                       Text(
                         'Taxable: ${elitePrice(value.currencySide, value.currencySymbol, value.taxableValue > 0 ? value.taxableValue : Get.find<ServiceCartController>().taxableValue, digits: 2)} | ${Get.find<ServiceCartController>().taxTypeLabel}: ${elitePrice(value.currencySide, value.currencySymbol, value.taxAmount > 0 ? value.taxAmount : Get.find<ServiceCartController>().taxAmount, digits: 2)}',
@@ -256,7 +262,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                               value.originalAmount,
                               digits: 2,
                             ),
-                            style: ThemeProvider.sans(
+                            style: ThemeProvider.price(
                               size: 14,
                               color: ThemeProvider.greyColor,
                             ).copyWith(
@@ -389,7 +395,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
           const Spacer(),
           Text(
             amount,
-            style: ThemeProvider.sans(
+            style: ThemeProvider.price(
               size: 13,
               weight: FontWeight.w600,
               color: amountColor ?? Colors.white,

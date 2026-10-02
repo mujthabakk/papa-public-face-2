@@ -328,7 +328,10 @@ class _FilterScreenState extends State<FilterScreen> {
 
   Widget _typeChip(
       UnifiedSearchController controller, Gender value, String label) {
-    final selected = controller.selectedGender.value == value;
+    final selected = (value == Gender.male && controller.isMale) ||
+        (value == Gender.female && controller.isFemale) ||
+        (value == Gender.kid && controller.isKid) ||
+        (value == Gender.family && controller.isFamily);
     return _chip(
       label: label,
       selected: selected,

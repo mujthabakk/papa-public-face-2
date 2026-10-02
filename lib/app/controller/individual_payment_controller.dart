@@ -17,6 +17,8 @@ import 'package:salon_user/app/controller/individual_slot_controller.dart';
 import 'package:salon_user/app/controller/service_cart_controller.dart';
 import 'package:salon_user/app/controller/tabs_controller.dart';
 import 'package:salon_user/app/env.dart';
+import 'package:salon_user/app/helper/country_payment.dart';
+import 'package:salon_user/app/helper/discount_rules.dart';
 import 'package:salon_user/app/helper/router.dart';
 import 'package:salon_user/app/util/constant.dart';
 import 'package:salon_user/app/util/theme.dart';
@@ -45,6 +47,8 @@ class IndividualPaymentController extends GetxController
 
   int paymentId = 0;
   String payMethodName = '';
+  bool codEnabled = true;
+  bool onlineEnabled = true;
 
   String offerId = '';
   String offerName = '';
@@ -99,12 +103,11 @@ class IndividualPaymentController extends GetxController
     currencySide = parser.getCurrencySide();
     currencySymbol = parser.getCurrencySymbol();
     getSalonDetails();
-    getPaymentMethods();
     getMyWalletAmount();
     debugPrint('*****************${Get.find<ServiceCartController>().salonId}');
     final cartCoupon = Get.find<ServiceCartController>().selectedCoupon;
     if ((cartCoupon.code ?? '').isNotEmpty || (cartCoupon.id ?? 0) > 0) {
-      onSaveCoupon(cartCoupon);
+      onSaveCoupon(cartCoupon, ask: false);
     }
 
     _razorpay = Razorpay();
@@ -292,10 +295,14 @@ class IndividualPaymentController extends GetxController
     }
   }
 
-  void updateWalletChecked(bool status) {
+  Future<void> updateWalletChecked(bool status) async {
     if (status && hasCoupon) {
+      final allow = await DiscountRules.confirmOnlyOne(useRewards: true);
+      if (!allow) {
+        update();
+        return;
+      }
       _clearCoupon();
-      showToast('Coupon removed. Use either a coupon or wallet.'.tr);
     }
     isWalletChecked = status;
     calculateAllCharge();
@@ -312,19 +319,33 @@ class IndividualPaymentController extends GetxController
     }
   }
 
-  void onSaveCoupon(CouponsModel offer) {
+  Future<void> onSaveCoupon(CouponsModel offer, {bool ask = true}) async {
     final applying =
         (offer.code ?? '').trim().isNotEmpty || (offer.id ?? 0) > 0;
     if (applying && isWalletChecked) {
+      if (ask) {
+        final allow = await DiscountRules.confirmOnlyOne(useRewards: false);
+        if (!allow) return;
+      }
       isWalletChecked = false;
       walletDiscount = 0;
-      showToast('Wallet removed. Use either a coupon or wallet.'.tr);
     }
     _selectedCoupon = offer;
     offerId = offer.id.toString();
     offerName = offer.name.toString();
     update();
     calculateAllCharge();
+    if (applying && Get.isRegistered<ServiceCartController>()) {
+      final priced = DiscountRules.couponOff(
+        type: offer.type ?? 1,
+        value: offer.discount ?? 0,
+        upto: offer.upto ?? 0,
+        base: Get.find<ServiceCartController>().totalPrice,
+      );
+      if (priced.capped) {
+        showToast('Maximum discount is 50%.'.tr);
+      }
+    }
   }
 
   void calculateAllCharge() {
@@ -333,7 +354,10 @@ class IndividualPaymentController extends GetxController
       isWalletChecked = false;
       walletDiscount = 0;
     } else {
-      walletDiscount = isWalletChecked ? balance : 0;
+      final cart = Get.find<ServiceCartController>();
+      walletDiscount = isWalletChecked
+          ? DiscountRules.cap(balance, cart.totalPrice)
+          : 0;
     }
     refreshPricingFromApi();
   }
@@ -341,18 +365,12 @@ class IndividualPaymentController extends GetxController
   double _couponDiscountAmount() {
     if (!Get.isRegistered<ServiceCartController>()) return 0;
     final cart = Get.find<ServiceCartController>();
-    final value = _selectedCoupon.discount ?? 0;
-    if (value <= 0) return 0;
-    double amount;
-    if ((_selectedCoupon.type ?? 1) == 1) {
-      amount = cart.totalPrice * (value / 100);
-      final upto = _selectedCoupon.upto ?? 0;
-      if (upto > 0 && amount > upto) amount = upto;
-    } else {
-      amount = value;
-    }
-    if (amount > cart.totalPrice) amount = cart.totalPrice;
-    return amount;
+    return DiscountRules.couponOff(
+      type: _selectedCoupon.type ?? 1,
+      value: _selectedCoupon.discount ?? 0,
+      upto: _selectedCoupon.upto ?? 0,
+      base: cart.totalPrice,
+    ).amount;
   }
 
   Future<void> refreshPricingFromApi() async {
@@ -404,23 +422,92 @@ class IndividualPaymentController extends GetxController
   }
 
   Future<void> getPaymentMethods() async {
-    Response response = await parser.getPayments();
+    paymentAPICalled = false;
+    update();
+    final country = await parser.fetchByCountry();
     paymentAPICalled = true;
+    if (country != null && country.methods.isNotEmpty) {
+      _applyCountryMethods(country);
+      update();
+      return;
+    }
 
+    Response response = await parser.getPayments();
     if (response.statusCode == 200) {
       Map<String, dynamic> myMap = Map<String, dynamic>.from(response.body);
-      var payment = myMap['data'];
-      _paymentList = [];
-      payment.forEach((pay) {
-        PaymentModel pays = PaymentModel.fromJson(pay);
-        if (pays.id == 1 || pays.id == 5) {
-          _paymentList.add(pays);
+      final parsed = CountryPaymentData.tryParse(response.body);
+      if (parsed != null && parsed.methods.isNotEmpty) {
+        _applyCountryMethods(parsed);
+      } else {
+        var payment = myMap['data'];
+        _paymentList = [];
+        if (payment is List) {
+          for (final pay in payment) {
+            if (pay is! Map) continue;
+            final pays =
+                PaymentModel.fromJson(Map<String, dynamic>.from(pay));
+            if ((pays.status ?? 1) == 1) {
+              _paymentList.add(pays);
+            }
+          }
         }
-      });
+        if (myMap['cod_enabled'] != null) {
+          codEnabled = myMap['cod_enabled'] == true ||
+              myMap['cod_enabled'].toString() == '1';
+        }
+        if (myMap['online_enabled'] != null) {
+          onlineEnabled = myMap['online_enabled'] == true ||
+              myMap['online_enabled'].toString() == '1';
+        }
+        _paymentList.removeWhere((m) => m.isCod && !codEnabled);
+        _paymentList.removeWhere((m) => m.isOnline && !onlineEnabled);
+        paymentId = CountryPaymentApi.pickDefault(
+          methods: _paymentList,
+          preferred: paymentId,
+        );
+        _syncPayMethodName();
+      }
     } else {
       ApiChecker.checkApi(response);
     }
     update();
+  }
+
+  void _applyCountryMethods(CountryPaymentData data) {
+    codEnabled = data.codEnabled;
+    onlineEnabled = data.onlineEnabled;
+    _paymentList = List<PaymentModel>.from(data.methods);
+    if (!codEnabled) {
+      _paymentList.removeWhere((m) => m.isCod);
+    }
+    if (!onlineEnabled) {
+      _paymentList.removeWhere((m) => m.isOnline);
+    }
+    paymentId = CountryPaymentApi.pickDefault(
+      methods: _paymentList,
+      preferred: data.defaultPayMethod,
+    );
+    _syncPayMethodName();
+  }
+
+  PaymentModel? get _selectedMethod {
+    for (final m in _paymentList) {
+      if (m.id == paymentId) return m;
+    }
+    return null;
+  }
+
+  bool get isCodSelected => _selectedMethod?.isCod ?? paymentId == 1;
+
+  void _syncPayMethodName() {
+    final method = _selectedMethod;
+    if (method == null) {
+      payMethodName = '';
+      return;
+    }
+    payMethodName = method.isCod
+        ? 'cod'
+        : (method.name ?? 'online').toLowerCase().replaceAll(' ', '');
   }
 
   // void onCoupon(String offerId, String offerName) {
@@ -433,10 +520,13 @@ class IndividualPaymentController extends GetxController
   //   ]);
   // }
 
-  void onCoupon(String offerId, String offerName, String cartValue) {
+  void onCoupon(String offerId, String offerName, String cartValue) async {
     if (isWalletChecked) {
-      showToast('Use either a coupon or wallet, not both.'.tr);
-      return;
+      final allow = await DiscountRules.confirmOnlyOne(useRewards: false);
+      if (!allow) return;
+      isWalletChecked = false;
+      walletDiscount = 0;
+      update();
     }
     Get.delete<CouponController>(force: true);
     Get.toNamed(AppRouter.getCouponRoutes(), arguments: [
@@ -458,12 +548,13 @@ class IndividualPaymentController extends GetxController
   }
 
   void selectPaymentMethod(int id) {
-    paymentId = id;
-    if (paymentId == 1) {
-      payMethodName = 'cod';
-    } else if (paymentId == 5) {
-      payMethodName = 'razorpay';
+    PaymentModel? method;
+    for (final m in _paymentList) {
+      if (m.id == id) method = m;
     }
+    if (method == null) return;
+    paymentId = id;
+    _syncPayMethodName();
     update();
   }
 
@@ -577,12 +668,19 @@ class IndividualPaymentController extends GetxController
   }
 
   void onCheckout() {
-    if (paymentId == 1) {
+    if (isCodSelected) {
+      if (!codEnabled) {
+        showToast('Cash on delivery is not available.'.tr);
+        return;
+      }
       createOrder();
-      // cod
-      //  Order API call
-    } else if (paymentId == 5) {
-      // razorpay - native SDK
+      return;
+    }
+    if (!onlineEnabled) {
+      showToast('Online payment is not available.'.tr);
+      return;
+    }
+    // razorpay - native SDK
       final int amountInPaise =
           double.parse((grandTotal * 100).toStringAsFixed(0)).toInt();
       final options = {
@@ -631,7 +729,6 @@ class IndividualPaymentController extends GetxController
           showToast('Could not open payment screen.');
         }
       });
-    }
   }
 
   Future<void> createOrder({String? transactionId}) async {

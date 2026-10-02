@@ -7,6 +7,7 @@ import 'package:get/get.dart';
 import 'package:salon_user/app/backend/models/language_model.dart';
 import 'package:salon_user/app/backend/models/locale_api_model.dart';
 import 'package:salon_user/app/backend/parse/languages_parse.dart';
+import 'package:salon_user/app/backend/parse/pricing_parse.dart';
 import 'package:salon_user/app/controller/account_controller.dart';
 import 'package:salon_user/app/controller/booking_controller.dart';
 import 'package:salon_user/app/controller/categories_controller.dart';
@@ -441,13 +442,19 @@ class LanguagesController extends GetxController implements GetxService {
     }
 
     try {
+      if (Get.isRegistered<PricingParser>()) {
+        await Get.find<PricingParser>().fetchTaxAvailability();
+      }
+    } catch (_) {}
+
+    try {
       if (Get.isRegistered<ServiceCartController>()) {
         Get.find<ServiceCartController>().calcuate();
       }
     } catch (_) {}
     try {
       if (Get.isRegistered<ProductCartController>()) {
-        Get.find<ProductCartController>().update();
+        Get.find<ProductCartController>().calcuate();
       }
     } catch (_) {}
 

@@ -1,4 +1,5 @@
 import 'package:salon_user/app/backend/api/api.dart';
+import 'package:salon_user/app/helper/country_payment.dart';
 import 'package:salon_user/app/helper/shared_pref.dart';
 import 'package:salon_user/app/util/constant.dart';
 import 'package:get/get.dart';
@@ -14,6 +15,13 @@ class ProductPaymentParser {
     var response = await apiService.getPrivate(AppConstants.getPayments,
         sharedPreferencesManager.getString('token') ?? '');
     return response;
+  }
+
+  Future<CountryPaymentData?> fetchByCountry() {
+    return CountryPaymentApi.fetch(
+      apiService: apiService,
+      prefs: sharedPreferencesManager,
+    );
   }
 
   Future<Response> getPremium(var body) async {

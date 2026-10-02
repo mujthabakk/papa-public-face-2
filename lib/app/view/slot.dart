@@ -5,6 +5,8 @@ import 'package:salon_user/app/controller/checkout_controller.dart';
 import 'package:salon_user/app/controller/service_cart_controller.dart';
 import 'package:salon_user/app/controller/slot_controller.dart';
 import 'package:salon_user/app/env.dart';
+import 'package:salon_user/app/helper/tax_availability.dart';
+import 'package:salon_user/app/helper/slot_time.dart';
 import 'package:salon_user/app/util/theme.dart';
 import 'package:salon_user/app/util/toast.dart';
 import 'package:salon_user/app/view/widgets/elite_ui.dart';
@@ -193,7 +195,12 @@ class _SlotScreenState extends State<SlotScreen> {
     try {
       selected = DateTime.parse(value.savedDate);
     } catch (_) {}
-    final slots = value.haveData ? (value.slotList.slots ?? []) : [];
+    final slots = value.haveData
+        ? (value.slotList.slots ?? [])
+            .where((s) =>
+                SlotTime.isAfterNow(start: s.startTime, date: value.savedDate))
+            .toList()
+        : [];
     final morning = slots.where((s) => _isMorning(s.startTime)).toList();
     final afternoon = slots.where((s) => !_isMorning(s.startTime)).toList();
     return Column(
@@ -461,8 +468,9 @@ class _SlotScreenState extends State<SlotScreen> {
                   'Service Fee',
                   '',
                   money(Get.find<ServiceCartController>().serviceChargeAmount)),
-              if (checkout.taxAmount > 0 ||
-                  Get.find<ServiceCartController>().taxAmount > 0) ...[
+              if (TaxAvailability.showTax &&
+                  (checkout.taxAmount > 0 ||
+                      Get.find<ServiceCartController>().taxAmount > 0)) ...[
                 const SizedBox(height: 4),
                 Text(
                   'Taxable: ${money(checkout.taxableValue > 0 ? checkout.taxableValue : Get.find<ServiceCartController>().taxableValue)} | ${Get.find<ServiceCartController>().taxTypeLabel}: ${money(checkout.taxAmount > 0 ? checkout.taxAmount : Get.find<ServiceCartController>().taxAmount)}',

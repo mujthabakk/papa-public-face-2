@@ -51,6 +51,7 @@ class ApiService extends GetxService {
         'X-App-Language': _lang,
         'Accept-Language': _lang,
         'X-App-Country': _country,
+        'X-Country': _country,
       };
 
   String _withLangQuery(String uri, {bool includeUid = true}) {

@@ -555,6 +555,7 @@ import 'package:salon_user/app/controller/individual_payment_controller.dart';
 import 'package:salon_user/app/controller/individual_slot_controller.dart';
 import 'package:salon_user/app/controller/service_cart_controller.dart';
 import 'package:salon_user/app/env.dart';
+import 'package:salon_user/app/helper/tax_availability.dart';
 import 'package:salon_user/app/util/theme.dart';
 import 'package:salon_user/app/view/widgets/elite_ui.dart';
 import 'package:skeletons/skeletons.dart';
@@ -568,6 +569,17 @@ class IndividualPaymentScreen extends StatefulWidget {
 }
 
 class _IndividualPaymentScreenState extends State<IndividualPaymentScreen> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      if (Get.isRegistered<IndividualPaymentController>()) {
+        Get.find<IndividualPaymentController>().getPaymentMethods();
+      }
+    });
+  }
+
   // App Colors
   static const Color primary = ThemeProvider.gold;
   static const Color primaryDark = ThemeProvider.gold;
@@ -965,7 +977,7 @@ class _IndividualPaymentScreenState extends State<IndividualPaymentScreen> {
                   value.deliveryPrice),
               false,
             ),
-            if (value.taxAmount > 0) ...[
+            if (TaxAvailability.showTax && value.taxAmount > 0) ...[
               const SizedBox(height: 12),
               Text(
                 'Taxable: ${elitePrice(value.currencySide, value.currencySymbol, value.taxableValue)} | ${Get.find<ServiceCartController>().taxTypeLabel}: ${elitePrice(value.currencySide, value.currencySymbol, value.taxAmount)}',

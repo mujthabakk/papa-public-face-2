@@ -3,6 +3,7 @@ import 'package:salon_user/app/backend/api/api.dart';
 import 'package:salon_user/app/backend/api/api_response.dart';
 import 'package:salon_user/app/backend/models/checkout_payment_model.dart';
 import 'package:salon_user/app/backend/models/payment_options_model.dart';
+import 'package:salon_user/app/helper/country_payment.dart';
 import 'package:salon_user/app/helper/shared_pref.dart';
 import 'package:get/get.dart';
 import 'package:salon_user/app/util/constant.dart';
@@ -29,6 +30,13 @@ class PaymentParser {
     var response = await apiService.getPrivate(AppConstants.getPayments,
         sharedPreferencesManager.getString('token') ?? '');
     return response;
+  }
+
+  Future<CountryPaymentData?> fetchByCountry() {
+    return CountryPaymentApi.fetch(
+      apiService: apiService,
+      prefs: sharedPreferencesManager,
+    );
   }
 
   Future<Response> createAppoinments(var body) async {

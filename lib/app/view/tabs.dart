@@ -46,9 +46,9 @@ class _TabScreenState extends State<TabScreen> {
                       GestureDetector(
                         onTap: openSpinWinOrLogin,
                         child: Container(
-                          width: 52,
-                          height: 52,
                           margin: const EdgeInsets.only(bottom: 10),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 12, vertical: 10),
                           decoration: BoxDecoration(
                             color: ThemeProvider.gold,
                             borderRadius: BorderRadius.circular(12),
@@ -59,8 +59,22 @@ class _TabScreenState extends State<TabScreen> {
                               ),
                             ],
                           ),
-                          child: const Icon(Icons.casino_outlined,
-                              color: Colors.black, size: 24),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(Icons.casino_outlined,
+                                  color: Colors.black, size: 20),
+                              const SizedBox(width: 6),
+                              Text(
+                                'Spin & Win'.tr,
+                                style: ThemeProvider.sans(
+                                  size: 12,
+                                  weight: FontWeight.w700,
+                                  color: Colors.black,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                     const EliteCartFab(),

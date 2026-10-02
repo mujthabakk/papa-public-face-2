@@ -85,6 +85,7 @@ import 'package:salon_user/app/controller/tabs_controller.dart';
 import 'package:salon_user/app/controller/top_products_controller.dart';
 import 'package:salon_user/app/env.dart';
 import 'package:salon_user/app/helper/shared_pref.dart';
+import 'package:salon_user/app/helper/tax_availability.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:get/get.dart';
 
@@ -98,6 +99,7 @@ class MainBinding extends Bindings {
         permanent: true,
       );
     }
+    TaxAvailability.loadFromPrefs(Get.find<SharedPreferencesManager>());
 
     if (!Get.isRegistered<ApiService>()) {
       Get.put<ApiService>(

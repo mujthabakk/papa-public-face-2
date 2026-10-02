@@ -490,6 +490,7 @@ import 'package:get/get.dart';
 import 'package:salon_user/app/controller/individual_checkout_controller.dart';
 import 'package:salon_user/app/controller/service_cart_controller.dart';
 import 'package:salon_user/app/env.dart';
+import 'package:salon_user/app/helper/tax_availability.dart';
 import 'package:salon_user/app/util/theme.dart';
 import 'package:salon_user/app/view/widgets/elite_ui.dart';
 
@@ -1040,12 +1041,14 @@ class _IndividualCheckoutScreenState extends State<IndividualCheckoutScreen> {
               elitePrice(value.currencySide, value.currencySymbol,
                   Get.find<ServiceCartController>().serviceChargeAmount),
             ),
-            const SizedBox(height: 12),
-            _buildBillRow(
-              'Tax (${Get.find<ServiceCartController>().taxTypeLabel} ${Get.find<ServiceCartController>().orderTax}%)',
-              elitePrice(value.currencySide, value.currencySymbol,
-                  Get.find<ServiceCartController>().taxAmount),
-            ),
+            if (TaxAvailability.showTax) ...[
+              const SizedBox(height: 12),
+              _buildBillRow(
+                'Tax (${Get.find<ServiceCartController>().taxTypeLabel} ${Get.find<ServiceCartController>().orderTax}%)',
+                elitePrice(value.currencySide, value.currencySymbol,
+                    Get.find<ServiceCartController>().taxAmount),
+              ),
+            ],
             const SizedBox(height: 16),
             Container(
               height: 1,

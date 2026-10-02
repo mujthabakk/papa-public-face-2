@@ -13,6 +13,7 @@ import 'package:salon_user/app/backend/models/services_model.dart';
 import 'package:salon_user/app/backend/models/slot_time_model.dart';
 import 'package:salon_user/app/backend/models/slots_model.dart';
 import 'package:salon_user/app/backend/models/bookedslot_model.dart';
+import 'package:salon_user/app/helper/slot_time.dart';
 import 'package:salon_user/app/backend/models/userinfo_model.dart';
 import 'package:salon_user/app/backend/parse/specialist_parse.dart';
 import 'package:salon_user/app/controller/chat_controller.dart';
@@ -663,16 +664,12 @@ class SpecialistController extends GetxController
         }
         final today = DateFormat('yyyy-MM-dd').format(DateTime.now());
         if (savedDate == today && datas.slots != null) {
-          final nowLabel = DateFormat('hh:mm a').format(DateTime.now());
-          datas.slots = datas.slots!.where((slot) {
-            try {
-              final slotTime = DateFormat('hh:mm a').parse(slot.startTime ?? '');
-              final currentTime = DateFormat('hh:mm a').parse(nowLabel);
-              return slotTime.isAfter(currentTime);
-            } catch (_) {
-              return true;
-            }
-          }).toList();
+          datas.slots = datas.slots!
+              .where((slot) => SlotTime.isAfterNow(
+                    start: slot.startTime,
+                    date: savedDate,
+                  ))
+              .toList();
         }
         _slotTimes = datas.slots ?? [];
       }

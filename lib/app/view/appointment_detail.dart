@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import 'package:salon_user/app/controller/appointment_detail_controller.dart';
 import 'package:salon_user/app/env.dart';
 import 'package:salon_user/app/helper/router.dart';
+import 'package:salon_user/app/helper/tax_availability.dart';
 import 'package:salon_user/app/util/theme.dart';
 import 'package:salon_user/app/view/widgets/elite_ui.dart';
 
@@ -177,7 +178,7 @@ class _AppointmentDetailScreenState extends State<AppointmentDetailScreen> {
             (s) => _itemRow(
               s.name.toString(),
               _genderLabel(s.gender),
-              _money(s.off ?? s.price, value),
+              _money(s.amountWithoutTax, value),
             ),
           ),
           ...packages.map(
@@ -208,10 +209,12 @@ class _AppointmentDetailScreenState extends State<AppointmentDetailScreen> {
               _money(value.distanceCost, value),
               muted: true,
             ),
-          if (_positive(value.serviceTax))
+          if (TaxAvailability.showTax && _positive(value.serviceTax))
             _itemRow(
               'Taxes'.tr,
-              'Service tax'.tr,
+              TaxAvailability.taxTypeLabel == 'Tax'
+                  ? 'Service tax'.tr
+                  : TaxAvailability.taxTypeLabel,
               _money(value.serviceTax, value),
               muted: true,
             ),
@@ -251,19 +254,24 @@ class _AppointmentDetailScreenState extends State<AppointmentDetailScreen> {
   }
 
   Widget _providerCard(AppointmentDetailController value) {
-    final isSalon = value.appointmentInfo.salonId != 0;
+    final info = value.appointmentInfo;
+    final salon = info.salonInfo;
+    final owner = info.ownerInfo;
+    final individual = info.individualInfo;
+    final isSalon = (info.salonId ?? 0) != 0 && salon != null;
     final name = isSalon
-        ? value.appointmentInfo.salonInfo!.name.toString()
-        : '${value.appointmentInfo.ownerInfo!.firstName} ${value.appointmentInfo.ownerInfo!.lastName}';
+        ? (salon.name ?? '').toString()
+        : '${owner?.firstName ?? ''} ${owner?.lastName ?? ''}'.trim();
     final address = isSalon
-        ? value.appointmentInfo.salonInfo!.address.toString()
-        : value.appointmentInfo.individualInfo!.address.toString();
+        ? (salon.address ?? '').toString()
+        : (individual?.address ?? '').toString();
     final image = isSalon
-        ? '${Environments.imageURL}${value.appointmentInfo.salonInfo!.cover}'
-        : '${Environments.imageURL}${value.appointmentInfo.ownerInfo!.cover}';
+        ? '${Environments.imageURL}${salon.cover ?? ''}'
+        : '${Environments.imageURL}${owner?.cover ?? ''}';
     final id = isSalon
-        ? value.appointmentInfo.salonId.toString()
-        : value.appointmentInfo.freelancerId.toString();
+        ? (info.salonId ?? 0).toString()
+        : (info.freelancerId ?? 0).toString();
+    final displayName = name.isEmpty ? 'Provider'.tr : name;
     return EliteCard(
       child: Row(
         children: [
@@ -280,7 +288,7 @@ class _AppointmentDetailScreenState extends State<AppointmentDetailScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(name, style: ThemeProvider.serif(size: 16)),
+                Text(displayName, style: ThemeProvider.serif(size: 16)),
                 const SizedBox(height: 4),
                 Text(
                   address,
@@ -293,12 +301,14 @@ class _AppointmentDetailScreenState extends State<AppointmentDetailScreen> {
             ),
           ),
           IconButton(
-            onPressed: () => value.onContactInfo(
-              name,
-              value.appointmentInfo.ownerInfo!.mobile!,
-              value.appointmentInfo.ownerInfo!.email!,
-              id,
-            ),
+            onPressed: owner == null
+                ? null
+                : () => value.onContactInfo(
+                      displayName,
+                      owner.mobile ?? '',
+                      owner.email ?? '',
+                      id,
+                    ),
             icon: const Icon(Icons.chat_bubble_outline,
                 color: ThemeProvider.gold),
           ),
@@ -441,7 +451,7 @@ class _AppointmentDetailScreenState extends State<AppointmentDetailScreen> {
           ),
           Text(
             price,
-            style: ThemeProvider.sans(
+            style: ThemeProvider.price(
               size: 13,
               weight: FontWeight.w600,
               color: muted ? ThemeProvider.greyColor : ThemeProvider.gold,

@@ -57,6 +57,12 @@ class UnifiedSearchController extends GetxController implements GetxService {
 
   bool get _genderFilterActive => isMale || isFemale || isKid || isFamily;
 
+  bool get _strictFiltersActive =>
+      selectedcat.isNotEmpty ||
+      facilitiesIds.isNotEmpty ||
+      rateSelected ||
+      _genderFilterActive;
+
   bool _matchesSelectedGender(int? gender) {
     if (!_genderFilterActive) return true;
     return gender == genderId;
@@ -67,6 +73,21 @@ class UnifiedSearchController extends GetxController implements GetxService {
     if (q.isEmpty && !hasSearched) return <SalonModel>[];
     return source.where((s) {
       if (!_matchesSelectedGender(s.gender)) return false;
+      if (rateSelected && (s.rating ?? 0) + 0.05 < starValue.value) {
+        return false;
+      }
+      final distance = s.distance ?? 0;
+      if (distance > 0 &&
+          (distance < currentRangeValues.value.start ||
+              distance > currentRangeValues.value.end)) {
+        return false;
+      }
+      final price = (s.off ?? 0) > 0 ? s.off! : (s.price ?? 0);
+      if (price > 0 &&
+          (price < currentRangeValuesPrice.value.start ||
+              price > currentRangeValuesPrice.value.end)) {
+        return false;
+      }
       if (q.isEmpty) return true;
       return _hit(q, [s.name, s.serviceName, s.address]);
     }).toList();
@@ -77,6 +98,15 @@ class UnifiedSearchController extends GetxController implements GetxService {
     if (q.isEmpty && !hasSearched) return <SearchIndividualModel>[];
     return source.where((s) {
       if (!_matchesSelectedGender(s.gender)) return false;
+      if (rateSelected && (s.rating ?? 0) + 0.05 < starValue.value) {
+        return false;
+      }
+      final distance = s.distance ?? 0;
+      if (distance > 0 &&
+          (distance < currentRangeValues.value.start ||
+              distance > currentRangeValues.value.end)) {
+        return false;
+      }
       if (q.isEmpty) return true;
       return _hit(q, [s.name, s.serviceName, s.address]);
     }).toList();
@@ -117,13 +147,16 @@ class UnifiedSearchController extends GetxController implements GetxService {
     return out;
   }
 
-  /// Frontend name filter over shop / freelancer / service results.
-  List<SalonModel> get filteredSalonList =>
-      _mergeShops(_filterShops(_salonList), _filterShops(_localShops));
+  List<SalonModel> get filteredSalonList {
+    final api = _filterShops(_salonList);
+    if (_strictFiltersActive) return api;
+    return _mergeShops(api, _filterShops(_localShops));
+  }
 
   List<SearchIndividualModel> get filteredIndividualList {
-    final q = searchValue.trim().toLowerCase();
     final api = _filterPeople(_individualList);
+    if (_strictFiltersActive) return api;
+    final q = searchValue.trim().toLowerCase();
     final local = _filterPeople(_localFreelancers);
     final out = <SearchIndividualModel>[...api];
     for (final item in local) {
@@ -134,10 +167,11 @@ class UnifiedSearchController extends GetxController implements GetxService {
     return out;
   }
 
-  List<SalonModel> get filteredServiceList => _mergeServices(
-        _filterShops(_serviceList),
-        _filterShops(_localServices),
-      );
+  List<SalonModel> get filteredServiceList {
+    final api = _filterShops(_serviceList);
+    if (_strictFiltersActive) return api;
+    return _mergeServices(api, _filterShops(_localServices));
+  }
 
   List<BannerModel> _bannerList = <BannerModel>[];
   List<BannerModel> get bannerList => _bannerList;
@@ -230,7 +264,22 @@ class UnifiedSearchController extends GetxController implements GetxService {
   }
 
   void updateGender(Gender? gender) {
-    selectedGender.value = gender!;
+    if (gender == null) return;
+    final already = (gender == Gender.male && isMale) ||
+        (gender == Gender.female && isFemale) ||
+        (gender == Gender.kid && isKid) ||
+        (gender == Gender.family && isFamily);
+    if (already) {
+      isMale = false;
+      isFemale = false;
+      isKid = false;
+      isFamily = false;
+      genderId = 0;
+      selectedGender.value = Gender.male;
+      update();
+      return;
+    }
+    selectedGender.value = gender;
     if (selectedGender.value == Gender.male) {
       isMaleSelected(true);
     } else if (selectedGender.value == Gender.female) {
@@ -294,11 +343,6 @@ class UnifiedSearchController extends GetxController implements GetxService {
     }
 
     // General mode: shop / freelancer / service search (API + frontend).
-    if (!(isFemale || isKid || isMale || isFamily)) {
-      isMale = true;
-      genderId = 1;
-      selectedGender.value = Gender.male;
-    }
     if (searchValue.isEmpty) {
       _searchDebounce?.cancel();
       _salonList = [];
@@ -531,7 +575,7 @@ class UnifiedSearchController extends GetxController implements GetxService {
       final response = await parser.getSearchResult({
         "category": '',
         "rating": '',
-        "gender": genderId,
+        "gender": _genderFilterActive ? genderId : '',
         "distance_from": '0',
         "distance_to": '200',
         "price_start": '0',
@@ -586,7 +630,7 @@ class UnifiedSearchController extends GetxController implements GetxService {
     if (selectedcat.isEmpty) {
       selCat = '';
     } else {
-      selCat = selectedcat.last;
+      selCat = selectedcat.join(',');
     }
     if (!rateSelected) {
       rating = '';
@@ -602,7 +646,7 @@ class UnifiedSearchController extends GetxController implements GetxService {
     var param = {
       "category": selCat,
       "rating": rating,
-      "gender": genderId,
+      "gender": _genderFilterActive ? genderId : '',
       "distance_from": currentRangeValues.value.start.round().toString(),
       "distance_to": currentRangeValues.value.end.round().toString(),
       "price_start": currentRangeValuesPrice.value.start.round().toString(),
@@ -713,7 +757,7 @@ class UnifiedSearchController extends GetxController implements GetxService {
     if (selectedcat.isEmpty) {
       selCat = selectedCateId;
     } else {
-      selCat = selectedcat.last;
+      selCat = selectedcat.join(',');
     }
     if (!rateSelected) {
       rating = '';
@@ -727,12 +771,14 @@ class UnifiedSearchController extends GetxController implements GetxService {
     }
 
     var param = {
-      "category": selectedCateId,
-      "gender": genderId,
+      "category": selCat,
+      "rating": rating,
+      "gender": _genderFilterActive ? genderId : '',
       "distance_from": currentRangeValues.value.start.round().toString(),
       "distance_to": currentRangeValues.value.end.round().toString(),
       "lat": parser.getLat(),
       "lng": parser.getLng(),
+      "facilities": facilities,
     };
 
     debugPrint(
@@ -997,6 +1043,11 @@ class UnifiedSearchController extends GetxController implements GetxService {
   }
 
   void clearFilters() {
+    isMale = false;
+    isFemale = false;
+    isKid = false;
+    isFamily = false;
+    genderId = 0;
     selectedcat.clear();
     rateSelected = false;
     starValue.value = 4.0;

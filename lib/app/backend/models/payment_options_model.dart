@@ -95,10 +95,17 @@ class PaymentOptionsModel {
           src['payment_status']?.toString().toLowerCase() == 'paid',
       canPayNow: src['can_pay_now'] == true ||
           src['can_pay_now']?.toString() == '1',
-      showPayNow: src['show_pay_now'] == true ||
-          src['show_pay_now']?.toString() == '1',
-      showCod:
-          src['show_cod'] == true || src['show_cod']?.toString() == '1',
+      showPayNow: src.containsKey('show_pay_now')
+          ? (src['show_pay_now'] == true ||
+              src['show_pay_now']?.toString() == '1')
+          : (src['online_enabled'] == true ||
+              src['online_enabled']?.toString() == '1' ||
+              src['online_available'] == true),
+      showCod: src.containsKey('show_cod')
+          ? (src['show_cod'] == true || src['show_cod']?.toString() == '1')
+          : (src['cod_enabled'] == true ||
+              src['cod_enabled']?.toString() == '1' ||
+              src['cod_available'] == true),
       codAvailable: src['cod_available'] == true ||
           src['cod_available']?.toString() == '1',
       onlineAvailable: src['online_available'] == true ||

@@ -62,14 +62,14 @@ class ThemeProvider {
     );
   }
 
-  /// Standard currency / amount style (not decorative serif).
+  /// Currency / amounts. Inter includes ₹, QR, AED (Montserrat does not).
   static TextStyle price({
     double size = 16,
     FontWeight weight = FontWeight.w600,
     Color color = whiteColor,
     double? letterSpacing,
   }) {
-    return GoogleFonts.montserrat(
+    return GoogleFonts.inter(
       fontSize: size,
       fontWeight: weight,
       color: color,

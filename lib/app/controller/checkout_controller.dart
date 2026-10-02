@@ -9,8 +9,10 @@ import 'package:salon_user/app/controller/coupon_controller.dart';
 import 'package:salon_user/app/controller/login_controller.dart';
 import 'package:salon_user/app/controller/service_cart_controller.dart';
 import 'package:salon_user/app/controller/slot_controller.dart';
+import 'package:salon_user/app/helper/discount_rules.dart';
 import 'package:salon_user/app/helper/locale_helper.dart';
 import 'package:salon_user/app/helper/router.dart';
+import 'package:salon_user/app/helper/tax_availability.dart';
 import 'package:salon_user/app/util/constant.dart';
 import 'package:salon_user/app/util/facebook_service.dart';
 import 'package:salon_user/app/util/toast.dart';
@@ -41,9 +43,24 @@ class CheckoutController extends GetxController implements GetxService {
   }
 
   double get originalAmount {
-    if (apiServicesAmount > 0) return apiServicesAmount;
-    if (!Get.isRegistered<ServiceCartController>()) return 0;
-    return Get.find<ServiceCartController>().totalPrice;
+    if (!TaxAvailability.showTax) {
+      if (apiServicesAmount > 0) return apiServicesAmount;
+      if (Get.isRegistered<ServiceCartController>()) {
+        return Get.find<ServiceCartController>().totalPrice;
+      }
+      return 0;
+    }
+    if (taxableValue > 0) return taxableValue;
+    if (Get.isRegistered<ServiceCartController>()) {
+      final cart = Get.find<ServiceCartController>();
+      if (cart.taxableValue > 0) return cart.taxableValue;
+      if (cart.taxAmount > 0 && cart.totalPrice > cart.taxAmount) {
+        return double.parse(
+            (cart.totalPrice - cart.taxAmount).toStringAsFixed(2));
+      }
+      return cart.totalPrice;
+    }
+    return apiServicesAmount;
   }
 
   double get payAmount {
@@ -145,6 +162,15 @@ class CheckoutController extends GetxController implements GetxService {
       cart.onSaveCoupon(matched);
       syncCouponLabel();
       await refreshPricingFromApi();
+      final priced = DiscountRules.couponOff(
+        type: matched.type ?? 1,
+        value: matched.discount ?? 0,
+        upto: matched.upto ?? 0,
+        base: cart.totalPrice,
+      );
+      if (priced.capped) {
+        showToast('Maximum discount is 50%.'.tr);
+      }
       showToast(validated.message.isNotEmpty
           ? validated.message
           : 'Coupon applied successfully.');
@@ -229,7 +255,11 @@ class CheckoutController extends GetxController implements GetxService {
       taxableValue =
           data.taxableValue > 0 ? data.taxableValue : cart.taxableValue;
       apiServicesAmount = data.servicesAmount;
-      if (couponOff <= 0 && data.discount > 0) {
+      if (couponOff > 0 && data.discount <= 0) {
+        apiDiscount = couponOff;
+        grandTotal =
+            (data.grandTotal - couponOff).clamp(0, double.infinity).toDouble();
+      } else if (couponOff <= 0 && data.discount > 0) {
         // Cart already uses offer price (off). Do not apply that discount again.
         apiDiscount = 0;
         grandTotal = data.grandTotal + data.discount;

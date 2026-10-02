@@ -36,6 +36,8 @@ class AppConstants {
       'api/v1/settings/getAppSettingsByLanguageId';
 
   static const String pricingGetTaxSettings = 'api/v1/pricing/getTaxSettings';
+  static const String pricingGetTaxAvailability =
+      'api/v1/pricing/getTaxAvailability';
   static const String pricingCalculateAppointment =
       'api/v1/pricing/calculateAppointment';
   static const String pricingCalculateProductOrder =
@@ -83,6 +85,7 @@ class AppConstants {
   static const String getTimedOffersHome = 'api/v1/timed_offers/getPublicHome';
   static const String getTimedOffersAll = 'api/v1/timed_offers/getAll';
   static const String getPayments = 'api/v1/payments/getPayments';
+  static const String paymentsGetByCountry = 'api/v1/payments/getByCountry';
   static const String createAppointments = 'api/v1/appoinments/create';
   static const String getUserProfile = 'api/v1/profile/getByID';
   static const String updateProfile = 'api/v1/profile/update';

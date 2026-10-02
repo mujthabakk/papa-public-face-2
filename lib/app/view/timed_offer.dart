@@ -146,9 +146,7 @@ class TimedOfferScreen extends StatelessWidget {
                 ),
               ),
               OutlinedButton.icon(
-                onPressed: couponRow.isScheduleActive
-                    ? () => value.copyCode(couponRow)
-                    : null,
+                onPressed: () => value.copyCode(couponRow),
                 icon: const Icon(Icons.copy, size: 14),
                 label: Text(
                   'Copy Code'.tr,

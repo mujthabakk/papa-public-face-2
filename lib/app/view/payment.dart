@@ -6,6 +6,7 @@ import 'package:salon_user/app/controller/service_cart_controller.dart';
 import 'package:salon_user/app/controller/slot_controller.dart';
 import 'package:salon_user/app/env.dart';
 import 'package:salon_user/app/helper/map_style.dart';
+import 'package:salon_user/app/helper/tax_availability.dart';
 import 'package:salon_user/app/util/theme.dart';
 import 'package:salon_user/app/view/widgets/elite_ui.dart';
 
@@ -17,6 +18,17 @@ class PaymentScreen extends StatefulWidget {
 }
 
 class _PaymentScreenState extends State<PaymentScreen> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      if (Get.isRegistered<PaymentController>()) {
+        Get.find<PaymentController>().getPaymentMethods();
+      }
+    });
+  }
+
   String _addrTitle(int? t) {
     switch (t) {
       case 1:
@@ -273,6 +285,17 @@ class _PaymentScreenState extends State<PaymentScreen> {
         if (value.paymentAPICalled == false)
           const Center(
               child: CircularProgressIndicator(color: ThemeProvider.gold))
+        else if (value.paymentList.isEmpty)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: Text(
+              'No payment methods available for this country.'.tr,
+              style: ThemeProvider.sans(
+                size: 13,
+                color: ThemeProvider.greyColor,
+              ),
+            ),
+          )
         else
           ...List.generate(value.paymentList.length, (i) {
             final p = value.paymentList[i];
@@ -386,7 +409,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
                 elitePrice(
                     value.currencySide,
                     value.currencySymbol,
-                    (s.discount ?? 0) > 0 ? s.off : s.price,
+                    s.amountWithoutTax,
                     digits: 2),
               )),
           ...(cart.savedInCart.packages ?? []).map((p) => _sumRow(
@@ -399,9 +422,13 @@ class _PaymentScreenState extends State<PaymentScreen> {
               )),
           const Divider(color: Color(0xFF2A2A2A)),
           _sumRow(
-              'Subtotal',
-              elitePrice(value.currencySide, value.currencySymbol,
-                  cart.totalPrice,
+              'Original Amount'.tr,
+              elitePrice(
+                  value.currencySide,
+                  value.currencySymbol,
+                  TaxAvailability.showTax && cart.taxableValue > 0
+                      ? cart.taxableValue
+                      : cart.totalPrice,
                   digits: 2)),
           if (value.discount > 0)
             _sumRow(
@@ -422,7 +449,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
               elitePrice(value.currencySide, value.currencySymbol,
                   cart.serviceChargeAmount,
                   digits: 2)),
-          if (value.taxAmount > 0)
+          if (TaxAvailability.showTax && value.taxAmount > 0)
             Padding(
               padding: const EdgeInsets.only(bottom: 8),
               child: Text(
@@ -469,7 +496,8 @@ class _PaymentScreenState extends State<PaymentScreen> {
                 children: [
                   const Icon(Icons.lock_outline, size: 16),
                   const SizedBox(width: 8),
-                  Text('Pay Now'.tr,
+                  Text(
+                      value.isCodSelected ? 'Book Now'.tr : 'Pay Now'.tr,
                       style: ThemeProvider.serif(size: 18, color: Colors.black)),
                 ],
               ),
@@ -487,7 +515,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
         children: [
           Expanded(child: Text(label, style: ThemeProvider.sans(size: 13))),
           Text(amount,
-              style: ThemeProvider.sans(size: 13, weight: FontWeight.w600)),
+              style: ThemeProvider.price(size: 13, weight: FontWeight.w600)),
         ],
       ),
     );
