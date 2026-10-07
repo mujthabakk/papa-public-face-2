@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:get/get.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:salon_user/app/backend/api/api_response.dart';
 import 'package:salon_user/app/backend/api/handler.dart';
 import 'package:salon_user/app/backend/models/categories_model.dart';
 import 'package:salon_user/app/backend/models/individual_info_model.dart';
@@ -10,6 +11,7 @@ import 'package:salon_user/app/backend/models/coupons_model.dart';
 import 'package:salon_user/app/backend/models/packages_model.dart';
 import 'package:salon_user/app/backend/models/owner_reviews_model.dart';
 import 'package:salon_user/app/backend/models/services_model.dart';
+import 'package:salon_user/app/backend/models/timed_offer_model.dart';
 import 'package:salon_user/app/backend/models/slot_time_model.dart';
 import 'package:salon_user/app/backend/models/slots_model.dart';
 import 'package:salon_user/app/backend/models/bookedslot_model.dart';
@@ -21,6 +23,8 @@ import 'package:salon_user/app/controller/home_controller.dart';
 import 'package:salon_user/app/controller/individual_checkout_controller.dart';
 import 'package:salon_user/app/controller/individual_list_controller.dart';
 import 'package:salon_user/app/controller/individual_packages_controller.dart';
+import 'package:salon_user/app/controller/individual_payment_controller.dart';
+import 'package:salon_user/app/controller/individual_slot_controller.dart';
 import 'package:salon_user/app/controller/login_controller.dart';
 import 'package:salon_user/app/controller/service_cart_controller.dart';
 import 'package:salon_user/app/env.dart';
@@ -94,6 +98,7 @@ class SpecialistController extends GetxController
 
   int individualId = 0;
   List<int> offerServiceIds = [];
+  String partnerOfferTitle = 'Flash Offers';
   final Set<Marker> markers = {};
   String getDistance = '';
   SpecialistController({required this.parser});
@@ -306,6 +311,7 @@ class SpecialistController extends GetxController
           !offerServiceIds.contains(service.serviceId));
 
       debugPrint('Service list' + _servicesList.length.toString());
+      await _mergePartnerOffers();
       _applyOfferServiceSelection();
 
       salonPackages.forEach((data) {
@@ -322,6 +328,85 @@ class SpecialistController extends GetxController
       ApiChecker.checkApi(response);
     }
     update();
+  }
+
+  Future<void> _mergePartnerOffers() async {
+    if (individualId <= 0) return;
+    try {
+      final response = await parser.getPartnerOffer(individualId);
+      final items = ApiBody.asList(response.body, keys: const [
+        'data',
+        'offers',
+        'items',
+        'result',
+        'list',
+      ]);
+      if (items.isEmpty) return;
+      for (final item in items) {
+        final row = TimedOfferRow.fromJson(item);
+        if ((row.name ?? '').trim().isNotEmpty) {
+          partnerOfferTitle = row.name!.trim();
+        }
+        for (final svc in row.services) {
+          final mapped = _serviceFromPartnerOffer(row, svc);
+          if ((mapped.id ?? 0) <= 0) continue;
+          final idx = _servicesList.indexWhere((s) => s.id == mapped.id);
+          if (idx >= 0) {
+            _overlayPartnerOffer(_servicesList[idx], mapped);
+          } else {
+            if (Get.find<ServiceCartController>()
+                .checkServiceInCart(mapped.id as int)) {
+              mapped.isChecked = true;
+            }
+            _servicesList.insert(0, mapped);
+          }
+        }
+      }
+      _servicesList.sort((a, b) {
+        if (a.isTimedOffer == b.isTimedOffer) return 0;
+        return a.isTimedOffer ? -1 : 1;
+      });
+    } catch (e) {
+      debugPrint('getPartnerOffer: $e');
+    }
+  }
+
+  ServicesModel _serviceFromPartnerOffer(
+      TimedOfferRow row, OfferServiceModel svc) {
+    final original = svc.originalPrice ?? svc.price ?? 0;
+    final sale = svc.offerPrice ?? svc.amount ?? 0;
+    return ServicesModel(
+      id: svc.id,
+      uid: individualId,
+      serviceId: svc.serviceId,
+      name: svc.name,
+      cover: svc.coverPath.isNotEmpty ? svc.coverPath : row.displayImage,
+      price: original,
+      off: sale > 0 ? sale : original,
+      discount: svc.discount ?? row.discountValue,
+      discountType: svc.type ?? (row.discountType == 'flat' ? 2 : 1),
+      discountText: row.discountText,
+      isTimedOffer: true,
+      offerCode: row.displayCode,
+      extraField: row.displayCode,
+      status: 1,
+    );
+  }
+
+  void _overlayPartnerOffer(ServicesModel existing, ServicesModel offer) {
+    existing.price = offer.price;
+    existing.off = offer.off;
+    existing.discount = offer.discount;
+    existing.discountType = offer.discountType;
+    existing.discountText = offer.discountText;
+    existing.isTimedOffer = true;
+    existing.offerCode = offer.offerCode;
+    existing.extraField = offer.extraField ?? existing.extraField;
+    if ((existing.name ?? '').isEmpty) existing.name = offer.name;
+    if ((existing.cover ?? '').trim().isEmpty &&
+        (offer.cover ?? '').trim().isNotEmpty) {
+      existing.cover = offer.cover;
+    }
   }
 
   void _applyOfferServiceSelection() {
@@ -598,8 +683,20 @@ class SpecialistController extends GetxController
       showToast('Please select Slots'.tr);
       return;
     }
+    if (parser.isLogin() != true) {
+      Get.delete<LoginController>(force: true);
+      Get.toNamed(AppRouter.getLoginRoute());
+      return;
+    }
     Get.delete<IndividualCheckoutController>(force: true);
-    Get.toNamed(AppRouter.getIndividualCheckout());
+    Get.put(IndividualCheckoutController(parser: Get.find()));
+    Get.delete<IndividualSlotController>(force: true);
+    final slotCtrl = Get.put(IndividualSlotController(parser: Get.find()));
+    if (savedDate.isNotEmpty) slotCtrl.savedDate = savedDate;
+    slotCtrl.selectedSlotIndex = selectedSlotIndex;
+    slotCtrl.selectedValue = selectedDay;
+    Get.delete<IndividualPaymentController>(force: true);
+    Get.toNamed(AppRouter.getIndividualPayment());
   }
 
   void onSelectDay(DateTime day) {

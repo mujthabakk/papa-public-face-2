@@ -1,6 +1,7 @@
 /*Papabear*/
 import 'package:get/get.dart';
 import 'package:salon_user/app/backend/api/api.dart';
+import 'package:salon_user/app/helper/locale_helper.dart';
 import 'package:salon_user/app/helper/shared_pref.dart';
 import 'package:salon_user/app/util/constant.dart';
 
@@ -22,6 +23,17 @@ class FindLocationParser {
     final uid = sharedPreferencesManager.getString('uid');
     if (uid != null && uid.isNotEmpty && uid != '0') {
       payload['uid'] = int.tryParse(uid) ?? uid;
+    }
+    final country = sharedPreferencesManager
+            .getString(LocaleHelper.prefCountryName) ??
+        sharedPreferencesManager.getString(LocaleHelper.prefCountry) ??
+        '';
+    if (country.isNotEmpty) {
+      payload['country'] = payload['country'] ?? country;
+    }
+    final cityId = sharedPreferencesManager.getInt('city_id') ?? 0;
+    if (cityId > 0) {
+      payload['city_id'] = payload['city_id'] ?? cityId;
     }
     return apiService.postPublic(AppConstants.getHomeData, payload);
   }

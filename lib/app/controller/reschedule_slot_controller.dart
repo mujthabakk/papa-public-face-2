@@ -58,19 +58,66 @@ class RescheduleSlotController extends GetxController implements GetxService {
   @override
   void onInit() {
     super.onInit();
-    appointmentId = Get.arguments[0].toString();
-    uid = Get.arguments[1].toString();
-    type = Get.arguments[2].toString();
-
-    var dayName = Jiffy.now().format(pattern: "EEEE"); // Tuesday
-    debugPrint(dayName);
+    final args = Get.arguments;
+    if (args is List && args.isNotEmpty) {
+      appointmentId = args[0].toString();
+      if (args.length > 1) uid = args[1].toString();
+      if (args.length > 2) type = args[2].toString();
+    } else if (args != null) {
+      appointmentId = args.toString();
+    }
+    var dayName = Jiffy.now().format(pattern: "EEEE");
     int index = dayList.indexOf(dayName);
     var date = Jiffy.now().format(pattern: 'yyyy-MM-dd');
     savedDate = date;
-    update();
-    getSlotsForBookings(index, date);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _bootstrap(index, date);
+    });
+  }
 
-    getSpecialist();
+  Future<void> _bootstrap(int weekId, String date) async {
+    apiCalled = false;
+    update();
+    await _resolveSalonFromAppointment();
+    if (uid.isEmpty || uid == '0' || uid == 'null') {
+      apiCalled = true;
+      haveData = false;
+      update();
+      showToast('Unable to load reschedule slots'.tr);
+      return;
+    }
+    await Future.wait([
+      getSlotsForBookings(weekId, date),
+      getSpecialist(),
+    ]);
+  }
+
+  Future<void> _resolveSalonFromAppointment() async {
+    if (appointmentId.isEmpty || appointmentId == '0') return;
+    try {
+      final response = await parser.getAppointmentDetails(
+          {"id": int.tryParse(appointmentId) ?? appointmentId});
+      if (response.statusCode != 200) return;
+      final body = response.body;
+      final map = body is Map ? Map<String, dynamic>.from(body) : null;
+      final data = map?['data'];
+      if (data is! Map) return;
+      final salonId = int.tryParse('${data['salon_id'] ?? 0}') ?? 0;
+      final freelancerId = int.tryParse('${data['freelancer_id'] ?? 0}') ?? 0;
+      final specialistId = int.tryParse('${data['specialist_id'] ?? 0}') ?? 0;
+      if (salonId > 0) {
+        uid = salonId.toString();
+        type = 'salon';
+      } else if (freelancerId > 0) {
+        uid = freelancerId.toString();
+        type = 'individual';
+      }
+      if (specialistId > 0) {
+        selectedSpecialist = specialistId.toString();
+      }
+    } catch (e) {
+      debugPrint('reschedule resolve appointment: $e');
+    }
   }
 
   Future<void> getSpecialist() async {

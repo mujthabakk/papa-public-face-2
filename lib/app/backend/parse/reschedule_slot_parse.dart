@@ -23,6 +23,13 @@ class RescheduleSlotParser {
     return response;
   }
 
+  Future<Response> getAppointmentDetails(var body) async {
+    return apiService.postPrivate(
+        AppConstants.getAppoimentInfo,
+        body,
+        sharedPreferencesManager.getString('token') ?? '');
+  }
+
   Future<Response> getSpecialist(var body) async {
     var response = await apiService.postPrivate(AppConstants.getSpecislistById,
         body, sharedPreferencesManager.getString('token') ?? '');

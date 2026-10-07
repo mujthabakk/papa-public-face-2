@@ -11,6 +11,7 @@ import 'package:salon_user/app/backend/models/coupons_model.dart';
 import 'package:salon_user/app/backend/models/packages_model.dart';
 import 'package:salon_user/app/backend/models/salon_details_model.dart';
 import 'package:salon_user/app/backend/models/services_model.dart';
+import 'package:salon_user/app/backend/models/timed_offer_model.dart';
 import 'package:salon_user/app/backend/models/specialist_model.dart';
 import 'package:salon_user/app/backend/models/timing_model.dart';
 import 'package:salon_user/app/backend/parse/services_parse.dart';
@@ -92,6 +93,7 @@ class ServicesController extends GetxController
 
   int salonId = 0;
   List<int> offerServiceIds = [];
+  String partnerOfferTitle = 'Flash Offers';
   final Set<Marker> markers = {};
   String getDistance = '';
   ServicesController({required this.parser});
@@ -317,6 +319,7 @@ class ServicesController extends GetxController
           service.status == 0 &&
           !offerServiceIds.contains(service.id) &&
           !offerServiceIds.contains(service.serviceId));
+      await _mergePartnerOffers();
       _dedupeDuplicateServices();
       _applyOfferPricing();
       _applyOfferServiceSelection();
@@ -704,7 +707,87 @@ class ServicesController extends GetxController
     update();
   }
 
+  Future<void> _mergePartnerOffers() async {
+    if (salonId <= 0) return;
+    try {
+      final response = await parser.getPartnerOffer(salonId);
+      final items = ApiBody.asList(response.body, keys: const [
+        'data',
+        'offers',
+        'items',
+        'result',
+        'list',
+      ]);
+      if (items.isEmpty) return;
+      for (final item in items) {
+        final row = TimedOfferRow.fromJson(item);
+        if ((row.name ?? '').trim().isNotEmpty) {
+          partnerOfferTitle = row.name!.trim();
+        }
+        for (final svc in row.services) {
+          final mapped = _serviceFromPartnerOffer(row, svc);
+          if ((mapped.id ?? 0) <= 0) continue;
+          final idx = _servicesList.indexWhere((s) => s.id == mapped.id);
+          if (idx >= 0) {
+            _overlayPartnerOffer(_servicesList[idx], mapped);
+          } else {
+            if (Get.find<ServiceCartController>()
+                .checkServiceInCart(mapped.id as int)) {
+              mapped.isChecked = true;
+            }
+            _servicesList.insert(0, mapped);
+          }
+        }
+      }
+      _servicesList.sort((a, b) {
+        if (a.isTimedOffer == b.isTimedOffer) return 0;
+        return a.isTimedOffer ? -1 : 1;
+      });
+    } catch (e) {
+      debugPrint('getPartnerOffer: $e');
+    }
+  }
+
+  ServicesModel _serviceFromPartnerOffer(
+      TimedOfferRow row, OfferServiceModel svc) {
+    final original = svc.originalPrice ?? svc.price ?? 0;
+    final sale = svc.offerPrice ?? svc.amount ?? 0;
+    return ServicesModel(
+      id: svc.id,
+      uid: salonId,
+      serviceId: svc.serviceId,
+      name: svc.name,
+      cover: svc.coverPath.isNotEmpty ? svc.coverPath : row.displayImage,
+      price: original,
+      off: sale > 0 ? sale : original,
+      discount: svc.discount ?? row.discountValue,
+      discountType: svc.type ?? (row.discountType == 'flat' ? 2 : 1),
+      discountText: row.discountText,
+      isTimedOffer: true,
+      offerCode: row.displayCode,
+      extraField: row.displayCode,
+      status: 1,
+    );
+  }
+
+  void _overlayPartnerOffer(ServicesModel existing, ServicesModel offer) {
+    existing.price = offer.price;
+    existing.off = offer.off;
+    existing.discount = offer.discount;
+    existing.discountType = offer.discountType;
+    existing.discountText = offer.discountText;
+    existing.isTimedOffer = true;
+    existing.offerCode = offer.offerCode;
+    existing.extraField = offer.extraField ?? existing.extraField;
+    if ((existing.name ?? '').isEmpty) existing.name = offer.name;
+    if ((existing.cover ?? '').trim().isEmpty &&
+        (offer.cover ?? '').trim().isNotEmpty) {
+      existing.cover = offer.cover;
+    }
+  }
+
   bool _isOfferService(ServicesModel service) {
+    if (service.isTimedOffer) return true;
     if (offerServiceIds.isEmpty) return false;
     if (offerServiceIds.contains(service.id)) return true;
     final hasListing = _servicesList.any((s) => offerServiceIds.contains(s.id));
@@ -716,7 +799,7 @@ class ServicesController extends GetxController
     final preferred = <ServicesModel>[];
     final rest = <ServicesModel>[];
     for (final service in _servicesList) {
-      if (offerServiceIds.contains(service.id)) {
+      if (service.isTimedOffer || offerServiceIds.contains(service.id)) {
         preferred.add(service);
       } else {
         rest.add(service);
@@ -740,6 +823,7 @@ class ServicesController extends GetxController
     final coupon = Get.find<ServiceCartController>().selectedCoupon;
     if ((coupon.type ?? 1) != 1 || (coupon.discount ?? 0) <= 0) return;
     for (final service in _servicesList) {
+      if (service.isTimedOffer) continue;
       if (!_isOfferService(service)) continue;
       final price = service.price ?? 0;
       final currentOff = service.off ?? 0;

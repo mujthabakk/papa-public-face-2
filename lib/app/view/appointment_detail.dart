@@ -358,11 +358,17 @@ class _AppointmentDetailScreenState extends State<AppointmentDetailScreen> {
                 Get.offAllNamed(AppRouter.getTabsBarRoute());
               },
             ),
-            if (value.appointmentInfo.status == 0) ...[
+            if (value.canManageBooking) ...[
+              const SizedBox(height: 10),
+              EliteGoldButton(
+                label: 'Reschedule'.tr,
+                icon: Icons.schedule,
+                onTap: value.goReschedule,
+              ),
               const SizedBox(height: 10),
               TextButton(
                 onPressed: () => value.onUpdateAppointmentStatus(5),
-                child: Text('CANCEL APPOINTMENT'.tr,
+                child: Text('Cancel Appointment'.tr,
                   style: ThemeProvider.sans(
                     size: 12,
                     weight: FontWeight.w700,

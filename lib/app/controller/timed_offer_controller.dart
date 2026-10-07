@@ -172,7 +172,7 @@ class TimedOfferController extends GetxController implements GetxService {
     successToast('Code copied');
   }
 
-  void bookRow(TimedOfferRow row) {
+  void bookRow(TimedOfferRow row, {OfferServiceModel? service}) {
     if (!row.isScheduleActive) {
       showToast(row.scheduleHint.isNotEmpty
           ? row.scheduleHint
@@ -182,9 +182,10 @@ class TimedOfferController extends GetxController implements GetxService {
     final partner = row.partner;
     if (partner == null || (partner.id ?? 0) <= 0) return;
     final serviceIds = <int>{};
-    for (final service in row.services) {
-      if ((service.id ?? 0) > 0) serviceIds.add(service.id!);
-      if ((service.serviceId ?? 0) > 0) serviceIds.add(service.serviceId!);
+    final pick = service == null ? row.services : [service];
+    for (final item in pick) {
+      if ((item.id ?? 0) > 0) serviceIds.add(item.id!);
+      if ((item.serviceId ?? 0) > 0) serviceIds.add(item.serviceId!);
     }
     final ids = serviceIds.toList();
     if ((partner.type ?? '').toLowerCase() == 'individual') {

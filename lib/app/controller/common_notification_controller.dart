@@ -8,6 +8,7 @@ import 'package:salon_user/app/backend/parse/common_notification_parse..dart';
 import 'package:salon_user/app/controller/appointment_detail_controller.dart';
 import 'package:salon_user/app/controller/payment_socket_controller.dart';
 import 'package:salon_user/app/controller/product_order_detail_controller.dart';
+import 'package:salon_user/app/controller/reschedule_slot_controller.dart';
 import 'package:salon_user/app/helper/router.dart';
 import 'package:salon_user/app/util/theme.dart';
 
@@ -65,133 +66,135 @@ class CommonNotificationController extends GetxController
   void showNotificationDialog(
       BuildContext context, NotificationItem notification) {
     openNotification(notification);
-    final type = notification.type.toLowerCase();
-    final isPayNotice = notification.data.showPopup ||
-        type.contains('payment') ||
-        notification.data.action == 'pay_now';
-    if (isPayNotice) return;
-    if (notification.isUnread) {
-      readNotifications(notification.id);
-    }
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return Dialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
+    final hasAppointment = (notification.data.appointmentId ?? 0) > 0;
+    final hasOrder = (notification.data.orderId ?? 0) > 0;
+    final business = notification.data.businessName.trim();
+    final date = notification.data.date.trim();
+    final price = notification.data.price;
+    Get.bottomSheet(
+      SafeArea(
+        child: Container(
+          width: double.infinity,
+          constraints: BoxConstraints(
+            maxHeight: MediaQuery.of(context).size.height * 0.75,
           ),
-          child: Container(
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(20),
-              boxShadow: const [
-                BoxShadow(
-                  color: Colors.black12,
-                  blurRadius: 10,
-                  offset: Offset(0, 5),
-                ),
-              ],
-            ),
+          padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
+          decoration: const BoxDecoration(
+            color: ThemeProvider.surface,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+          ),
+          child: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
-                  children: [
-                    CircleAvatar(
-                      backgroundColor:
-                          ThemeProvider.appColor.withOpacity(0.1),
-                      child: const Icon(
-                        Icons.notifications_active,
-                        color: ThemeProvider.appColor,
-                      ),
+                Center(
+                  child: Container(
+                    width: 40,
+                    height: 4,
+                    margin: const EdgeInsets.only(bottom: 16),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF3A3A3A),
+                      borderRadius: BorderRadius.circular(4),
                     ),
-                    const SizedBox(width: 15),
-                    Expanded(
-                      child: Text(
-                        notification.title,
-                        style: const TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.w700,
-                          color: Colors.black87,
-                        ),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 20),
-                _buildDetailRow(
-                  icon: Icons.monetization_on,
-                  label: 'Price',
-                  value: notification.data.price.toString(),
-                ),
-                _buildDetailRow(
-                  icon: Icons.business,
-                  label: 'Business',
-                  value: notification.data.businessName,
-                ),
-                _buildDetailRow(
-                  icon: Icons.calendar_today,
-                  label: 'Date',
-                  value: notification.data.date,
-                ),
-                const SizedBox(height: 15),
-                Text(
-                  notification.message,
-                  style: TextStyle(
-                    color: Colors.grey[800],
-                    fontSize: 16,
-                    height: 1.5,
                   ),
                 ),
-                const SizedBox(height: 20),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    TextButton(
-                      onPressed: () => Navigator.of(context).pop(),
-                      child: Text(
-                        'Dismiss',
-                        style: TextStyle(
-                          color: Colors.grey[600],
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
+                Text(
+                  notification.title,
+                  style: ThemeProvider.serif(
+                    size: 20,
+                    color: ThemeProvider.gold,
+                  ),
+                ),
+                if (date.isNotEmpty) ...[
+                  const SizedBox(height: 6),
+                  Text(
+                    date,
+                    style: ThemeProvider.sans(
+                      size: 12,
+                      color: ThemeProvider.greyColor,
                     ),
-                    ElevatedButton(
+                  ),
+                ],
+                const SizedBox(height: 16),
+                Text(
+                  notification.message,
+                  style: ThemeProvider.sans(
+                    size: 14,
+                    color: Colors.white70,
+                  ).copyWith(height: 1.5),
+                ),
+                if (business.isNotEmpty)
+                  _buildDetailRow(
+                    icon: Icons.storefront_outlined,
+                    label: 'Business'.tr,
+                    value: business,
+                  ),
+                if (price > 0)
+                  _buildDetailRow(
+                    icon: Icons.payments_outlined,
+                    label: 'Amount'.tr,
+                    value: price.toString(),
+                  ),
+                const SizedBox(height: 20),
+                if (hasAppointment || hasOrder)
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
                       onPressed: () {
-                        Navigator.of(context).pop();
-                        if (notification.data.appointmentId != null) {
+                        Get.back();
+                        if (hasAppointment) {
                           onAppointment(notification.data.appointmentId!);
-                        } else if (notification.data.orderId != null) {
+                        } else {
                           onProductDetail(notification.data.orderId!);
                         }
                       },
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: ThemeProvider.appColor,
+                        backgroundColor: ThemeProvider.gold,
+                        foregroundColor: Colors.black,
+                        minimumSize: const Size(0, 46),
+                        elevation: 0,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(10),
                         ),
-                        elevation: 2,
                       ),
-                      child: const Text(
-                        'More Details',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
+                      child: Text(
+                        hasAppointment
+                            ? 'View Appointment'.tr
+                            : 'View Order'.tr,
+                        style: ThemeProvider.sans(
+                          size: 13,
+                          weight: FontWeight.w700,
+                          color: Colors.black,
                         ),
                       ),
                     ),
-                  ],
-                ),
+                  )
+                else
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton(
+                      onPressed: () => Get.back(),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: Colors.white,
+                        side: const BorderSide(color: Color(0xFF3A3A3A)),
+                        minimumSize: const Size(0, 46),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                      ),
+                      child: Text('Close'.tr,
+                          style: ThemeProvider.sans(
+                              size: 13, weight: FontWeight.w600)),
+                    ),
+                  ),
               ],
             ),
           ),
-        );
-      },
+        ),
+      ),
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
     );
   }
 
@@ -200,36 +203,34 @@ class CommonNotificationController extends GetxController
     required String label,
     required String value,
   }) {
+    if (value.trim().isEmpty) return const SizedBox.shrink();
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8.0),
+      padding: const EdgeInsets.only(top: 14),
       child: Row(
         children: [
-          Icon(
-            icon,
-            color: ThemeProvider.appColor.withOpacity(0.7),
-            size: 20,
-          ),
+          Icon(icon, color: ThemeProvider.gold, size: 18),
           const SizedBox(width: 10),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                label,
-                style: TextStyle(
-                  color: Colors.grey[600],
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: ThemeProvider.sans(
+                    size: 11,
+                    color: ThemeProvider.greyColor,
+                  ),
                 ),
-              ),
-              Text(
-                value,
-                style: const TextStyle(
-                  color: Colors.black87,
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
+                Text(
+                  value,
+                  style: ThemeProvider.sans(
+                    size: 14,
+                    weight: FontWeight.w600,
+                    color: ThemeProvider.whiteColor,
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ],
       ),
@@ -260,6 +261,13 @@ class CommonNotificationController extends GetxController
   void onAppointment(int id) {
     Get.delete<AppointmentDetailController>(force: true);
     Get.toNamed(AppRouter.getAppointmentDetailRoutes(), arguments: [id]);
+  }
+
+  void onReschedule(NotificationItem n) {
+    final id = n.data.appointmentId ?? n.data.bookId ?? n.data.payBookId;
+    if (id <= 0) return;
+    Get.delete<RescheduleSlotController>(force: true);
+    Get.toNamed(AppRouter.getRescheduleSlotRoutes(), arguments: [id]);
   }
 
   Future<void> getAllNotifications(String uidParam) async {
@@ -318,7 +326,6 @@ class CommonNotificationController extends GetxController
           : ok;
       if (!ok && !success) {
         ApiChecker.checkApi(response);
-        // Revert by refreshing list
         await getAllNotifications(uid);
       }
     } catch (e) {
@@ -334,19 +341,16 @@ class CommonNotificationController extends GetxController
         _notificationList.where((n) => n.isUnread).map((n) => n.id).toList();
     if (unreadIds.isEmpty) return;
 
-    // Optimistic
     for (final n in _notificationList) {
       if (n.isUnread) n.markReadLocally();
     }
     safeUpdate();
 
     try {
-      // Try bulk first
       final bulk = await parser.readAllNotifications(uid: uid);
       final bulkOk = bulk.statusCode == 200;
       if (bulkOk) return;
 
-      // Fallback: one-by-one without full list refresh each time
       for (final id in unreadIds) {
         await parser.readNotification(notificationId: id, uid: uid);
       }

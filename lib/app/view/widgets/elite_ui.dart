@@ -2,6 +2,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:salon_user/app/backend/models/salon_social_model.dart';
+import 'package:salon_user/app/controller/checkout_controller.dart';
 import 'package:salon_user/app/controller/product_cart_controller.dart';
 import 'package:salon_user/app/controller/service_cart_controller.dart';
 import 'package:salon_user/app/controller/tabs_controller.dart';
@@ -12,6 +13,7 @@ import 'package:salon_user/app/util/theme.dart';
 
 class EliteAppBar extends StatelessWidget implements PreferredSizeWidget {
   final VoidCallback? onMenu;
+  final VoidCallback? onBack;
   final VoidCallback? onSearch;
   final VoidCallback? onMore;
   final VoidCallback? onFavorite;
@@ -27,6 +29,7 @@ class EliteAppBar extends StatelessWidget implements PreferredSizeWidget {
   const EliteAppBar({
     Key? key,
     this.onMenu,
+    this.onBack,
     this.onSearch,
     this.onMore,
     this.onFavorite,
@@ -77,7 +80,7 @@ class EliteAppBar extends StatelessWidget implements PreferredSizeWidget {
                   size: 22,
                 ),
                 onPressed: showBack
-                    ? () => Get.back()
+                    ? (onBack ?? () => Get.back())
                     : (onMenu ??
                         () {
                           Scaffold.maybeOf(context)?.openDrawer();
@@ -284,42 +287,56 @@ class EliteNetworkImage extends StatelessWidget {
     return path.isNotEmpty;
   }
 
-  Widget _placeholder() {
-    return Image.asset(
-      'assets/images/notfound.png',
-      fit: fit,
-      width: width,
-      height: height,
-    );
-  }
+  double? _finite(double? value) =>
+      value != null && value.isFinite && value > 0 ? value : null;
 
   @override
   Widget build(BuildContext context) {
-    if (!_isValidUrl) {
-      final child = _placeholder();
-      if (radius == null) return child;
-      return ClipRRect(borderRadius: radius!, child: child);
-    }
-
-    final resolved = Environments.mediaUrl(url);
-    final image = CachedNetworkImage(
-      imageUrl: resolved,
-      width: width,
-      height: height,
-      fit: fit,
-      placeholder: (context, url) => Container(
-        color: ThemeProvider.surface,
-        child: const Center(
-          child: CircularProgressIndicator(
-            color: ThemeProvider.gold,
-            strokeWidth: 2,
-          ),
-        ),
-      ),
-      errorWidget: (context, url, error) => _placeholder(),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final w = _finite(width) ??
+            (constraints.hasBoundedWidth ? _finite(constraints.maxWidth) : null);
+        final h = _finite(height) ??
+            (constraints.hasBoundedHeight
+                ? _finite(constraints.maxHeight)
+                : null);
+        Widget child;
+        if (!_isValidUrl) {
+          child = Image.asset(
+            'assets/images/notfound.png',
+            fit: fit,
+            width: w,
+            height: h,
+          );
+        } else {
+          child = CachedNetworkImage(
+            imageUrl: Environments.mediaUrl(url),
+            width: w,
+            height: h,
+            fit: fit,
+            placeholder: (context, url) => Container(
+              width: w,
+              height: h,
+              color: ThemeProvider.surface,
+              child: const Center(
+                child: CircularProgressIndicator(
+                  color: ThemeProvider.gold,
+                  strokeWidth: 2,
+                ),
+              ),
+            ),
+            errorWidget: (context, url, error) => Image.asset(
+              'assets/images/notfound.png',
+              fit: fit,
+              width: w,
+              height: h,
+            ),
+          );
+        }
+        if (radius == null) return child;
+        return ClipRRect(borderRadius: radius!, child: child);
+      },
     );
-    if (radius == null) return image;
-    return ClipRRect(borderRadius: radius!, child: image);
   }
 }
 
@@ -437,8 +454,12 @@ class EliteCartFab extends StatelessWidget {
               child: GestureDetector(
                 onTap: () {
                   if (serviceCart.totalItemsInCart > 0) {
-                    Get.find<TabsController>().updateTabId(0);
-                    Get.toNamed(AppRouter.getCheckoutRoutes());
+                    if (serviceCart.servicesFrom == 'individual') {
+                      Get.toNamed(AppRouter.getIndividualCheckout());
+                    } else {
+                      Get.delete<CheckoutController>(force: true);
+                      Get.toNamed(AppRouter.getCheckoutRoutes());
+                    }
                   } else {
                     Get.toNamed(AppRouter.getCartRoutes());
                   }

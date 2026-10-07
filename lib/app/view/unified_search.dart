@@ -81,7 +81,7 @@ class _UnifiedSearchScreenState extends State<UnifiedSearchScreen> {
                     }
                   },
                   onSelected: (String selection) {
-                    value.setSearchValue(selection);
+                    value.selectServiceSuggestion(selection);
                     value.searchProducts(context, selection);
                     FocusScope.of(context).unfocus();
                   },
@@ -117,6 +117,9 @@ class _UnifiedSearchScreenState extends State<UnifiedSearchScreen> {
                     return TextField(
                       controller: textController,
                       focusNode: focusNode,
+                      enabled: true,
+                      readOnly: false,
+                      autofocus: false,
                       style: ThemeProvider.sans(size: 14),
                       textInputAction: TextInputAction.search,
                       onChanged: value.setSearchValue,
@@ -127,7 +130,8 @@ class _UnifiedSearchScreenState extends State<UnifiedSearchScreen> {
                       decoration: InputDecoration(
                         prefixIcon: const Icon(Icons.search,
                             color: ThemeProvider.gold, size: 18),
-                        hintText: 'Search shops, freelancers, services...'.tr,
+                        hintText:
+                            'Search shops, services, products...'.tr,
                         hintStyle: ThemeProvider.sans(
                             size: 13, color: ThemeProvider.greyColor),
                         filled: true,
@@ -199,6 +203,12 @@ class _UnifiedSearchScreenState extends State<UnifiedSearchScreen> {
                   selected: value.tabID.value == 2,
                   onTap: () => value.updateTabID(2),
                 ),
+                const SizedBox(width: 4),
+                _modeButton(
+                  label: 'Products'.tr,
+                  selected: value.tabID.value == 3,
+                  onTap: () => value.updateTabID(3),
+                ),
               ],
             ),
           ),
@@ -257,14 +267,16 @@ class _UnifiedSearchScreenState extends State<UnifiedSearchScreen> {
                               .toList(),
                           onBanner: value.onBanner,
                         )
-                      : _resultList(
+                      : value.tabID.value == 2
+                      ? _resultList(
                           banners: value.bannerList,
                           searched: value.hasSearched,
                           empty: value.filteredServiceList.isEmpty,
                           children: value.filteredServiceList
                               .map((s) => _resultCard(
                                     cover: s.cover,
-                                    title: (s.serviceName ?? '').isNotEmpty
+                                    title: (s.serviceName ?? '').isNotEmpty &&
+                                            s.serviceName != 'Unknown Service'
                                         ? s.serviceName!
                                         : (s.name ?? ''),
                                     subtitle: (s.name ?? '').isNotEmpty
@@ -280,6 +292,30 @@ class _UnifiedSearchScreenState extends State<UnifiedSearchScreen> {
                                     offer: s.off,
                                     discount: s.discount,
                                     onTap: () => value.onServiceResult(s),
+                                  ))
+                              .toList(),
+                          onBanner: value.onBanner,
+                        )
+                      : _resultList(
+                          banners: value.bannerList,
+                          searched: value.hasSearched,
+                          empty: value.filteredProductList.isEmpty,
+                          children: value.filteredProductList
+                              .map((p) => _resultCard(
+                                    cover: p.cover,
+                                    title: p.name ?? '',
+                                    subtitle: 'Product'.tr,
+                                    address: null,
+                                    distance: null,
+                                    duration: null,
+                                    gender: null,
+                                    rating: p.rating,
+                                    reviews: p.totalRating,
+                                    price: p.originalPrice,
+                                    offer: p.sellPrice,
+                                    discount: p.discount,
+                                    onTap: () =>
+                                        value.onProduct(p.id ?? 0),
                                   ))
                               .toList(),
                           onBanner: value.onBanner,
@@ -307,7 +343,7 @@ class _UnifiedSearchScreenState extends State<UnifiedSearchScreen> {
           child: Text(
             label,
             style: ThemeProvider.sans(
-              size: 11,
+              size: 10,
               weight: FontWeight.w700,
               color: selected ? ThemeProvider.blackColor : Colors.white70,
             ),
@@ -338,13 +374,13 @@ class _UnifiedSearchScreenState extends State<UnifiedSearchScreen> {
                 Icon(Icons.search_off, size: 48, color: Colors.grey.shade500),
                 const SizedBox(height: 12),
                 Text(
-                  'No shops or freelancers found'.tr,
+                  'No matching shops, services or products'.tr,
                   style: ThemeProvider.sans(
                       size: 16, weight: FontWeight.w600, color: Colors.white70),
                 ),
                 const SizedBox(height: 6),
                 Text(
-                  'Try another shop or freelancer name'.tr,
+                  'Try a shop, service or product name'.tr,
                   style: ThemeProvider.sans(
                       size: 12, color: ThemeProvider.greyColor),
                 ),

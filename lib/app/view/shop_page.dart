@@ -635,6 +635,17 @@ class _ServicesScreenState extends State<ServicesScreen> {
   List<Widget> _serviceSections(ServicesController value) {
     final used = <int>{};
     final widgets = <Widget>[];
+    final timed = <MapEntry<int, ServicesModel>>[];
+    for (var i = 0; i < value.servicesList.length; i++) {
+      if (value.servicesList[i].isTimedOffer) {
+        timed.add(MapEntry(i, value.servicesList[i]));
+        used.add(i);
+      }
+    }
+    if (timed.isNotEmpty) {
+      widgets.add(_sectionHeader(value.partnerOfferTitle, timed.length));
+      widgets.addAll(timed.map((e) => _serviceCard(value, e.value, e.key)));
+    }
     for (final cate in value.categoriesList) {
       final items = <MapEntry<int, ServicesModel>>[];
       for (var i = 0; i < value.servicesList.length; i++) {
@@ -670,8 +681,8 @@ class _ServicesScreenState extends State<ServicesScreen> {
   Widget _serviceCard(
       ServicesController value, ServicesModel service, int index) {
     final selected = service.isChecked == true;
-    final hasOffer = (service.discount ?? 0) > 0;
-    final offerPrice = hasOffer ? service.off : service.price;
+    final hasOffer = service.hasSalePrice || service.offerBadge.isNotEmpty;
+    final offerPrice = service.displayPrice;
     final serviceRating = (service.rating ?? 0) > 0
         ? service.rating!
         : (value.salonDetails.rating ?? 0);
@@ -688,11 +699,14 @@ class _ServicesScreenState extends State<ServicesScreen> {
         children: [
           Stack(
             children: [
-              EliteNetworkImage(
-                url: '${Environments.imageURL}${service.cover}',
+              SizedBox(
                 height: 160,
                 width: double.infinity,
-                radius: BorderRadius.circular(12),
+                child: EliteNetworkImage(
+                  url: service.imageCover,
+                  height: 160,
+                  radius: BorderRadius.circular(12),
+                ),
               ),
               if (hasOffer)
                 Positioned(
@@ -706,7 +720,9 @@ class _ServicesScreenState extends State<ServicesScreen> {
                       borderRadius: BorderRadius.circular(6),
                     ),
                     child: Text(
-                      '${service.discount!.toStringAsFixed(0)}% OFF',
+                      service.offerBadge.isNotEmpty
+                          ? service.offerBadge
+                          : '${service.discount!.toStringAsFixed(0)}% OFF',
                       style: ThemeProvider.sans(
                         size: 11,
                         weight: FontWeight.w700,

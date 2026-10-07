@@ -58,23 +58,15 @@ class SlotController extends GetxController implements GetxService {
   void onInit() {
     super.onInit();
 
-    if (Get.find<CheckoutController>().savedInCart.services!.isNotEmpty ||
-        Get.find<CheckoutController>().savedInCart.packages!.isNotEmpty) {
-      if (Get.find<CheckoutController>().savedInCart.services!.isNotEmpty) {
-        uid = Get.find<CheckoutController>()
-            .savedInCart
-            .services![0]
-            .uid
-            .toString();
-      } else if (Get.find<CheckoutController>()
-          .savedInCart
-          .packages!
-          .isNotEmpty) {
-        uid = Get.find<CheckoutController>()
-            .savedInCart
-            .packages![0]
-            .uid
-            .toString();
+    final cart = Get.isRegistered<ServiceCartController>()
+        ? Get.find<ServiceCartController>().savedInCart
+        : Get.find<CheckoutController>().savedInCart;
+
+    if ((cart.services ?? []).isNotEmpty || (cart.packages ?? []).isNotEmpty) {
+      if ((cart.services ?? []).isNotEmpty) {
+        uid = cart.services![0].uid.toString();
+      } else if ((cart.packages ?? []).isNotEmpty) {
+        uid = cart.packages![0].uid.toString();
       }
 
       var dayName = Jiffy.now().format(pattern: "EEEE"); // Tuesday
@@ -309,6 +301,24 @@ class SlotController extends GetxController implements GetxService {
     }
     Get.delete<PaymentController>(force: true);
     Get.toNamed(AppRouter.getPaymentRoutes());
+  }
+
+  void addToCart() {
+    if (!Get.isRegistered<ServiceCartController>()) {
+      showToast('Please select services'.tr);
+      return;
+    }
+    final cart = Get.find<ServiceCartController>();
+    cart.calcuate();
+    final services = cart.savedInCart.services ?? [];
+    final packages = cart.savedInCart.packages ?? [];
+    if (services.isEmpty && packages.isEmpty) {
+      showToast('Please select services'.tr);
+      return;
+    }
+    successToast('Added to cart'.tr);
+    Get.delete<CheckoutController>(force: true);
+    Get.offNamed(AppRouter.getCheckoutRoutes());
   }
 
   void saveSpecialist(int id) {

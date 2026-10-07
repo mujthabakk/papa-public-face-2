@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:salon_user/app/backend/models/coupons_model.dart';
 import 'package:salon_user/app/backend/models/timed_offer_model.dart';
 import 'package:salon_user/app/controller/timed_offer_controller.dart';
 import 'package:salon_user/app/env.dart';
@@ -83,6 +84,20 @@ class TimedOfferScreen extends StatelessWidget {
             style: ThemeProvider.serif(size: 20, color: ThemeProvider.gold),
           ),
         ),
+      if (_imageUrl(header.image ?? header.cover ?? value.campaignImage)
+          .isNotEmpty) ...[
+        const SizedBox(height: 8),
+        SizedBox(
+          height: 150,
+          width: double.infinity,
+          child: EliteNetworkImage(
+            url: _imageUrl(
+                header.image ?? header.cover ?? value.campaignImage),
+            height: 150,
+            radius: BorderRadius.circular(12),
+          ),
+        ),
+      ],
       if ((header.discountText ?? '').isNotEmpty)
         Text(
           header.discountText!,
@@ -166,141 +181,27 @@ class TimedOfferScreen extends StatelessWidget {
           ),
         ),
       ],
-      ...bookable.map((row) => _bookableCard(value, row)),
+      ...bookable.expand((row) {
+        if (row.services.isEmpty) {
+          return [_salonBookCard(value, row)];
+        }
+        return row.services.map((service) => _serviceCard(value, row, service));
+      }),
     ];
   }
 
-  Widget _bookableCard(TimedOfferController value, TimedOfferRow row) {
+  Widget _salonBookCard(TimedOfferController value, TimedOfferRow row) {
     final partner = row.partner!;
-    final cover = _imageUrl(partner.coverPath);
+    final cover = _imageUrl(
+      partner.coverPath.isNotEmpty ? partner.coverPath : row.displayImage,
+    );
     return Padding(
       padding: const EdgeInsets.only(top: 16),
       child: EliteCard(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              children: [
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(10),
-                  child: cover.isEmpty
-                      ? Container(
-                          width: 56,
-                          height: 56,
-                          color: ThemeProvider.gold.withOpacity(0.2),
-                          child: const Icon(Icons.storefront,
-                              color: ThemeProvider.gold),
-                        )
-                      : EliteNetworkImage(url: cover, width: 56, height: 56),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        partner.displayName,
-                        style: ThemeProvider.serif(size: 16),
-                      ),
-                      if ((partner.type ?? '').isNotEmpty)
-                        Text(
-                          partner.type!.toUpperCase(),
-                          style: ThemeProvider.sans(
-                            size: 10,
-                            color: ThemeProvider.gold,
-                            letterSpacing: 0.6,
-                          ),
-                        ),
-                      if (row.displayCode.isNotEmpty)
-                        Text(
-                          row.displayCode,
-                          style: ThemeProvider.sans(
-                            size: 11,
-                            weight: FontWeight.w700,
-                            color: ThemeProvider.gold,
-                          ),
-                        ),
-                      if ((partner.address ?? '').isNotEmpty)
-                        Text(
-                          partner.address!.replaceAll('\n', ', '),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: ThemeProvider.sans(
-                            size: 11,
-                            color: ThemeProvider.greyColor,
-                          ),
-                        ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-            if (row.services.isNotEmpty) ...[
-              const SizedBox(height: 12),
-              Text('SERVICES'.tr,
-                style: ThemeProvider.sans(
-                  size: 10,
-                  color: ThemeProvider.greyColor,
-                  letterSpacing: 1,
-                ),
-              ),
-              const SizedBox(height: 8),
-              SizedBox(
-                height: 150,
-                child: ListView.separated(
-                  scrollDirection: Axis.horizontal,
-                  itemCount: row.services.length,
-                  separatorBuilder: (_, __) => const SizedBox(width: 10),
-                  itemBuilder: (_, i) {
-                    final service = row.services[i];
-                    final img = _imageUrl(service.coverPath);
-                    final price = service.price ?? service.amount ?? 0;
-                    return SizedBox(
-                      width: 130,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          ClipRRect(
-                            borderRadius: BorderRadius.circular(10),
-                            child: img.isEmpty
-                                ? Container(
-                                    height: 84,
-                                    width: 130,
-                                    color: const Color(0xFF2A2A2A),
-                                    child: const Icon(Icons.spa_outlined,
-                                        color: ThemeProvider.gold),
-                                  )
-                                : EliteNetworkImage(
-                                    url: img,
-                                    width: 130,
-                                    height: 84,
-                                    radius: BorderRadius.circular(10),
-                                  ),
-                          ),
-                          const SizedBox(height: 6),
-                          Text(
-                            service.name ?? '',
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: ThemeProvider.sans(
-                                size: 12, weight: FontWeight.w600),
-                          ),
-                          if (price > 0)
-                            Text(
-                              elitePrice('', '', price),
-                              style: ThemeProvider.sans(
-                                size: 12,
-                                weight: FontWeight.w700,
-                                color: ThemeProvider.gold,
-                              ),
-                            ),
-                        ],
-                      ),
-                    );
-                  },
-                ),
-              ),
-            ],
+            _partnerHeader(partner, cover, row),
             const SizedBox(height: 12),
             if (!row.isScheduleActive && row.scheduleHint.isNotEmpty) ...[
               Text(
@@ -320,6 +221,164 @@ class TimedOfferScreen extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+
+  Widget _serviceCard(
+    TimedOfferController value,
+    TimedOfferRow row,
+    OfferServiceModel service,
+  ) {
+    final partner = row.partner!;
+    final cover = _imageUrl(
+      partner.coverPath.isNotEmpty ? partner.coverPath : row.displayImage,
+    );
+    final img = _imageUrl(
+      service.coverPath.isNotEmpty ? service.coverPath : row.displayImage,
+    );
+    final original = service.originalPrice ?? service.price ?? 0;
+    final offer = service.offerPrice ?? service.amount ?? 0;
+    final price = offer > 0 ? offer : original;
+    return Padding(
+      padding: const EdgeInsets.only(top: 16),
+      child: EliteCard(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _partnerHeader(partner, cover, row),
+            const SizedBox(height: 12),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: img.isEmpty
+                  ? Container(
+                      height: 140,
+                      width: double.infinity,
+                      color: const Color(0xFF2A2A2A),
+                      child: const Icon(Icons.spa_outlined,
+                          color: ThemeProvider.gold, size: 36),
+                    )
+                  : SizedBox(
+                      height: 140,
+                      width: double.infinity,
+                      child: EliteNetworkImage(
+                        url: img,
+                        height: 140,
+                        radius: BorderRadius.circular(12),
+                      ),
+                    ),
+            ),
+            const SizedBox(height: 10),
+            Text(
+              service.name ?? '',
+              style: ThemeProvider.serif(size: 18),
+            ),
+            if ((row.discountText ?? '').isNotEmpty) ...[
+              const SizedBox(height: 4),
+              Text(
+                row.discountText!,
+                style: ThemeProvider.sans(
+                  size: 12,
+                  weight: FontWeight.w700,
+                  color: ThemeProvider.gold,
+                ),
+              ),
+            ],
+            if (price > 0) ...[
+              const SizedBox(height: 4),
+              Text(
+                elitePrice('', '', price),
+                style: ThemeProvider.price(
+                  size: 16,
+                  weight: FontWeight.w700,
+                  color: ThemeProvider.gold,
+                ),
+              ),
+              if (original > 0 && offer > 0 && original > offer)
+                Text(
+                  elitePrice('', '', original),
+                  style: ThemeProvider.sans(
+                    size: 12,
+                    color: ThemeProvider.greyColor,
+                  ).copyWith(decoration: TextDecoration.lineThrough),
+                ),
+            ],
+            const SizedBox(height: 12),
+            if (!row.isScheduleActive && row.scheduleHint.isNotEmpty) ...[
+              Text(
+                row.scheduleHint,
+                style: ThemeProvider.sans(
+                  size: 11,
+                  color: ThemeProvider.greyColor,
+                ),
+              ),
+              const SizedBox(height: 8),
+            ],
+            EliteGoldButton(
+              label: 'BOOK NOW'.tr,
+              enabled: row.isScheduleActive,
+              onTap: () => value.bookRow(row, service: service),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _partnerHeader(OfferPartnerModel partner, String cover, TimedOfferRow row) {
+    return Row(
+      children: [
+        ClipRRect(
+          borderRadius: BorderRadius.circular(10),
+          child: cover.isEmpty
+              ? Container(
+                  width: 48,
+                  height: 48,
+                  color: ThemeProvider.gold.withOpacity(0.2),
+                  child: const Icon(Icons.storefront, color: ThemeProvider.gold),
+                )
+              : EliteNetworkImage(url: cover, width: 48, height: 48),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                partner.displayName,
+                style: ThemeProvider.serif(size: 15),
+              ),
+              if ((partner.type ?? '').isNotEmpty)
+                Text(
+                  partner.type!.toUpperCase(),
+                  style: ThemeProvider.sans(
+                    size: 10,
+                    color: ThemeProvider.gold,
+                    letterSpacing: 0.6,
+                  ),
+                ),
+              if (row.displayCode.isNotEmpty)
+                Text(
+                  row.displayCode,
+                  style: ThemeProvider.sans(
+                    size: 11,
+                    weight: FontWeight.w700,
+                    color: ThemeProvider.gold,
+                  ),
+                ),
+              if ((partner.address ?? '').isNotEmpty)
+                Text(
+                  partner.address!.replaceAll('\n', ', '),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: ThemeProvider.sans(
+                    size: 11,
+                    color: ThemeProvider.greyColor,
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }

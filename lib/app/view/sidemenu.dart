@@ -119,7 +119,7 @@ class _SideMenuScreenState extends State<SideMenuScreen> {
                       _item(Icons.calendar_today_outlined, 'My Appointments',
                           () {
                         Navigator.pop(context);
-                        Get.find<TabsController>().updateTabId(4);
+                        Get.find<TabsController>().openAppointments();
                       }),
                     if (value.parser.haveLoggedIn())
                       _item(Icons.payments_outlined, 'After Payment', () {

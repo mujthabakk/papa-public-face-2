@@ -220,12 +220,19 @@ class _IndividualCategoriesScreenState
                   borderRadius: BorderRadius.circular(5),
                 ),
                 child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(
-                      '${Get.find<ServiceCartController>().totalItemsInCart} ${Get.find<ServiceCartController>().totalItemsInCart == 1 ? 'Item'.tr : 'Items'.tr}  ${'Pay Amount'.tr} ${elitePrice(value.currencySide, value.currencySymbol, Get.find<ServiceCartController>().totalPrice, digits: 2)}',
-                      style: const TextStyle(color: ThemeProvider.whiteColor),
+                    Expanded(
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        alignment: Alignment.centerLeft,
+                        child: Text(
+                          '${Get.find<ServiceCartController>().totalItemsInCart} ${Get.find<ServiceCartController>().totalItemsInCart == 1 ? 'Item'.tr : 'Items'.tr}  ${'Pay Amount'.tr} ${elitePrice(value.currencySide, value.currencySymbol, Get.find<ServiceCartController>().totalPrice, digits: 2)}',
+                          maxLines: 1,
+                          style: const TextStyle(color: ThemeProvider.whiteColor),
+                        ),
+                      ),
                     ),
+                    const SizedBox(width: 8),
                     Text(
                       'Book Services'.tr,
                       style: const TextStyle(color: ThemeProvider.whiteColor),

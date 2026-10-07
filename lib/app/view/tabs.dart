@@ -37,7 +37,7 @@ class _TabScreenState extends State<TabScreen> {
         length: 6,
         child: Scaffold(
           backgroundColor: ThemeProvider.backgroundColor,
-          floatingActionButton: value.tabId == 2
+          floatingActionButton: value.tabId == 2 || value.tabId == 4
               ? null
               : Column(
                   mainAxisSize: MainAxisSize.min,
@@ -81,10 +81,12 @@ class _TabScreenState extends State<TabScreen> {
                   ],
                 ),
           floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
-          bottomNavigationBar: EliteBottomNav(
-            tabId: value.tabId,
-            onSelect: value.updateTabId,
-          ),
+          bottomNavigationBar: value.tabId == 4
+              ? null
+              : EliteBottomNav(
+                  tabId: value.tabId,
+                  onSelect: value.updateTabId,
+                ),
           body: pages[value.tabId],
         ),
       );

@@ -8,7 +8,6 @@ import 'package:salon_user/app/env.dart';
 import 'package:salon_user/app/helper/tax_availability.dart';
 import 'package:salon_user/app/helper/slot_time.dart';
 import 'package:salon_user/app/util/theme.dart';
-import 'package:salon_user/app/util/toast.dart';
 import 'package:salon_user/app/view/widgets/elite_ui.dart';
 
 class SlotScreen extends StatefulWidget {
@@ -568,10 +567,7 @@ class _SlotScreenState extends State<SlotScreen> {
             SizedBox(
               width: double.infinity,
               child: OutlinedButton(
-                onPressed: () {
-                  showToast('Saved to cart');
-                  Get.back();
-                },
+                onPressed: value.addToCart,
                 style: OutlinedButton.styleFrom(
                   foregroundColor: ThemeProvider.gold,
                   side: const BorderSide(color: ThemeProvider.gold),

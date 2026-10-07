@@ -94,6 +94,10 @@ class ServicesModel {
   double? customerPays;
   double? taxRate;
   bool taxInclusive = false;
+  int? discountType;
+  String? discountText;
+  bool isTimedOffer = false;
+  String? offerCode;
 
   ServicesModel(
       {this.id,
@@ -122,7 +126,11 @@ class ServicesModel {
       this.taxType = '',
       this.customerPays,
       this.taxRate,
-      this.taxInclusive = false});
+      this.taxInclusive = false,
+      this.discountType,
+      this.discountText,
+      this.isTimedOffer = false,
+      this.offerCode});
 
   ServicesModel.fromJson(Map<String, dynamic> json) {
     id = int.tryParse(json['id']?.toString() ?? '') ?? 0;
@@ -169,6 +177,27 @@ class ServicesModel {
     taxRate = double.tryParse(json['tax_rate']?.toString() ?? '') ?? 0;
     taxInclusive = json['tax_inclusive'] == true ||
         json['tax_inclusive']?.toString() == '1';
+    cover ??= json['image']?.toString() ?? json['service_image']?.toString();
+    if ((cover == null || cover!.isEmpty) && json['images'] != null) {
+      final raw = json['images'];
+      if (raw is List && raw.isNotEmpty) {
+        cover = raw.first.toString();
+      } else if (raw is String && raw.isNotEmpty) {
+        final cleaned = raw.replaceAll('[', '').replaceAll(']', '').replaceAll('"', '');
+        cover = cleaned.split(',').first.trim();
+      }
+    }
+  }
+
+  String get imageCover {
+    final path = (cover ?? images ?? '').trim();
+    if (path.isEmpty || path == 'null') return '';
+    if (path.startsWith('[')) {
+      final cleaned =
+          path.replaceAll('[', '').replaceAll(']', '').replaceAll('"', '');
+      return cleaned.split(',').first.trim();
+    }
+    return path.split(',').first.trim();
   }
 
   double get resolvedTaxAmount {
@@ -204,6 +233,24 @@ class ServicesModel {
     if ((vatAmount ?? 0) > 0) return 'VAT';
     if ((gstAmount ?? 0) > 0) return 'GST';
     return 'Tax';
+  }
+
+  bool get hasSalePrice {
+    final original = price ?? 0;
+    final sale = off ?? 0;
+    return sale > 0 && original > sale;
+  }
+
+  double get displayPrice => hasSalePrice ? (off ?? 0) : (price ?? 0);
+
+  String get offerBadge {
+    final text = (discountText ?? '').trim();
+    if (text.isNotEmpty) return text;
+    if ((discountType ?? 1) == 2 && (discount ?? 0) > 0) {
+      return 'FLAT ${discount!.toStringAsFixed(0)}';
+    }
+    if ((discount ?? 0) > 0) return '${discount!.toStringAsFixed(0)}% OFF';
+    return '';
   }
 
   Map<String, dynamic> toJson() {

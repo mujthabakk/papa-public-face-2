@@ -16,13 +16,21 @@ class TimedOfferIcon {
   });
 
   factory TimedOfferIcon.fromJson(dynamic json) {
-    final map =
+    final outer =
         json is Map ? Map<String, dynamic>.from(json) : <String, dynamic>{};
+    final map = <String, dynamic>{};
+    if (outer['data'] is Map) {
+      map.addAll(Map<String, dynamic>.from(outer['data']));
+    }
+    map.addAll(outer);
     return TimedOfferIcon(
       id: int.tryParse(map['id']?.toString() ?? ''),
       name: map['name']?.toString(),
       code: map['code']?.toString(),
-      image: map['image']?.toString() ?? map['cover']?.toString(),
+      image: _mediaPath(map) ??
+          (outer['data'] is Map
+              ? _mediaPath(Map<String, dynamic>.from(outer['data']))
+              : null),
       description:
           map['description']?.toString() ?? map['short_description']?.toString(),
     );
@@ -36,6 +44,7 @@ class TimedOfferRow {
   String? shortDescription;
   String? description;
   String? image;
+  String? cover;
   String? discountText;
   String? discountType;
   double? discountValue;
@@ -61,19 +70,32 @@ class TimedOfferRow {
   TimedOfferRow();
 
   factory TimedOfferRow.fromJson(dynamic json) {
-    final map =
+    final outer =
         json is Map ? Map<String, dynamic>.from(json) : <String, dynamic>{};
+    final map = <String, dynamic>{};
+    if (outer['data'] is Map) {
+      map.addAll(Map<String, dynamic>.from(outer['data']));
+    }
+    map.addAll(outer);
+    map.remove('data');
+    if (outer['services'] != null) map['services'] = outer['services'];
     final row = TimedOfferRow();
-    row.id = int.tryParse(map['id']?.toString() ?? '');
+    row.id = int.tryParse(map['id']?.toString() ?? '') ??
+        int.tryParse(map['campaign_id']?.toString() ?? '');
     row.name = map['name']?.toString();
     row.code = map['code']?.toString();
     row.shortDescription = map['short_description']?.toString();
     row.description = map['description']?.toString();
-    row.image = map['image']?.toString() ?? map['cover']?.toString();
+    row.image = _mediaPath(map) ??
+        (outer['data'] is Map
+            ? _mediaPath(Map<String, dynamic>.from(outer['data']))
+            : null);
+    row.cover = row.image;
     row.discountText = map['discount_text']?.toString();
-    row.discountType = map['discount_type']?.toString();
-    row.discountValue =
-        double.tryParse(map['discount_value']?.toString() ?? '');
+    row.discountType = map['discount_type']?.toString() ??
+        (int.tryParse(map['type']?.toString() ?? '') == 2 ? 'flat' : null);
+    row.discountValue = double.tryParse(map['discount_value']?.toString() ?? '') ??
+        double.tryParse(map['discount']?.toString() ?? '');
 
     if (map['coupon'] is Map) {
       final coupon = Map<String, dynamic>.from(map['coupon']);
@@ -103,6 +125,9 @@ class TimedOfferRow {
       row.endDate = _parseDay(schedule['end_date']);
       row.expireDate = _parseDay(schedule['expire_date']);
     }
+    row.startDate ??= _parseDay(map['start_date']);
+    row.endDate ??= _parseDay(map['end_date']);
+    row.expireDate ??= _parseDay(map['expire'] ?? map['expire_date']);
 
     if (map['created_by'] is Map) {
       final created = Map<String, dynamic>.from(map['created_by']);
@@ -126,9 +151,16 @@ class TimedOfferRow {
 
   bool get hasPartner => (partner?.id ?? 0) > 0;
 
-  bool get hasServices => hasPartner && services.isNotEmpty;
+  /// Partner image, else campaign/offer banner (`image`/`cover`).
+  String get displayImage {
+    final partnerImg = (partner?.coverPath ?? '').trim();
+    if (partnerImg.isNotEmpty) return partnerImg;
+    return (image ?? cover ?? '').trim();
+  }
 
-  bool get isCouponOnly => !hasPartner;
+  bool get hasServices => services.isNotEmpty;
+
+  bool get isCouponOnly => !hasPartner && services.isEmpty;
 
   String get displayCode =>
       (couponCode ?? code ?? '').trim();
@@ -176,6 +208,15 @@ class TimedOfferRow {
     if (start != null && last != null && start != last) return '$start – $last';
     return start ?? last ?? '';
   }
+}
+
+String? _mediaPath(Map<String, dynamic> map) {
+  for (final key in const ['image', 'cover', 'banner', 'campaign_image']) {
+    final text = map[key]?.toString().trim() ?? '';
+    if (text.isEmpty || text == 'null' || text == 'undefined') continue;
+    return text;
+  }
+  return null;
 }
 
 DateTime? _parseDay(dynamic value) {

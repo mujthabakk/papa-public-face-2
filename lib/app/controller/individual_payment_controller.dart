@@ -901,8 +901,8 @@ class IndividualPaymentController extends GetxController
   void backOrders() {
     Get.find<ServiceCartController>().clearCart();
     Get.offAllNamed(AppRouter.getTabsBarRoute());
-    Future.delayed(Duration(milliseconds: 100), () {
-      Get.find<TabsController>().updateTabId(4);
+    Future.delayed(const Duration(milliseconds: 100), () {
+      Get.find<TabsController>().openAppointments();
     });
   }
 

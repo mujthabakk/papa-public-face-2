@@ -146,7 +146,11 @@ class SplashController extends GetxController implements GetxService {
   Future<void> _loadTaxSettings() async {
     if (!Get.isRegistered<PricingParser>()) return;
     final parser = Get.find<PricingParser>();
-    await parser.fetchTaxAvailability();
+    await parser.fetchTaxAvailability(
+      country: Get.isRegistered<LanguagesController>()
+          ? Get.find<LanguagesController>().countryCode
+          : null,
+    );
     await parser.fetchTaxSettings();
   }
 

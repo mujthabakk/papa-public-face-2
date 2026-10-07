@@ -1,6 +1,7 @@
 import 'package:salon_user/app/backend/api/api.dart';
 import 'package:salon_user/app/backend/api/api_response.dart';
 import 'package:salon_user/app/backend/models/pricing_model.dart';
+import 'package:salon_user/app/helper/locale_helper.dart';
 import 'package:salon_user/app/helper/shared_pref.dart';
 import 'package:salon_user/app/helper/tax_availability.dart';
 import 'package:salon_user/app/util/constant.dart';
@@ -28,10 +29,23 @@ class PricingParser {
     return _parseTaxSettings(response.body);
   }
 
-  /// GET|POST /api/v1/pricing/getTaxAvailability — body `{ "uid": 1642 }` is enough.
+  String _appCountry([String? country]) {
+    final iso = (country ??
+            sharedPreferencesManager.getString(LocaleHelper.prefCountry) ??
+            'IN')
+        .trim()
+        .toUpperCase();
+    return iso.isEmpty ? 'IN' : iso;
+  }
+
+  /// GET|POST /api/v1/pricing/getTaxAvailability — country-based GST/VAT check.
   Future<({bool success, String message, TaxAvailabilityData? data})>
-      fetchTaxAvailability({int? uid}) async {
-    final body = <String, dynamic>{};
+      fetchTaxAvailability({int? uid, String? country}) async {
+    final iso = _appCountry(country);
+    final body = <String, dynamic>{
+      'country': iso,
+      'country_code': iso,
+    };
     final rawUid = uid?.toString() ??
         sharedPreferencesManager.getString('uid') ??
         '';
@@ -44,9 +58,9 @@ class PricingParser {
     );
     var parsed = _parseTaxAvailability(response.body);
     if (!parsed.success) {
-      final qs = body.isEmpty
-          ? AppConstants.pricingGetTaxAvailability
-          : '${AppConstants.pricingGetTaxAvailability}?uid=${body['uid']}';
+      final qs =
+          '${AppConstants.pricingGetTaxAvailability}?country=$iso&country_code=$iso'
+          '${body.containsKey('uid') ? '&uid=${body['uid']}' : ''}';
       response = await apiService.getPublic(qs);
       parsed = _parseTaxAvailability(response.body);
     }

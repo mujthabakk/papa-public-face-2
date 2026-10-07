@@ -8,6 +8,7 @@ import 'package:salon_user/app/controller/home_controller.dart';
 import 'package:salon_user/app/controller/near_controller.dart';
 import 'package:salon_user/app/controller/payment_socket_controller.dart';
 import 'package:salon_user/app/controller/product_cart_controller.dart';
+import 'package:salon_user/app/helper/router.dart';
 
 class TabsController extends GetxController
     with GetTickerProviderStateMixin
@@ -42,6 +43,15 @@ class TabsController extends GetxController
     tabController.animateTo(tabId);
     _refreshTabIfCountryChanged(id);
     update();
+  }
+
+  void openAppointments() {
+    if (Get.isRegistered<BookingController>() &&
+        Get.find<BookingController>().parser.haveLoggedIn()) {
+      Get.find<BookingController>().getAppointmentById();
+    }
+    if (Get.currentRoute == AppRouter.bookingRoutes) return;
+    Get.toNamed(AppRouter.getBookingRoutes());
   }
 
   void _refreshTabIfCountryChanged(int id) {

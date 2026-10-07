@@ -83,8 +83,8 @@ class _HomeScreenState extends State<HomeScreen> {
                                       onFilter: value.onFilter,
                                     ),
                                     const SizedBox(height: 12),
-                                    value.bannerList.isNotEmpty
-                                        ? _banners(value)
+                                    value.partnerAds.isNotEmpty
+                                        ? _partnerAds(value)
                                         : const SizedBox.shrink(),
                                     EliteSectionHeader(
                                       title: 'Top Category'.tr,
@@ -170,16 +170,23 @@ class _HomeScreenState extends State<HomeScreen> {
                           borderRadius: BorderRadius.circular(10),
                         ),
                         child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Text(
-                              '${cartController.totalItemsInCart} ${cartController.totalItemsInCart == 1 ? 'Item'.tr : 'Items'.tr}  ${'Pay Amount'.tr} ${elitePrice(value.currencySide, value.currencySymbol, cartController.totalPrice, digits: 2)}',
-                              style: ThemeProvider.sans(
-                                size: 13,
-                                weight: FontWeight.w600,
-                                color: ThemeProvider.blackColor,
+                            Expanded(
+                              child: FittedBox(
+                                fit: BoxFit.scaleDown,
+                                alignment: Alignment.centerLeft,
+                                child: Text(
+                                  '${cartController.totalItemsInCart} ${cartController.totalItemsInCart == 1 ? 'Item'.tr : 'Items'.tr}  ${'Pay Amount'.tr} ${elitePrice(value.currencySide, value.currencySymbol, cartController.totalPrice, digits: 2)}',
+                                  maxLines: 1,
+                                  style: ThemeProvider.sans(
+                                    size: 13,
+                                    weight: FontWeight.w600,
+                                    color: ThemeProvider.blackColor,
+                                  ),
+                                ),
                               ),
                             ),
+                            const SizedBox(width: 8),
                             Text(
                               'Book Services'.tr,
                               style: ThemeProvider.sans(
@@ -199,6 +206,41 @@ class _HomeScreenState extends State<HomeScreen> {
           },
         );
       },
+    );
+  }
+
+  Widget _partnerAds(HomeController value) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
+      child: CarouselSlider.builder(
+        itemCount: value.partnerAds.length,
+        itemBuilder: (context, index, realIndex) {
+          final item = value.partnerAds[index];
+          final cover = item.image ?? '';
+          final url = cover.startsWith('http://') || cover.startsWith('https://')
+              ? cover
+              : '${Environments.imageURL}$cover';
+          return GestureDetector(
+            onTap: () => value.onPartnerAd(item),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(14),
+              child: EliteNetworkImage(
+                url: url,
+                width: double.infinity,
+                height: 160,
+                fit: BoxFit.cover,
+              ),
+            ),
+          );
+        },
+        options: CarouselOptions(
+          height: 160,
+          viewportFraction: 1,
+          autoPlay: value.partnerAds.length > 1,
+          autoPlayInterval: const Duration(seconds: 4),
+          enlargeCenterPage: false,
+        ),
+      ),
     );
   }
 
@@ -369,7 +411,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _offers(HomeController value) {
     if (value.offersList.isEmpty) return const SizedBox.shrink();
     return SizedBox(
-      height: 150,
+      height: 210,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -381,11 +423,11 @@ class _HomeScreenState extends State<HomeScreen> {
           final discountLabel = isPercent
               ? '${(offer.discount ?? 0).toStringAsFixed(0)}% OFF'
               : '${elitePrice(value.currencySide, value.currencySymbol, offer.discount, digits: 0)} OFF';
+          final imageUrl = Environments.mediaUrl(offer.coverPath);
           return GestureDetector(
             onTap: () => value.openExclusiveOffer(offer),
             child: Container(
               width: 280,
-              padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
                 color: ThemeProvider.surface,
                 borderRadius: BorderRadius.circular(14),
@@ -393,42 +435,68 @@ class _HomeScreenState extends State<HomeScreen> {
                   colors: [Color(0xFF2A2A2A), Color(0xFF1A1A1A)],
                 ),
               ),
+              clipBehavior: Clip.antiAlias,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    discountLabel,
-                    style: ThemeProvider.sans(
-                      size: 22,
-                      weight: FontWeight.w800,
-                      color: ThemeProvider.gold,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    offer.name ?? '',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: ThemeProvider.serif(size: 18),
-                  ),
-                  if ((offer.shortDescriptions ?? '').isNotEmpty)
-                    Text(
-                      offer.shortDescriptions!,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: ThemeProvider.sans(
-                        size: 12,
-                        color: Colors.white70,
+                  if (imageUrl.isNotEmpty)
+                    SizedBox(
+                      width: 280,
+                      height: 88,
+                      child: EliteNetworkImage(
+                        url: imageUrl,
+                        width: 280,
+                        height: 88,
+                        radius: const BorderRadius.vertical(
+                          top: Radius.circular(14),
+                        ),
                       ),
                     ),
-                  const Spacer(),
-                  Text(
-                    'VIEW DETAILS  →'.tr,
-                    style: ThemeProvider.sans(
-                      size: 12,
-                      weight: FontWeight.w700,
-                      color: ThemeProvider.gold,
-                      letterSpacing: 0.8,
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            discountLabel,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: ThemeProvider.sans(
+                              size: 20,
+                              weight: FontWeight.w800,
+                              color: ThemeProvider.gold,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            offer.name ?? '',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: ThemeProvider.serif(size: 16),
+                          ),
+                          if ((offer.shortDescriptions ?? '').isNotEmpty)
+                            Text(
+                              offer.shortDescriptions!,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: ThemeProvider.sans(
+                                size: 12,
+                                color: Colors.white70,
+                              ),
+                            ),
+                          const Spacer(),
+                          Text(
+                            'VIEW DETAILS  →'.tr,
+                            style: ThemeProvider.sans(
+                              size: 12,
+                              weight: FontWeight.w700,
+                              color: ThemeProvider.gold,
+                              letterSpacing: 0.8,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ],

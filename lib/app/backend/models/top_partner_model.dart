@@ -13,6 +13,7 @@ class TopPartnerModel {
   String? badge;
   int? sortOrder;
   String? city;
+  String? country;
   double? distance;
 
   TopPartnerModel({
@@ -30,6 +31,7 @@ class TopPartnerModel {
     this.badge,
     this.sortOrder,
     this.city,
+    this.country,
     this.distance,
   });
 
@@ -54,6 +56,7 @@ class TopPartnerModel {
       badge: json['badge']?.toString(),
       sortOrder: int.tryParse(json['sort_order']?.toString() ?? ''),
       city: json['city']?.toString(),
+      country: json['country']?.toString(),
       distance: double.tryParse(json['distance']?.toString() ?? ''),
     );
   }

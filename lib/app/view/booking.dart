@@ -64,12 +64,33 @@ class _BookingScreenState extends State<BookingScreen> {
       builder: (_) {
         return GetBuilder<BookingController>(
           builder: (c) {
-            return Scaffold(
+            return PopScope(
+              canPop: Get.currentRoute == AppRouter.bookingRoutes,
+              onPopInvokedWithResult: (didPop, _) {
+                if (didPop) return;
+                if (Get.isRegistered<TabsController>()) {
+                  Get.find<TabsController>().updateTabId(5);
+                }
+              },
+              child: Scaffold(
               backgroundColor: ThemeProvider.backgroundColor,
               appBar: EliteAppBar(
                 showBack: true,
                 title: 'My Appointments'.tr,
-                onMenu: () => Get.find<TabsController>().updateTabId(5),
+                onBack: () {
+                  if (Get.currentRoute == AppRouter.bookingRoutes) {
+                    Get.back();
+                    return;
+                  }
+                  if (Get.key.currentState?.canPop() == true &&
+                      Get.currentRoute != AppRouter.tabsBarRoutes) {
+                    Get.back();
+                    return;
+                  }
+                  if (Get.isRegistered<TabsController>()) {
+                    Get.find<TabsController>().updateTabId(5);
+                  }
+                },
                 onMore: c.parser.haveLoggedIn() ? c.getAppointmentById : null,
               ),
               body: !c.parser.haveLoggedIn()
@@ -136,6 +157,7 @@ class _BookingScreenState extends State<BookingScreen> {
                             ),
                           ],
                         ),
+            ),
             );
           },
         );

@@ -488,15 +488,28 @@ class FindLocationController extends GetxController implements GetxService {
     debugPrint(
         '[LOCATION_SAVE] lat=${myLat.value}, lng=${myLng.value}, address=${searchbarText.text}');
     parser.saveLatLng(myLat.value, myLng.value, searchbarText.text);
-    String? iso;
+    String iso = '';
+    String placeCountry = '';
     try {
       final marks =
           await placemarkFromCoordinates(myLat.value, myLng.value);
       if (marks.isNotEmpty) {
-        iso = marks.first.isoCountryCode;
+        iso = (marks.first.isoCountryCode ?? '').toUpperCase();
+        placeCountry = (marks.first.country ?? '').trim();
       }
     } catch (_) {}
-    await _persistLocationPrefs(myLat.value, myLng.value, iso);
+    await _persistLocationPrefs(
+      myLat.value,
+      myLng.value,
+      iso.length == 2 ? iso : null,
+    );
+    if (iso.length == 2 && Get.isRegistered<LanguagesController>()) {
+      await Get.find<LanguagesController>().applyCountryFromLocation(
+        iso,
+        placeCountryName: placeCountry,
+        reloadHome: false,
+      );
+    }
     Get.delete<TabsController>(force: true);
     Get.delete<HomeController>(force: true);
     Get.delete<NearController>(force: true);

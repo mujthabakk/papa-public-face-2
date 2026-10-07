@@ -45,6 +45,13 @@ class SpecialistParser {
     return sharedPreferencesManager.getDouble('lng') ?? 0.0;
   }
 
+  Future<Response> getPartnerOffer(int partnerUid) {
+    return apiService.getPublic(
+      '${AppConstants.getTimedOffersPartner}?uid=$partnerUid',
+      includeUid: false,
+    );
+  }
+
   bool isLogin() {
     return sharedPreferencesManager.getString('uid') != null &&
             sharedPreferencesManager.getString('uid') != ''

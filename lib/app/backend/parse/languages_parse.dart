@@ -285,6 +285,8 @@ class LanguagesParser {
       iso = getCountry();
     } else {
       saveCountry(iso);
+      final name = getCountryName();
+      if (name.isEmpty) saveCountryName(iso);
     }
     final uid = getUid();
     if (uid == null) return;

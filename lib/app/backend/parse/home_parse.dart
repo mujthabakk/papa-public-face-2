@@ -1,4 +1,5 @@
 import 'package:salon_user/app/backend/api/api.dart';
+import 'package:salon_user/app/helper/locale_helper.dart';
 import 'package:salon_user/app/helper/shared_pref.dart';
 import 'package:get/get.dart';
 import 'package:salon_user/app/util/constant.dart';
@@ -10,14 +11,33 @@ class HomeParser {
   HomeParser(
       {required this.apiService, required this.sharedPreferencesManager});
 
-  Future<Response> getHomeData(var body) async {
-    final payload =
-        body is Map ? Map<String, dynamic>.from(body) : <String, dynamic>{};
+  Map<String, dynamic> listingPayload([dynamic extra]) {
+    final payload = extra is Map
+        ? Map<String, dynamic>.from(extra)
+        : <String, dynamic>{};
+    payload['lat'] = payload['lat'] ?? getLat();
+    payload['lng'] = payload['lng'] ?? getLng();
+    final country = sharedPreferencesManager
+            .getString(LocaleHelper.prefCountryName) ??
+        sharedPreferencesManager.getString(LocaleHelper.prefCountry) ??
+        '';
+    if (country.isNotEmpty) {
+      payload['country'] = payload['country'] ?? country;
+    }
+    final cityId = sharedPreferencesManager.getInt('city_id') ?? 0;
+    if (cityId > 0) {
+      payload['city_id'] = payload['city_id'] ?? cityId;
+    }
     final uid = sharedPreferencesManager.getString('uid');
     if (uid != null && uid.isNotEmpty && uid != '0') {
-      payload['uid'] = int.tryParse(uid) ?? uid;
+      payload['uid'] = payload['uid'] ?? int.tryParse(uid) ?? uid;
     }
-    return apiService.postPublic(AppConstants.getHomeData, payload);
+    return payload;
+  }
+
+  Future<Response> getHomeData(var body) async {
+    return apiService.postPublic(
+        AppConstants.getHomeData, listingPayload(body));
   }
 
   Future<Response> getAllCategories() {
@@ -25,37 +45,47 @@ class HomeParser {
   }
 
   Future<Response> getAllOffers() {
-    return apiService.postPublic(AppConstants.getAllOffers, {
-      'lat': getLat(),
-      'lng': getLng(),
-    });
+    return apiService.postPublic(
+        AppConstants.getAllOffers, listingPayload());
   }
 
   Future<Response> getPublicHomeOffers() {
-    return apiService.postPublic(AppConstants.getPublicHomeOffers, {
-      'lat': getLat(),
-      'lng': getLng(),
-    });
+    return apiService.postPublic(
+        AppConstants.getPublicHomeOffers, listingPayload());
   }
 
   Future<Response> getTopSalon(var body) {
-    return apiService.postPublic(AppConstants.getTopSalon, body);
+    return apiService.postPublic(
+        AppConstants.getTopSalon, listingPayload(body));
   }
 
   Future<Response> getTopFreelancer(var body) {
-    return apiService.postPublic(AppConstants.getTopFreelancer, body);
+    return apiService.postPublic(
+        AppConstants.getTopFreelancer, listingPayload(body));
   }
 
   Future<Response> getBannerData(var body) {
-    return apiService.postPublic(AppConstants.getBannerData, body);
+    return apiService.postPublic(
+        AppConstants.getBannerData, listingPayload(body));
   }
 
   Future<Response> getTopProducts(var body) {
-    return apiService.postPublic(AppConstants.getTopProducts, body);
+    return apiService.postPublic(
+        AppConstants.getTopProducts, listingPayload(body));
   }
 
-  Future<Response> getTopPartners(var body) {
-    return apiService.postPublic(AppConstants.getTopPartners, body);
+  Future<Response> getTopPartners(var body) async {
+    final payload = listingPayload(body);
+    final post = await apiService.postPublic(AppConstants.getTopPartners, payload);
+    if (post.statusCode == 200) return post;
+    return apiService.getPublic(AppConstants.getTopPartners);
+  }
+
+  Future<Response> getPartnerAds(var body) async {
+    final payload = listingPayload(body);
+    final post = await apiService.postPublic(AppConstants.getPartnerAds, payload);
+    if (post.statusCode == 200) return post;
+    return apiService.getPublic(AppConstants.getPartnerAds);
   }
 
   Future<Response> getTimedOffersHome() {
@@ -75,6 +105,13 @@ class HomeParser {
 
   Future<Response> postTimedOffersAll(Map<String, dynamic> body) {
     return apiService.postPublic(AppConstants.getTimedOffersAll, body);
+  }
+
+  Future<Response> getPartnerOffer(int partnerUid) {
+    return apiService.getPublic(
+      '${AppConstants.getTimedOffersPartner}?uid=$partnerUid',
+      includeUid: false,
+    );
   }
 
   String getAddressName() {

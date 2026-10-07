@@ -11,7 +11,30 @@ class SearchParser {
       {required this.apiService, required this.sharedPreferencesManager});
 
   Future<Response> getSearchResult(var body) async {
-    return await apiService.postPublic(AppConstants.searchResult, body);
+    final payload = body is Map
+        ? Map<String, dynamic>.from(body)
+        : <String, dynamic>{};
+    final query = (payload['param'] ?? payload['q'] ?? '').toString().trim();
+    if (query.isNotEmpty) {
+      payload['param'] = query;
+      payload['q'] = payload['q'] ?? query;
+      payload['keyword'] = payload['keyword'] ?? query;
+      payload['name'] = payload['name'] ?? query;
+      payload['search'] = payload['search'] ?? query;
+    }
+    return await apiService.postPublic(AppConstants.searchResult, payload);
+  }
+
+  Future<Response> searchProducts(String query) async {
+    return apiService.postPublic(AppConstants.getTopProducts, {
+      'lat': getLat(),
+      'lng': getLng(),
+      'param': query,
+      'q': query,
+      'keyword': query,
+      'name': query,
+      'search': query,
+    });
   }
 
   Future<Response> getBannerData(var body) async {

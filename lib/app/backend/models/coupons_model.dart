@@ -89,8 +89,11 @@ class OfferServiceModel {
   String? image;
   double? price;
   double? amount;
+  double? originalPrice;
+  double? offerPrice;
   double? duration;
   double? discount;
+  int? type;
   int? status;
 
   OfferServiceModel({
@@ -101,26 +104,34 @@ class OfferServiceModel {
     this.image,
     this.price,
     this.amount,
+    this.originalPrice,
+    this.offerPrice,
     this.duration,
     this.discount,
+    this.type,
     this.status,
   });
 
   factory OfferServiceModel.fromJson(dynamic json) {
     final map =
         json is Map ? Map<String, dynamic>.from(json) : <String, dynamic>{};
+    final original = double.tryParse(map['original_price']?.toString() ?? '') ??
+        double.tryParse(map['price']?.toString() ?? '');
+    final offer = double.tryParse(map['offer_price']?.toString() ?? '') ??
+        double.tryParse(map['amount']?.toString() ?? '');
     return OfferServiceModel(
       id: int.tryParse(map['id']?.toString() ?? ''),
       serviceId: int.tryParse(map['service_id']?.toString() ?? ''),
       name: _offerString(map['name']),
       cover: _offerString(map['cover']) ?? _offerString(map['image']),
       image: _offerString(map['image']) ?? _offerString(map['cover']),
-      price: double.tryParse(map['price']?.toString() ?? '') ??
-          double.tryParse(map['amount']?.toString() ?? ''),
-      amount: double.tryParse(map['amount']?.toString() ?? '') ??
-          double.tryParse(map['price']?.toString() ?? ''),
+      originalPrice: original,
+      offerPrice: offer,
+      price: original ?? double.tryParse(map['price']?.toString() ?? ''),
+      amount: offer ?? double.tryParse(map['amount']?.toString() ?? ''),
       duration: double.tryParse(map['duration']?.toString() ?? ''),
       discount: double.tryParse(map['discount']?.toString() ?? ''),
+      type: int.tryParse(map['type']?.toString() ?? ''),
       status: int.tryParse(map['status']?.toString() ?? ''),
     );
   }
@@ -148,10 +159,17 @@ class CouponsModel {
   int? validations;
   int? userLimitValidation;
   String? extraField;
+  String? image;
+  String? cover;
   int? status;
   bool? maxUsageExceeded;
   bool firstTimeUserOnly = false;
   bool alreadyUsed = false;
+  bool canApply = true;
+  String? deniedReason;
+  bool showPopup = false;
+  String? popupTitle;
+  String? popupMessage;
   List<OfferPartnerModel> partners = [];
   List<OfferServiceModel> services = [];
   OfferPartnerModel? partner;
@@ -176,10 +194,17 @@ class CouponsModel {
     this.validations,
     this.userLimitValidation,
     this.extraField,
+    this.image,
+    this.cover,
     this.status,
     this.maxUsageExceeded,
     this.firstTimeUserOnly = false,
     this.alreadyUsed = false,
+    this.canApply = true,
+    this.deniedReason,
+    this.showPopup = false,
+    this.popupTitle,
+    this.popupMessage,
     List<OfferPartnerModel>? partners,
     List<OfferServiceModel>? services,
     this.partner,
@@ -241,6 +266,8 @@ class CouponsModel {
     userLimitValidation =
         int.tryParse(json['user_limit_validation']?.toString() ?? '') ?? 0;
     extraField = _offerString(json['extra_field']);
+    image = _offerString(json['image']) ?? _offerString(json['cover']);
+    cover = _offerString(json['cover']) ?? _offerString(json['image']);
     status = int.tryParse(json['status']?.toString() ?? '') ?? 1;
     maxUsageExceeded = json['max_usage_exceeded'] == true ||
         json['max_usage_exceeded']?.toString() == '1';
@@ -249,10 +276,16 @@ class CouponsModel {
         _truthy(json['firstTimeUserOnly']) ||
         _truthy(json['is_first_user']) ||
         _truthy(json['for_first_user']);
-    alreadyUsed = _truthy(json['already_used']) ||
-        _truthy(json['used']) ||
-        json['eligible'] == false ||
-        json['can_apply'] == false;
+    alreadyUsed = _truthy(json['already_used']) || _truthy(json['used']);
+    if (json.containsKey('can_apply')) {
+      canApply = _truthy(json['can_apply']);
+    } else {
+      canApply = !alreadyUsed;
+    }
+    deniedReason = _offerString(json['denied_reason']);
+    showPopup = _truthy(json['show_popup']);
+    popupTitle = _offerString(json['popup_title']);
+    popupMessage = _offerString(json['popup_message']);
 
     try {
       final rawPartners = json['partners'];
@@ -295,6 +328,16 @@ class CouponsModel {
     return looksLikeFirstUserOffer(name: name, code: code);
   }
 
+  void applyEligibilityFrom(CouponsModel other) {
+    canApply = other.canApply;
+    alreadyUsed = other.alreadyUsed;
+    showPopup = other.showPopup;
+    popupTitle = other.popupTitle ?? popupTitle;
+    popupMessage = other.popupMessage ?? popupMessage;
+    deniedReason = other.deniedReason ?? deniedReason;
+    firstTimeUserOnly = firstTimeUserOnly || other.firstTimeUserOnly;
+  }
+
   static bool looksLikeFirstUserOffer({String? name, String? code}) {
     final hay = '${name ?? ''} ${code ?? ''}'.toLowerCase();
     final compact = hay.replaceAll(RegExp(r'[\s_-]+'), '');
@@ -333,6 +376,9 @@ class CouponsModel {
           (serviceIds ?? '').toLowerCase() != 'null');
 
   bool get canBook => hasPartners && hasServices;
+
+  /// Offer image from GET (`image` and `cover` are the same URL).
+  String get coverPath => image ?? cover ?? '';
 
   List<int> get bookableServiceIds {
     final listingIds = <int>{};
@@ -379,6 +425,8 @@ class CouponsModel {
     data['validations'] = validations;
     data['user_limit_validation'] = userLimitValidation;
     data['extra_field'] = extraField;
+    data['image'] = image;
+    data['cover'] = cover;
     data['status'] = status;
     data['max_usage_exceeded'] = maxUsageExceeded;
     data['first_time_user'] = firstTimeUserOnly;

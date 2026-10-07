@@ -64,19 +64,22 @@ class CouponController extends GetxController implements GetxService {
     apiCalled = true;
     _couponList = [];
 
-    final eligibleIds = <int>{};
-    final eligibleCodes = <String>{};
+    const offerKeys = [
+      'offers',
+      'coupons',
+      'data',
+      'items',
+      'result',
+      'list',
+    ];
+    final uidOffers = <CouponsModel>[];
     if (action == 'browse' && parser.hasUid) {
-      for (final offer in parser.parseOffers(
-          (await parser.getAllOffers(includeUid: true)).body)) {
-        if ((offer.id ?? 0) > 0) eligibleIds.add(offer.id!);
-        final code = (offer.code ?? '').trim().toLowerCase();
-        if (code.isNotEmpty) eligibleCodes.add(code);
-      }
+      uidOffers.addAll(parser.parseOffers(
+          (await parser.getAllOffers(includeUid: true)).body));
     }
 
-    if (response.statusCode == 200 || ApiBody.asList(response.body).isNotEmpty) {
-      final body = ApiBody.asList(response.body);
+    final body = ApiBody.asList(response.body, keys: offerKeys);
+    if (response.statusCode == 200 || body.isNotEmpty) {
       final now = DateTime.now();
       final currentDate = DateTime(now.year, now.month, now.day);
 
@@ -91,12 +94,7 @@ class CouponController extends GetxController implements GetxService {
 
           if (action == 'browse') {
             if (isActive && isNotExpired) {
-              if (data.isFirstTimeUserOffer && parser.hasUid) {
-                final code = (data.code ?? '').trim().toLowerCase();
-                final stillEligible = eligibleIds.contains(data.id) ||
-                    (code.isNotEmpty && eligibleCodes.contains(code));
-                if (!stillEligible) data.alreadyUsed = true;
-              }
+              _overlayUidEligibility(data, uidOffers);
               _couponList.add(data);
             }
             continue;
@@ -137,6 +135,30 @@ class CouponController extends GetxController implements GetxService {
       ApiChecker.checkApi(response);
     }
     update();
+  }
+
+  void _overlayUidEligibility(
+      CouponsModel offer, List<CouponsModel> uidOffers) {
+    if (uidOffers.isEmpty) return;
+    CouponsModel? match;
+    for (final item in uidOffers) {
+      if ((offer.id ?? 0) > 0 && item.id == offer.id) {
+        match = item;
+        break;
+      }
+      if ((offer.code ?? '').isNotEmpty &&
+          CouponsModel.matchesCode(item, offer.code!)) {
+        match = item;
+        break;
+      }
+    }
+    if (match != null) {
+      offer.applyEligibilityFrom(match);
+      return;
+    }
+    if (offer.isFirstTimeUserOffer && parser.hasUid && offer.canApply) {
+      offer.canApply = false;
+    }
   }
 
   bool _matchesSalon(CouponsModel data, String uid) {
@@ -190,13 +212,8 @@ class CouponController extends GetxController implements GetxService {
         .toList();
   }
 
-  static const alreadyUsedMessage = 'This offer has already been used.';
-
   bool canUseOffer(CouponsModel coupon) {
-    if (coupon.alreadyUsed) {
-      showToast(alreadyUsedMessage.tr);
-      return false;
-    }
+    if (CouponParser.presentOffer(coupon)) return false;
     return true;
   }
 
@@ -462,12 +479,7 @@ class CouponController extends GetxController implements GetxService {
       return;
     }
     final validated = await parser.validateApply(code: trimmed);
-    if (!validated.canApply) {
-      showToast(validated.message.isNotEmpty
-          ? validated.message
-          : CouponParser.firstUserOnlyMessage.tr);
-      return;
-    }
+    if (CouponParser.presentGate(validated)) return;
     CouponsModel? matched;
     for (final coupon in _couponList) {
       final couponCode = (coupon.code ?? '').trim().toLowerCase();
@@ -517,12 +529,7 @@ class CouponController extends GetxController implements GetxService {
       code: savedCoupon.code,
       id: savedCoupon.id,
     );
-    if (!validated.canApply) {
-      showToast(validated.message.isNotEmpty
-          ? validated.message
-          : CouponParser.firstUserOnlyMessage.tr);
-      return;
-    }
+    if (CouponParser.presentGate(validated)) return;
     if (validated.message.isNotEmpty) {
       showToast(validated.message);
     }

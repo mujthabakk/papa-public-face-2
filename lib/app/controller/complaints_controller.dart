@@ -181,6 +181,7 @@ class ComplaintsController extends GetxController implements GetxService {
         context: context,
         builder: (BuildContext context) {
           return AlertDialog(
+            backgroundColor: ThemeProvider.surface,
             scrollable: true,
             title: Text(
               'Choose Issue With'.tr,
@@ -238,6 +239,7 @@ class ComplaintsController extends GetxController implements GetxService {
         context: context,
         builder: (BuildContext context) {
           return AlertDialog(
+            backgroundColor: ThemeProvider.surface,
             scrollable: true,
             title: Text(
               'Choose Reason'.tr,
@@ -320,6 +322,7 @@ class ComplaintsController extends GetxController implements GetxService {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
+            backgroundColor: ThemeProvider.surface,
           shape: RoundedRectangleBorder(
               borderRadius:
                   BorderRadius.circular(15)), // Modern rounded corners
@@ -329,7 +332,7 @@ class ComplaintsController extends GetxController implements GetxService {
             style: const TextStyle(
               fontSize: 18, // Slightly larger for prominence
               fontFamily: 'bold',
-              color: ThemeProvider.blackColor,
+              color: ThemeProvider.whiteColor,
             ),
             textAlign: TextAlign.center,
           ),
@@ -383,7 +386,7 @@ class ComplaintsController extends GetxController implements GetxService {
                               service.name.toString(),
                               style: const TextStyle(
                                 fontSize: 14,
-                                color: ThemeProvider.blackColor,
+                                color: ThemeProvider.whiteColor,
                                 fontWeight: FontWeight.w500,
                               ),
                             ),
@@ -439,6 +442,7 @@ class ComplaintsController extends GetxController implements GetxService {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
+            backgroundColor: ThemeProvider.surface,
           shape: RoundedRectangleBorder(
               borderRadius:
                   BorderRadius.circular(15)), // Rounded corners for modern look
@@ -448,7 +452,7 @@ class ComplaintsController extends GetxController implements GetxService {
             style: const TextStyle(
               fontSize: 18, // Slightly larger for emphasis
               fontFamily: 'bold',
-              color: ThemeProvider.blackColor,
+              color: ThemeProvider.whiteColor,
             ),
             textAlign: TextAlign.center,
           ),
@@ -501,7 +505,7 @@ class ComplaintsController extends GetxController implements GetxService {
                               package.name.toString(),
                               style: const TextStyle(
                                 fontSize: 14,
-                                color: ThemeProvider.blackColor,
+                                color: ThemeProvider.whiteColor,
                                 fontWeight: FontWeight.w500,
                               ),
                             ),
@@ -557,6 +561,7 @@ class ComplaintsController extends GetxController implements GetxService {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
+            backgroundColor: ThemeProvider.surface,
           shape: RoundedRectangleBorder(
               borderRadius:
                   BorderRadius.circular(15)), // Modern rounded corners
@@ -566,7 +571,7 @@ class ComplaintsController extends GetxController implements GetxService {
             style: const TextStyle(
               fontSize: 18, // Slightly larger for emphasis
               fontFamily: 'bold',
-              color: ThemeProvider.blackColor,
+              color: ThemeProvider.whiteColor,
             ),
             textAlign: TextAlign.center,
           ),
@@ -618,7 +623,7 @@ class ComplaintsController extends GetxController implements GetxService {
                               product.name.toString(),
                               style: const TextStyle(
                                 fontSize: 14,
-                                color: ThemeProvider.blackColor,
+                                color: ThemeProvider.whiteColor,
                                 fontWeight: FontWeight.w500,
                               ),
                             ),

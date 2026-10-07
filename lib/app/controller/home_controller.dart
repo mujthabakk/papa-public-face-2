@@ -9,11 +9,13 @@ import 'package:salon_user/app/backend/models/banner_model.dart';
 import 'package:salon_user/app/backend/models/categories_model.dart';
 import 'package:salon_user/app/backend/models/coupons_model.dart';
 import 'package:salon_user/app/backend/models/individual_model.dart';
+import 'package:salon_user/app/backend/models/partner_ad_model.dart';
 import 'package:salon_user/app/backend/models/products_list_model.dart';
 import 'package:salon_user/app/backend/models/salon_model.dart';
 import 'package:salon_user/app/backend/models/timed_offer_model.dart';
 import 'package:salon_user/app/backend/models/top_partner_model.dart';
 import 'package:salon_user/app/controller/coupon_controller.dart';
+import 'package:salon_user/app/backend/parse/coupon_parse.dart';
 import 'package:salon_user/app/backend/parse/home_parse.dart';
 import 'package:salon_user/app/controller/all_categories_controller.dart';
 import 'package:salon_user/app/controller/categories_controller.dart';
@@ -69,7 +71,11 @@ class HomeController extends GetxController
   List<TopPartnerModel> _topPartners = <TopPartnerModel>[];
   List<TopPartnerModel> get topPartners => _topPartners;
 
+  List<PartnerAdModel> _partnerAds = <PartnerAdModel>[];
+  List<PartnerAdModel> get partnerAds => _partnerAds;
+
   bool apiCalled = false;
+  int _homeFetchId = 0;
 
   bool haveData = false;
 
@@ -89,6 +95,10 @@ class HomeController extends GetxController
   }
 
   Future<void> getHomeData() async {
+    final fetchId = ++_homeFetchId;
+    apiCalled = false;
+    update();
+
     var param = {
       "lat": parser.getLat(),
       "lng": parser.getLng(),
@@ -96,6 +106,7 @@ class HomeController extends GetxController
 
     final timedFuture = parser.getTimedOffersHome();
     Response response = await parser.getHomeData(param);
+    if (fetchId != _homeFetchId) return;
     currencySide = parser.getCurrencySide();
     currencySymbol = parser.getCurrencySymbol();
 
@@ -107,6 +118,7 @@ class HomeController extends GetxController
     _offersList = [];
     _timedOffers = [];
     _topPartners = [];
+    _partnerAds = [];
 
     final map = ApiBody.asMap(response.body);
     if (map != null) {
@@ -120,6 +132,7 @@ class HomeController extends GetxController
         _applyHomeMap(map);
       } else {
         _parseTopPartners(map['top_partners'] ?? map['topPartners']);
+        _parsePartnerAds(map['partner_ads'] ?? map['partnerAds']);
       }
     } else if (!ApiBody.isSuccess(response)) {
       debugPrint('getHomeData status ${response.statusCode}');
@@ -129,16 +142,18 @@ class HomeController extends GetxController
     apiCalled = true;
     update();
 
-    unawaited(_finishHomeExtras(timedFuture));
+    unawaited(_finishHomeExtras(timedFuture, fetchId));
   }
 
-  Future<void> _finishHomeExtras(Future<Response> timedFuture) async {
+  Future<void> _finishHomeExtras(Future<Response> timedFuture, int fetchId) async {
     try {
       await _loadTimedOffersFrom(await timedFuture);
     } catch (e) {
       debugPrint('timedOffers extra: $e');
     }
+    if (fetchId != _homeFetchId) return;
     await _fillMissingHomeSections();
+    if (fetchId != _homeFetchId) return;
     checkCartData();
     haveData = _salonList.isNotEmpty || _individualList.isNotEmpty;
     update();
@@ -150,9 +165,10 @@ class HomeController extends GetxController
     _parseIndividuals(myMap['individual'] ?? myMap['individuals']);
     _parseBanners(myMap['banners']);
     _parseProducts(myMap['products']);
-    _setOffers(myMap['offers'] ?? myMap['data']);
+    _setOffers(myMap['offers'] ?? myMap['coupons'] ?? myMap);
     _parseTimedOffers(myMap['timed_offers'] ?? myMap['timedOffers']);
     _parseTopPartners(myMap['top_partners'] ?? myMap['topPartners']);
+    _parsePartnerAds(myMap['partner_ads'] ?? myMap['partnerAds']);
   }
 
   void _parseTopPartners(dynamic raw) {
@@ -176,6 +192,46 @@ class HomeController extends GetxController
         debugPrint('Skip top partner: $e');
       }
     }
+  }
+
+  void _parsePartnerAds(dynamic raw) {
+    if (_partnerAds.isNotEmpty) return;
+    final items = ApiBody.asItemList(raw, keys: const [
+      'partner_ads',
+      'partnerAds',
+      'data',
+      'items',
+      'result',
+      'list',
+    ]);
+    final now = DateTime.now();
+    for (final data in items) {
+      try {
+        final map = ApiBody.asObject(data);
+        if (map == null) continue;
+        final ad = PartnerAdModel.fromJson(map);
+        if ((ad.status ?? 1) == 0) continue;
+        if ((ad.image ?? '').isEmpty) continue;
+        if (!_isAdLive(ad.fromDate, ad.toDate, now)) continue;
+        _partnerAds.add(ad);
+      } catch (e) {
+        debugPrint('Skip partner ad: $e');
+      }
+    }
+    _partnerAds.sort((a, b) => (a.sortOrder ?? 0).compareTo(b.sortOrder ?? 0));
+  }
+
+  bool _isAdLive(String? fromRaw, String? toRaw, DateTime now) {
+    final from = DateTime.tryParse(fromRaw ?? '');
+    final to = DateTime.tryParse(toRaw ?? '');
+    if (from != null && now.isBefore(DateTime(from.year, from.month, from.day))) {
+      return false;
+    }
+    if (to != null) {
+      final end = DateTime(to.year, to.month, to.day, 23, 59, 59);
+      if (now.isAfter(end)) return false;
+    }
+    return true;
   }
 
   void _parseSalons(dynamic raw) {
@@ -229,6 +285,9 @@ class HomeController extends GetxController
       try {
         final map = ApiBody.asObject(data);
         if (map == null) continue;
+        if (map['link'] != null && map['type'] == null && map['value'] == null) {
+          continue;
+        }
         final banner = BannerModel.fromJson(map);
         if ((banner.status ?? 1) == 0) continue;
         if ((banner.cover ?? '').isEmpty) continue;
@@ -277,6 +336,7 @@ class HomeController extends GetxController
     if (_productsList.isEmpty) jobs.add(_loadTopProducts(latLng));
     if (_bannerList.isEmpty) jobs.add(_loadBanners(latLng));
     if (_topPartners.isEmpty) jobs.add(_loadTopPartners(latLng));
+    if (_partnerAds.isEmpty) jobs.add(_loadPartnerAds(latLng));
     if (jobs.isNotEmpty) await Future.wait(jobs);
   }
 
@@ -287,6 +347,16 @@ class HomeController extends GetxController
       _parseTopPartners(map?['data'] ?? map?['top_partners'] ?? response.body);
     } catch (e) {
       debugPrint('loadTopPartners: $e');
+    }
+  }
+
+  Future<void> _loadPartnerAds(Map<String, dynamic> param) async {
+    try {
+      final response = await parser.getPartnerAds(param);
+      final map = ApiBody.asMap(response.body);
+      _parsePartnerAds(map?['data'] ?? map?['partner_ads'] ?? response.body);
+    } catch (e) {
+      debugPrint('loadPartnerAds: $e');
     }
   }
 
@@ -321,6 +391,8 @@ class HomeController extends GetxController
     try {
       final response = await parser.getBannerData(param);
       _parseBanners(response.body);
+      final map = ApiBody.asMap(response.body);
+      _parsePartnerAds(map?['partner_ads'] ?? map?['partnerAds']);
     } catch (e) {
       debugPrint('loadBanners: $e');
     }
@@ -404,9 +476,20 @@ class HomeController extends GetxController
   }
 
   void onTopPartner(TopPartnerModel partner) {
-    final uid = partner.uid ?? 0;
+    final uid = partner.uid ?? partner.salonId ?? 0;
     if (uid <= 0) return;
     onServices(uid);
+  }
+
+  void onPartnerAd(PartnerAdModel ad) {
+    final link = (ad.link ?? '').trim();
+    if (link.isEmpty) return;
+    if (link.startsWith('http://') || link.startsWith('https://')) {
+      launchInBrowser(link);
+      return;
+    }
+    final uid = int.tryParse(link) ?? 0;
+    if (uid > 0) onServices(uid);
   }
 
   void onSpecialist(int uid) {
@@ -461,6 +544,7 @@ class HomeController extends GetxController
 
   /// Open Exclusive Offers (VIEW ALL) and focus this offer's full details.
   void openExclusiveOffer(CouponsModel offer) {
+    if (CouponParser.presentOffer(offer)) return;
     Get.delete<CouponController>(force: true);
     Get.toNamed(
       AppRouter.getCouponRoutes(),
@@ -469,6 +553,7 @@ class HomeController extends GetxController
   }
 
   void claimOffer(CouponsModel offer) {
+    if (CouponParser.presentOffer(offer)) return;
     if (offer.canBook) {
       bookExclusiveOffer(offer);
       return;
@@ -554,10 +639,19 @@ class HomeController extends GetxController
 
   void _setOffers(dynamic raw) {
     _offersList = [];
-    if (raw is! List) return;
+    final items = raw is List
+        ? raw
+        : ApiBody.asList(raw, keys: const [
+            'offers',
+            'coupons',
+            'data',
+            'items',
+            'result',
+            'list',
+          ]);
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
-    for (final data in raw) {
+    for (final data in items) {
       try {
         final offer = CouponsModel.tryParse(data);
         if (offer == null) continue;
@@ -579,10 +673,10 @@ class HomeController extends GetxController
   Future<void> loadPublicOffers() async {
     try {
       var response = await parser.getAllOffers();
-      _setOffers(ApiBody.asList(response.body));
+      _setOffers(response.body);
       if (_offersList.isEmpty) {
         response = await parser.getPublicHomeOffers();
-        _setOffers(ApiBody.asList(response.body));
+        _setOffers(response.body);
       }
     } catch (e) {
       debugPrint('loadPublicOffers: $e');

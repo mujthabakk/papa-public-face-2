@@ -181,6 +181,7 @@ class _CouponScreenState extends State<CouponScreen> {
     final days = _daysLeft(coupon.expire);
     final scopeLabel = coupon.isPublicScope ? 'PUBLIC' : 'PARTNER';
     final used = coupon.alreadyUsed;
+    final locked = !coupon.canApply && !used;
     return Opacity(
       opacity: used ? 0.42 : 1,
       child: Container(
@@ -197,7 +198,7 @@ class _CouponScreenState extends State<CouponScreen> {
                       ThemeProvider.serif(size: 18, color: ThemeProvider.gold),
                 ),
               ),
-              if (used)
+              if (used || locked)
                 Container(
                   margin: const EdgeInsets.only(right: 8),
                   padding:
@@ -208,7 +209,7 @@ class _CouponScreenState extends State<CouponScreen> {
                     border: Border.all(color: ThemeProvider.greyColor),
                   ),
                   child: Text(
-                    'ALREADY USED'.tr,
+                    (used ? 'ALREADY USED' : 'FIRST USER ONLY').tr,
                     style: ThemeProvider.sans(
                       size: 9,
                       weight: FontWeight.w800,
@@ -245,6 +246,18 @@ class _CouponScreenState extends State<CouponScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    if (_imageUrl(coupon.coverPath).isNotEmpty) ...[
+                      SizedBox(
+                        height: 140,
+                        width: double.infinity,
+                        child: EliteNetworkImage(
+                          url: _imageUrl(coupon.coverPath),
+                          height: 140,
+                          radius: BorderRadius.circular(10),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                    ],
                     Wrap(
                       spacing: 8,
                       runSpacing: 8,

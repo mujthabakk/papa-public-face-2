@@ -1170,7 +1170,9 @@ class _IndividualPaymentScreenState extends State<IndividualPaymentScreen> {
           ),
           child: Center(
             child: Text(
-              'Pay ${elitePrice(value.currencySide, value.currencySymbol, value.grandTotal)}',
+              value.isCodSelected
+                  ? 'Book Now'.tr
+                  : '${'Pay Now'.tr} ${elitePrice(value.currencySide, value.currencySymbol, value.grandTotal)}',
               style: const TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w600,

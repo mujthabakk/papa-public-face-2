@@ -222,12 +222,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
         type.contains('offer') ||
         n.title.toLowerCase().contains('offer');
     return InkWell(
-      onTap: () {
-        controller.openNotification(n);
-        if (n.isClosedAppointment && n.data.appointmentId != null) {
-          controller.onAppointment(n.data.appointmentId!);
-        }
-      },
+      onTap: () => controller.showNotificationDialog(context, n),
       borderRadius: BorderRadius.circular(14),
       child: Container(
       margin: const EdgeInsets.only(bottom: 12),
@@ -336,9 +331,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
                     child: OutlinedButton(
                       onPressed: () {
                         controller.openNotification(n);
-                        if (n.data.appointmentId != null) {
-                          controller.onAppointment(n.data.appointmentId!);
-                        }
+                        controller.onReschedule(n);
                       },
                       style: OutlinedButton.styleFrom(
                         foregroundColor: Colors.white,

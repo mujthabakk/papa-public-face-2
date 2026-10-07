@@ -94,22 +94,20 @@ class CheckoutController extends GetxController implements GetxService {
     final coupon = cart.selectedCoupon;
     final code = (coupon.code ?? coupon.name ?? '').trim();
     if (code.isEmpty && (coupon.id ?? 0) <= 0) return;
-    final couponParser = Get.find<CouponParser>();
-    final eligible = await couponParser.loadEligibleOffers();
-    final stillOk = eligible.any((item) =>
-        ((coupon.id ?? 0) > 0 && item.id == coupon.id) ||
-        (code.isNotEmpty && CouponsModel.matchesCode(item, code)));
-    if (stillOk) return;
-    if (!coupon.isFirstTimeUserOffer &&
-        !(code.isNotEmpty &&
-            await couponParser.isBlockedFirstUserOffer(code))) {
-      return;
+    try {
+      final validated = await Get.find<CouponParser>().validateApply(
+        code: code.isEmpty ? null : code,
+        id: coupon.id,
+      );
+      if (validated.canApply) return;
+      CouponParser.presentGate(validated);
+      cart.onSaveCoupon(CouponsModel());
+      syncCouponLabel();
+      refreshPricingFromApi();
+      update();
+    } catch (e) {
+      debugPrint('_dropIneligibleFirstUserCoupon: $e');
     }
-    cart.onSaveCoupon(CouponsModel());
-    syncCouponLabel();
-    showToast(CouponParser.firstUserOnlyMessage.tr);
-    refreshPricingFromApi();
-    update();
   }
 
   void onCoupon() {
@@ -140,12 +138,7 @@ class CheckoutController extends GetxController implements GetxService {
       }
       final couponParser = Get.find<CouponParser>();
       final validated = await couponParser.validateApply(code: trimmed);
-      if (!validated.canApply) {
-        showToast(validated.message.isNotEmpty
-            ? validated.message
-            : CouponParser.firstUserOnlyMessage.tr);
-        return;
-      }
+      if (CouponParser.presentGate(validated)) return;
       final matched = await couponParser.findEligibleOffer(trimmed);
       if (matched == null) {
         showToast(validated.message.isNotEmpty

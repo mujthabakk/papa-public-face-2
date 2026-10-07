@@ -139,7 +139,7 @@ class _AccountScreenState extends State<AccountScreen> {
                   _section('BOOKINGS'.tr, [
                     _row(Icons.calendar_today_outlined, 'My Appointments'.tr,
                         () {
-                      Get.find<TabsController>().updateTabId(4);
+                      Get.find<TabsController>().openAppointments();
                     }),
                     _row(Icons.payments_outlined, 'After Payment'.tr, () {
                       Get.toNamed(AppRouter.getAfterPaymentRoutes());

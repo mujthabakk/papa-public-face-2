@@ -7,6 +7,7 @@ import 'package:salon_user/app/controller/account_controller.dart';
 import 'package:salon_user/app/controller/booking_controller.dart';
 import 'package:salon_user/app/controller/categories_controller.dart';
 import 'package:salon_user/app/controller/home_controller.dart';
+import 'package:salon_user/app/controller/languages_controller.dart';
 import 'package:salon_user/app/controller/near_controller.dart';
 import 'package:salon_user/app/controller/tabs_controller.dart';
 import 'package:salon_user/app/helper/router.dart';
@@ -24,7 +25,27 @@ class ChooseLocationController extends GetxController implements GetxService {
   }
 
   Future<void> continueLastLocation() async {
-    await _persistLocationPrefs(parser.getLat(), parser.getLng());
+    final lat = parser.getLat();
+    final lng = parser.getLng();
+    String iso = '';
+    String placeCountry = '';
+    try {
+      if (lat != 0 && lng != 0) {
+        final marks = await placemarkFromCoordinates(lat, lng);
+        if (marks.isNotEmpty) {
+          iso = (marks.first.isoCountryCode ?? '').toUpperCase();
+          placeCountry = (marks.first.country ?? '').trim();
+        }
+      }
+    } catch (_) {}
+    await _persistLocationPrefs(lat, lng, iso.length == 2 ? iso : null);
+    if (iso.length == 2 && Get.isRegistered<LanguagesController>()) {
+      await Get.find<LanguagesController>().applyCountryFromLocation(
+        iso,
+        placeCountryName: placeCountry,
+        reloadHome: false,
+      );
+    }
     Get.delete<TabsController>(force: true);
     Get.delete<HomeController>(force: true);
     Get.delete<NearController>(force: true);
@@ -95,11 +116,19 @@ class ChooseLocationController extends GetxController implements GetxService {
           "$name,$subLocality,$locality,$administrativeArea,$postalCode,$country";
       debugPrint(address);
       parser.saveLatLng(value.latitude, value.longitude, address);
+      final iso = (placeMark.isoCountryCode ?? '').toUpperCase();
       await _persistLocationPrefs(
         value.latitude,
         value.longitude,
-        placeMark.isoCountryCode,
+        iso.length == 2 ? iso : null,
       );
+      if (iso.length == 2 && Get.isRegistered<LanguagesController>()) {
+        await Get.find<LanguagesController>().applyCountryFromLocation(
+          iso,
+          placeCountryName: country,
+          reloadHome: false,
+        );
+      }
 
       Get.delete<TabsController>(force: true);
       Get.delete<HomeController>(force: true);

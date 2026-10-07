@@ -63,6 +63,7 @@ class AppConstants {
   static const String getTopFreelancer = 'api/v1/salon/getTopFreelancer';
   static const String getTopSalon = 'api/v1/salon/getTopSalon';
   static const String getTopPartners = 'api/v1/top_partners/getAll';
+  static const String getPartnerAds = 'api/v1/partner-ads/getAll';
   static const String salonDetails = 'api/v1/salon/salonDetails';
   static const String getOwnerReviewsList = 'api/v1/owner_reviews/getMyReviews';
 
@@ -84,6 +85,8 @@ class AppConstants {
   static const String validateApplyOffer = 'api/v1/offers/validateApply';
   static const String getTimedOffersHome = 'api/v1/timed_offers/getPublicHome';
   static const String getTimedOffersAll = 'api/v1/timed_offers/getAll';
+  static const String getTimedOffersPartner =
+      'api/v1/timed_offers/getPartnerOffer';
   static const String getPayments = 'api/v1/payments/getPayments';
   static const String paymentsGetByCountry = 'api/v1/payments/getByCountry';
   static const String createAppointments = 'api/v1/appoinments/create';

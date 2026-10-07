@@ -126,7 +126,8 @@ class LanguagesController extends GetxController implements GetxService {
     }
   }
 
-  Future<void> _savePreferenceToServer() async {
+  Future<void> _savePreferenceToServer(
+      {bool applyCountryFromProfile = true}) async {
     final uid = parser.getUid();
     if (uid == null) return;
     await parser.saveUserPreference(
@@ -142,7 +143,11 @@ class LanguagesController extends GetxController implements GetxService {
       country: countryCode,
     );
     if (profile != null) {
-      await applyPreferredFromUser(profile, reloadUi: false);
+      await applyPreferredFromUser(
+        profile,
+        reloadUi: false,
+        applyCountry: applyCountryFromProfile,
+      );
     }
   }
 
@@ -151,6 +156,7 @@ class LanguagesController extends GetxController implements GetxService {
   Future<void> applyPreferredFromUser(
     Map<String, dynamic> user, {
     bool reloadUi = true,
+    bool applyCountry = true,
   }) async {
     final lang = (user['preferred_language'] ??
             user['language'] ??
@@ -166,7 +172,7 @@ class LanguagesController extends GetxController implements GetxService {
         .toString()
         .trim();
 
-    if (countryRaw.isNotEmpty) {
+    if (applyCountry && countryRaw.isNotEmpty) {
       final match = countries.firstWhere(
         (c) =>
             c.code.toLowerCase() == countryRaw.toLowerCase() ||
@@ -402,6 +408,54 @@ class LanguagesController extends GetxController implements GetxService {
     _notifyAppUi();
   }
 
+  /// Map pin / GPS confirm: switch country from the selected place.
+  Future<void> applyCountryFromLocation(
+    String iso, {
+    String? placeCountryName,
+    bool reloadHome = true,
+  }) async {
+    final code = iso.trim().toUpperCase();
+    if (code.length != 2) return;
+
+    LocaleCountryItem? item;
+    for (final c in countries) {
+      if (c.code.toUpperCase() == code) {
+        item = c;
+        break;
+      }
+    }
+    final fromPlace = (placeCountryName ?? '').trim();
+    final resolvedName = (item != null && item.displayName.isNotEmpty)
+        ? item.displayName
+        : (fromPlace.isNotEmpty ? fromPlace : code);
+
+    final unchanged = code == countryCode && resolvedName == countryName;
+    countryCode = code;
+    countryName = resolvedName;
+    parser.saveCountry(code);
+    parser.saveCountryName(countryName);
+    await _refreshTaxForCountry();
+    if (unchanged) {
+      safeUpdate();
+      return;
+    }
+
+    _refreshLanguagesForCountry();
+    _ensureLanguageValidForCountry();
+    safeUpdate();
+    _notifyAppUi();
+    LocaleRefresh.bumpCountry();
+
+    unawaited(_savePreferenceToServer(applyCountryFromProfile: false));
+    if (!reloadHome) return;
+    if (Get.isRegistered<HomeController>()) {
+      Get.find<HomeController>().markCountryFresh();
+    }
+    await _reloadHomeFirst();
+    unawaited(_reloadPrimaryTabsAfterCountryChange());
+    unawaited(loadPicker(country: code));
+  }
+
   Future<void> changeCountry(String code) async {
     if (!_ensureLoggedInForCountry()) return;
     if (code == countryCode) return;
@@ -418,6 +472,7 @@ class LanguagesController extends GetxController implements GetxService {
     countryName = item.displayName;
     parser.saveCountry(code);
     parser.saveCountryName(countryName);
+    unawaited(_refreshTaxForCountry());
 
     // Checklist: when country changes, refresh language list (country.languages)
     _refreshLanguagesForCountry();
@@ -425,28 +480,32 @@ class LanguagesController extends GetxController implements GetxService {
     safeUpdate();
     _notifyAppUi();
 
-    await _savePreferenceToServer();
-    await _reloadPrimaryTabsAfterCountryChange();
+    LocaleRefresh.bumpCountry();
+    if (Get.isBottomSheetOpen == true) {
+      Get.back();
+    }
+    if (Get.isRegistered<HomeController>()) {
+      Get.find<HomeController>().markCountryFresh();
+    }
+    if (Get.isRegistered<TabsController>()) {
+      Get.find<TabsController>().updateTabId(0);
+    }
+    await _reloadHomeFirst();
+    unawaited(_savePreferenceToServer(applyCountryFromProfile: false));
+    unawaited(_reloadPrimaryTabsAfterCountryChange());
     unawaited(loadPicker(country: code));
   }
 
-  Future<void> _reloadPrimaryTabsAfterCountryChange() async {
-    LocaleRefresh.bumpCountry();
-    try {
-      if (Get.isRegistered<SplashController>()) {
-        await Get.find<SplashController>().getConfigData();
-      }
-      await parser.fetchConfig(lang: languageCode, country: countryCode);
-    } catch (e) {
-      debugPrint('reload config after country failed: $e');
-    }
-
+  Future<void> _refreshTaxForCountry() async {
     try {
       if (Get.isRegistered<PricingParser>()) {
-        await Get.find<PricingParser>().fetchTaxAvailability();
+        final pricing = Get.find<PricingParser>();
+        await pricing.fetchTaxAvailability(country: countryCode);
+        await pricing.fetchTaxSettings();
       }
-    } catch (_) {}
-
+    } catch (e) {
+      debugPrint('refresh tax after country failed: $e');
+    }
     try {
       if (Get.isRegistered<ServiceCartController>()) {
         Get.find<ServiceCartController>().calcuate();
@@ -457,6 +516,32 @@ class LanguagesController extends GetxController implements GetxService {
         Get.find<ProductCartController>().calcuate();
       }
     } catch (_) {}
+  }
+
+  Future<void> _reloadHomeFirst() async {
+    if (!Get.isRegistered<HomeController>()) return;
+    try {
+      final home = Get.find<HomeController>();
+      home.currencySide = home.parser.getCurrencySide();
+      home.currencySymbol = home.parser.getCurrencySymbol();
+      home.markCountryFresh();
+      await home.getHomeData();
+    } catch (e) {
+      debugPrint('reload home after country failed: $e');
+    }
+  }
+
+  Future<void> _reloadPrimaryTabsAfterCountryChange() async {
+    try {
+      if (Get.isRegistered<SplashController>()) {
+        await Get.find<SplashController>().getConfigData();
+      }
+      await parser.fetchConfig(lang: languageCode, country: countryCode);
+    } catch (e) {
+      debugPrint('reload config after country failed: $e');
+    }
+
+    await _refreshTaxForCountry();
 
     dropSecondaryCountryControllers();
 
@@ -466,7 +551,7 @@ class LanguagesController extends GetxController implements GetxService {
         home.currencySide = home.parser.getCurrencySide();
         home.currencySymbol = home.parser.getCurrencySymbol();
         home.markCountryFresh();
-        unawaited(home.getHomeData());
+        home.update();
       }
     } catch (_) {}
     try {

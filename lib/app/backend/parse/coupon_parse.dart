@@ -1,13 +1,106 @@
+import 'package:flutter/material.dart';
 import 'package:salon_user/app/backend/api/api.dart';
 import 'package:salon_user/app/backend/api/api_response.dart';
 import 'package:salon_user/app/backend/models/coupons_model.dart';
+import 'package:salon_user/app/helper/locale_helper.dart';
 import 'package:salon_user/app/helper/shared_pref.dart';
 import 'package:get/get.dart';
 import 'package:salon_user/app/util/constant.dart';
+import 'package:salon_user/app/util/theme.dart';
+import 'package:salon_user/app/util/toast.dart';
+
+class OfferApplyGate {
+  final bool canApply;
+  final String message;
+  final bool isFirstUser;
+  final bool showPopup;
+  final String popupTitle;
+  final String popupMessage;
+  final String deniedReason;
+
+  const OfferApplyGate({
+    required this.canApply,
+    this.message = '',
+    this.isFirstUser = false,
+    this.showPopup = false,
+    this.popupTitle = '',
+    this.popupMessage = '',
+    this.deniedReason = '',
+  });
+
+  factory OfferApplyGate.fromOffer(CouponsModel offer) {
+    return OfferApplyGate(
+      canApply: offer.canApply && !offer.alreadyUsed,
+      isFirstUser: offer.isFirstTimeUserOffer,
+      showPopup: offer.showPopup,
+      popupTitle: offer.popupTitle ?? '',
+      popupMessage: offer.popupMessage ?? '',
+      deniedReason: offer.deniedReason ?? '',
+      message: offer.alreadyUsed
+          ? 'This offer has already been used.'
+          : (offer.deniedReason ?? ''),
+    );
+  }
+
+  String get displayTitle => popupTitle.trim().isNotEmpty
+      ? popupTitle.trim()
+      : 'Offer unavailable';
+
+  String get displayMessage {
+    final popup = popupMessage.trim();
+    if (popup.isNotEmpty) return popup;
+    final denied = deniedReason.trim();
+    if (denied.isNotEmpty) return denied;
+    final body = message.trim();
+    if (body.isNotEmpty) return body;
+    return CouponParser.firstUserOnlyMessage;
+  }
+}
 
 class CouponParser {
   static const firstUserOnlyMessage =
       'This offer is for first-time users only.';
+
+  static bool presentGate(OfferApplyGate gate) {
+    if (gate.showPopup) {
+      Get.dialog(
+        AlertDialog(
+          backgroundColor: ThemeProvider.surface,
+          title: Text(
+            gate.displayTitle.tr,
+            style: ThemeProvider.serif(size: 18, color: ThemeProvider.gold),
+          ),
+          content: Text(
+            gate.displayMessage.tr,
+            style: ThemeProvider.sans(size: 14, color: Colors.white70),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Get.back(),
+              child: Text(
+                'OK'.tr,
+                style: ThemeProvider.sans(
+                  size: 14,
+                  weight: FontWeight.w700,
+                  color: ThemeProvider.gold,
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+      return true;
+    }
+    if (!gate.canApply) {
+      showToast(gate.displayMessage.tr);
+      return true;
+    }
+    return false;
+  }
+
+  static bool presentOffer(CouponsModel offer) {
+    return presentGate(OfferApplyGate.fromOffer(offer));
+  }
 
   final SharedPreferencesManager sharedPreferencesManager;
   final ApiService apiService;
@@ -25,10 +118,16 @@ class CouponParser {
   }
 
   Map<String, dynamic> listingBody() {
-    return {
+    final body = <String, dynamic>{
       'lat': sharedPreferencesManager.getDouble('lat') ?? 0.0,
       'lng': sharedPreferencesManager.getDouble('lng') ?? 0.0,
     };
+    final country = sharedPreferencesManager
+            .getString(LocaleHelper.prefCountryName) ??
+        sharedPreferencesManager.getString(LocaleHelper.prefCountry) ??
+        '';
+    if (country.isNotEmpty) body['country'] = country;
+    return body;
   }
 
   String listingQuery(String uri) {
@@ -75,7 +174,7 @@ class CouponParser {
     return apiService.postPublic(AppConstants.getAllOffers, listingBody());
   }
 
-  Future<({bool canApply, String message, bool isFirstUser})> validateApply({
+  Future<OfferApplyGate> validateApply({
     String? code,
     int? id,
   }) async {
@@ -90,16 +189,28 @@ class CouponParser {
         .toString()
         .trim();
     final canApply = map['success'] == true && map['can_apply'] == true;
-    return (
+    return OfferApplyGate(
       canApply: canApply,
       message: message,
       isFirstUser: map['is_first_user'] == true,
+      showPopup: map['show_popup'] == true ||
+          map['show_popup']?.toString() == '1',
+      popupTitle: (map['popup_title'] ?? '').toString().trim(),
+      popupMessage: (map['popup_message'] ?? '').toString().trim(),
+      deniedReason: (map['denied_reason'] ?? '').toString().trim(),
     );
   }
 
   List<CouponsModel> parseOffers(dynamic body) {
     final offers = <CouponsModel>[];
-    for (final item in ApiBody.asList(body)) {
+    for (final item in ApiBody.asList(body, keys: const [
+      'offers',
+      'coupons',
+      'data',
+      'items',
+      'result',
+      'list',
+    ])) {
       final coupon = CouponsModel.tryParse(item);
       if (coupon != null) offers.add(coupon);
     }
@@ -127,19 +238,7 @@ class CouponParser {
     return offers;
   }
 
-  /// Eligible for this uid (backend hides first-user offers after a booking).
   Future<CouponsModel?> findEligibleOffer(String code) async {
     return matchOffer(await loadEligibleOffers(), code);
-  }
-
-  /// Returning users: offer exists globally as first-user only.
-  Future<bool> isBlockedFirstUserOffer(String code) async {
-    if (!hasUid) return false;
-    if (CouponsModel.looksLikeFirstUserOffer(name: code, code: code)) {
-      return true;
-    }
-    final catalog = parseOffers((await getAllOffers(includeUid: false)).body);
-    final found = matchOffer(catalog, code);
-    return found?.isFirstTimeUserOffer == true;
   }
 }

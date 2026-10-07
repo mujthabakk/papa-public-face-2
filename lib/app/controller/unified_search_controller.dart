@@ -8,6 +8,7 @@ import 'package:salon_user/app/backend/api/handler.dart';
 import 'package:salon_user/app/backend/models/banner_model.dart';
 import 'package:salon_user/app/backend/models/categories_model.dart';
 import 'package:salon_user/app/backend/models/facilities_model.dart';
+import 'package:salon_user/app/backend/models/products_list_model.dart';
 import 'package:salon_user/app/backend/models/salon_model.dart';
 import 'package:salon_user/app/backend/models/search_individual_model.dart';
 import 'package:salon_user/app/backend/parse/search_parse.dart';
@@ -43,6 +44,8 @@ class UnifiedSearchController extends GetxController implements GetxService {
   List<SalonModel> _localShops = <SalonModel>[];
   List<SearchIndividualModel> _localFreelancers = <SearchIndividualModel>[];
   List<SalonModel> _localServices = <SalonModel>[];
+  List<ProductsListModel> _productList = <ProductsListModel>[];
+  List<ProductsListModel> _localProducts = <ProductsListModel>[];
   Timer? _searchDebounce;
 
   bool _isRealServiceName(String? name) {
@@ -52,16 +55,23 @@ class UnifiedSearchController extends GetxController implements GetxService {
 
   bool _hit(String q, List<String?> fields) {
     if (q.isEmpty) return true;
-    return fields.any((f) => (f ?? '').toLowerCase().contains(q));
+    final blob = fields
+        .where((f) => f != null && f.trim().isNotEmpty)
+        .map((f) => f!.toLowerCase())
+        .join(' ');
+    if (blob.isEmpty) return false;
+    final needle = q.toLowerCase().trim();
+    if (blob.contains(needle)) return true;
+    final tokens = needle
+        .split(RegExp(r'\s+'))
+        .where((t) => t.isNotEmpty)
+        .toList();
+    if (tokens.isEmpty) return false;
+    if (tokens.every((t) => blob.contains(t))) return true;
+    return tokens.any((t) => t.length > 2 && blob.contains(t));
   }
 
   bool get _genderFilterActive => isMale || isFemale || isKid || isFamily;
-
-  bool get _strictFiltersActive =>
-      selectedcat.isNotEmpty ||
-      facilitiesIds.isNotEmpty ||
-      rateSelected ||
-      _genderFilterActive;
 
   bool _matchesSelectedGender(int? gender) {
     if (!_genderFilterActive) return true;
@@ -89,7 +99,37 @@ class UnifiedSearchController extends GetxController implements GetxService {
         return false;
       }
       if (q.isEmpty) return true;
-      return _hit(q, [s.name, s.serviceName, s.address]);
+      return _hit(q, [s.name, s.address]);
+    }).toList();
+  }
+
+  List<SalonModel> _filterServices(List<SalonModel> source) {
+    final q = searchValue.trim().toLowerCase();
+    if (q.isEmpty && !hasSearched) return <SalonModel>[];
+    return source.where((s) {
+      if (!_matchesSelectedGender(s.gender)) return false;
+      if (q.isEmpty) return true;
+      return _hit(q, [s.serviceName, s.name, s.address]);
+    }).toList();
+  }
+
+  List<ProductsListModel> _filterProducts(List<ProductsListModel> source) {
+    final q = searchValue.trim().toLowerCase();
+    if (q.isEmpty && !hasSearched) return <ProductsListModel>[];
+    return source.where((p) {
+      if ((p.status ?? 1) == 0) return false;
+      if (q.isEmpty) return true;
+      String shop = '';
+      final uid = p.freelacerId ?? 0;
+      if (uid > 0) {
+        for (final s in [..._salonList, ..._localShops]) {
+          if (s.uid == uid) {
+            shop = s.name ?? '';
+            break;
+          }
+        }
+      }
+      return _hit(q, [p.name, p.descriptions, shop]);
     }).toList();
   }
 
@@ -148,29 +188,37 @@ class UnifiedSearchController extends GetxController implements GetxService {
   }
 
   List<SalonModel> get filteredSalonList {
-    final api = _filterShops(_salonList);
-    if (_strictFiltersActive) return api;
-    return _mergeShops(api, _filterShops(_localShops));
+    return _mergeShops(_filterShops(_salonList), _filterShops(_localShops));
   }
 
   List<SearchIndividualModel> get filteredIndividualList {
     final api = _filterPeople(_individualList);
-    if (_strictFiltersActive) return api;
-    final q = searchValue.trim().toLowerCase();
     final local = _filterPeople(_localFreelancers);
     final out = <SearchIndividualModel>[...api];
     for (final item in local) {
       if ((item.uid ?? 0) > 0 && out.any((e) => e.uid == item.uid)) continue;
       out.add(item);
     }
-    if (q.isEmpty && !hasSearched) return <SearchIndividualModel>[];
     return out;
   }
 
   List<SalonModel> get filteredServiceList {
-    final api = _filterShops(_serviceList);
-    if (_strictFiltersActive) return api;
-    return _mergeServices(api, _filterShops(_localServices));
+    return _mergeServices(
+      _filterServices(_serviceList),
+      _filterServices(_localServices),
+    );
+  }
+
+  List<ProductsListModel> get filteredProductList {
+    final out = <ProductsListModel>[];
+    for (final item in [
+      ..._filterProducts(_productList),
+      ..._filterProducts(_localProducts),
+    ]) {
+      if ((item.id ?? 0) > 0 && out.any((e) => e.id == item.id)) continue;
+      out.add(item);
+    }
+    return out;
   }
 
   List<BannerModel> _bannerList = <BannerModel>[];
@@ -300,10 +348,6 @@ class UnifiedSearchController extends GetxController implements GetxService {
 
   void setSearchValue(String value) {
     searchValue = value;
-    if (!isGeneralMode) {
-      update();
-      return;
-    }
     final q = value.trim();
     if (q.isEmpty) {
       _searchDebounce?.cancel();
@@ -311,6 +355,7 @@ class UnifiedSearchController extends GetxController implements GetxService {
       _salonList = [];
       _individualList = [];
       _serviceList = [];
+      _productList = [];
       update();
       return;
     }
@@ -322,6 +367,13 @@ class UnifiedSearchController extends GetxController implements GetxService {
     });
   }
 
+  void selectServiceSuggestion(String name) {
+    if (isGeneralMode) tabID.value = 2;
+    _searchDebounce?.cancel();
+    setSearchValue(name);
+    getSearchResult(name.trim());
+  }
+
   searchProducts(
     BuildContext context,
     String query,
@@ -329,11 +381,6 @@ class UnifiedSearchController extends GetxController implements GetxService {
     searchValue = query.trim();
 
     if (isCategoryMode) {
-      if (!(isFemale || isKid || isMale || isFamily)) {
-        FocusManager.instance.primaryFocus?.unfocus();
-        genderDialog(context);
-        return;
-      }
       if (searchValue.isEmpty) {
         getSearchResultInit();
         return;
@@ -348,6 +395,7 @@ class UnifiedSearchController extends GetxController implements GetxService {
       _salonList = [];
       _individualList = [];
       _serviceList = [];
+      _productList = [];
       hasSearched = false;
       isEmpty = true.obs;
       update();
@@ -414,6 +462,12 @@ class UnifiedSearchController extends GetxController implements GetxService {
         status: 1,
       ));
     }
+    _localProducts = [];
+    for (final p in home.productsList) {
+      if ((p.id ?? 0) <= 0) continue;
+      if (_localProducts.any((e) => e.id == p.id)) continue;
+      _localProducts.add(p);
+    }
   }
 
   void toggleChip(int index) {
@@ -441,6 +495,29 @@ class UnifiedSearchController extends GetxController implements GetxService {
 
   void updateSortOption(String? newValue) {
     selectedSortOption.value = newValue!;
+  }
+
+  void _pickBestTab() {
+    if (!isGeneralMode) return;
+    final q = searchValue.trim();
+    if (q.isEmpty) return;
+    final shopNameHit = filteredSalonList.any((s) => _hit(q, [s.name]));
+    final serviceHit = filteredServiceList.isNotEmpty;
+    final productHit = filteredProductList.isNotEmpty;
+    final peopleHit = filteredIndividualList.isNotEmpty;
+    if (serviceHit && !shopNameHit) {
+      tabID.value = 2;
+      return;
+    }
+    if (productHit && !shopNameHit && !serviceHit) {
+      tabID.value = 3;
+      return;
+    }
+    if (peopleHit && !shopNameHit && !serviceHit) {
+      tabID.value = 1;
+      return;
+    }
+    if (shopNameHit) tabID.value = 0;
   }
 
   void updateTabID(int id) {
@@ -536,6 +613,13 @@ class UnifiedSearchController extends GetxController implements GetxService {
         suggestions.add(service);
       }
     }
+    for (final p in [..._productList, ..._localProducts]) {
+      final name = (p.name ?? '').trim();
+      if (name.isNotEmpty &&
+          name.toLowerCase().contains(query.toLowerCase())) {
+        suggestions.add(name);
+      }
+    }
     for (final s in _individualList) {
       final name = (s.name ?? '').trim();
       if (name.isNotEmpty &&
@@ -600,6 +684,27 @@ class UnifiedSearchController extends GetxController implements GetxService {
         for (final data in ApiBody.asItemList(
             map['freelancers'] ?? map['individual'],
             keys: const ['freelancers', 'individual', 'individuals', 'data'])) {
+          final item = ApiBody.asObject(data);
+          final name = item?['name']?.toString().trim() ?? '';
+          if (name.isNotEmpty &&
+              name.toLowerCase().contains(query.toLowerCase())) {
+            suggestions.add(name);
+          }
+        }
+        for (final data in ApiBody.asItemList(
+            map['services'] ?? map['service'],
+            keys: const ['services', 'service', 'treatments', 'data'])) {
+          final item = ApiBody.asObject(data);
+          final name = (item?['service_name'] ?? item?['name'] ?? '')
+              .toString()
+              .trim();
+          if (name.isNotEmpty &&
+              name.toLowerCase().contains(query.toLowerCase())) {
+            suggestions.add(name);
+          }
+        }
+        for (final data in ApiBody.asItemList(map['products'] ?? map['product'],
+            keys: const ['products', 'product', 'data'])) {
           final item = ApiBody.asObject(data);
           final name = item?['name']?.toString().trim() ?? '';
           if (name.isNotEmpty &&
@@ -674,6 +779,7 @@ class UnifiedSearchController extends GetxController implements GetxService {
     _salonList = [];
     _individualList = [];
     _serviceList = [];
+    _productList = [];
     var apiOk = false;
     try {
       apiOk = response != null &&
@@ -690,6 +796,7 @@ class UnifiedSearchController extends GetxController implements GetxService {
           final item = ApiBody.asObject(data);
           if (item == null) continue;
           _salonList.add(SalonModel.fromJson(item));
+          _flattenPartnerServices(item);
         } catch (e) {
           debugPrint('Skip search salon: $e');
         }
@@ -716,6 +823,7 @@ class UnifiedSearchController extends GetxController implements GetxService {
           debugPrint('Skip search service: $e');
         }
       }
+      _ingestProducts(map['products'] ?? map['product']);
 
       if (isGeneralMode) {
         _salonList.removeWhere((salon) => salon.status == 0);
@@ -730,12 +838,15 @@ class UnifiedSearchController extends GetxController implements GetxService {
       isEmpty = false.obs;
     }
 
+    await _loadProductMatches(query);
+
     if (isGeneralMode) {
       _seedLocalCatalog();
     }
     isEmptySearchSalon = filteredSalonList.isEmpty;
     isEmptySearchFreelancer = filteredIndividualList.isEmpty;
     isEmptySearchService = filteredServiceList.isEmpty;
+    _pickBestTab();
     if (!apiOk &&
         isEmptySearchSalon &&
         isEmptySearchFreelancer &&
@@ -1071,8 +1182,71 @@ class UnifiedSearchController extends GetxController implements GetxService {
     _salonList = [];
     _individualList = [];
     _serviceList = [];
+    _productList = [];
     isEmpty = true.obs;
     update();
+  }
+
+  void _flattenPartnerServices(Map<String, dynamic> partner) {
+    final nested = partner['services'] ?? partner['service'];
+    if (nested is! List) return;
+    final shopName = partner['name']?.toString();
+    final shopUid = int.tryParse(partner['uid']?.toString() ?? '') ?? 0;
+    final shopCover = partner['cover']?.toString();
+    final shopAddress = partner['address']?.toString();
+    for (final raw in nested) {
+      if (raw is! Map) continue;
+      try {
+        final map = Map<String, dynamic>.from(raw);
+        final serviceTitle =
+            map['service_name'] ?? map['name'] ?? map['title'];
+        map['uid'] = map['uid'] ?? shopUid;
+        map['service_name'] = serviceTitle;
+        map['name'] = map['shop_name'] ?? map['salon_name'] ?? shopName;
+        map['cover'] = map['cover'] ?? shopCover;
+        map['address'] = map['address'] ?? shopAddress;
+        _serviceList.add(SalonModel.fromJson(map));
+      } catch (e) {
+        debugPrint('Skip nested service: $e');
+      }
+    }
+  }
+
+  void _ingestProducts(dynamic raw) {
+    for (final data in ApiBody.asItemList(raw, keys: const [
+      'products',
+      'data',
+      'items',
+      'result',
+      'list',
+    ])) {
+      try {
+        final item = ApiBody.asObject(data);
+        if (item == null) continue;
+        final product = ProductsListModel.fromJson(item);
+        if ((product.id ?? 0) <= 0) continue;
+        if (_productList.any((e) => e.id == product.id)) continue;
+        _productList.add(product);
+      } catch (e) {
+        debugPrint('Skip search product: $e');
+      }
+    }
+  }
+
+  Future<void> _loadProductMatches(String query) async {
+    final q = query.trim();
+    if (q.isEmpty) return;
+    try {
+      final response = await parser.searchProducts(q);
+      _ingestProducts(response.body);
+    } catch (e) {
+      debugPrint('product search: $e');
+    }
+  }
+
+  void onProduct(int id) {
+    Get.delete<ProductsDetailsController>(force: true);
+    Get.toNamed(AppRouter.getProductsDetailsRoutes(), arguments: [id]);
   }
 
   void onServices(int uid) {

@@ -297,20 +297,49 @@ class _SpecialistScreenState extends State<SpecialistScreen> {
           ],
         ),
         const SizedBox(height: 12),
-        ...List.generate(value.servicesList.length, (index) {
-          final item = value.servicesList[index];
-          final selected = item.isChecked == true;
-          final hasOffer = (item.discount ?? 0) > 0;
-          final offerPrice = hasOffer ? item.off : item.price;
-          final rating = (item.rating ?? 0) > 0
-              ? item.rating!
-              : (value.individualDetails.rating ?? 0);
-          final reviews = (item.reviewCount ?? 0) > 0
-              ? item.reviewCount!
-              : (item.totalRating ?? 0) > 0
-                  ? item.totalRating!
-                  : (value.individualDetails.totalRating ?? 0);
-          return GestureDetector(
+        ..._serviceCards(value),
+      ],
+    );
+  }
+
+  List<Widget> _serviceCards(SpecialistController value) {
+    final timed = <int>[];
+    final rest = <int>[];
+    for (var i = 0; i < value.servicesList.length; i++) {
+      if (value.servicesList[i].isTimedOffer) {
+        timed.add(i);
+      } else {
+        rest.add(i);
+      }
+    }
+    return [
+      if (timed.isNotEmpty) ...[
+        Text(
+          value.partnerOfferTitle,
+          style: ThemeProvider.serif(size: 18, color: ThemeProvider.gold),
+        ),
+        const SizedBox(height: 10),
+        ...timed.map((i) => _serviceCard(value, i)),
+        const SizedBox(height: 8),
+      ],
+      ...rest.map((i) => _serviceCard(value, i)),
+    ];
+  }
+
+  Widget _serviceCard(SpecialistController value, int index) {
+    final item = value.servicesList[index];
+    final selected = item.isChecked == true;
+    final hasOffer = item.hasSalePrice || item.offerBadge.isNotEmpty;
+    final offerPrice = item.displayPrice;
+    final rating = (item.rating ?? 0) > 0
+        ? item.rating!
+        : (value.individualDetails.rating ?? 0);
+    final reviews = (item.reviewCount ?? 0) > 0
+        ? item.reviewCount!
+        : (item.totalRating ?? 0) > 0
+            ? item.totalRating!
+            : (value.individualDetails.totalRating ?? 0);
+    return GestureDetector(
             onTap: () =>
                 value.updateServiceStatusInCart(index, !(item.isChecked ?? false)),
             child: Container(
@@ -325,6 +354,28 @@ class _SpecialistScreenState extends State<SpecialistScreen> {
               ),
               child: Row(
                 children: [
+                  Padding(
+                    padding: const EdgeInsets.only(right: 12),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(10),
+                      child: item.imageCover.isEmpty
+                          ? Container(
+                              width: 72,
+                              height: 72,
+                              color: const Color(0xFF2A2A2A),
+                              child: const Icon(Icons.spa_outlined,
+                                  color: ThemeProvider.gold),
+                            )
+                          : EliteNetworkImage(
+                              url: item.imageCover.startsWith('http')
+                                  ? item.imageCover
+                                  : '${Environments.imageURL}${item.imageCover}',
+                              width: 72,
+                              height: 72,
+                              radius: BorderRadius.circular(10),
+                            ),
+                    ),
+                  ),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -333,7 +384,9 @@ class _SpecialistScreenState extends State<SpecialistScreen> {
                           Padding(
                             padding: const EdgeInsets.only(bottom: 4),
                             child: Text(
-                              '${item.discount!.toStringAsFixed(0)}% OFF',
+                              item.offerBadge.isNotEmpty
+                                  ? item.offerBadge
+                                  : '${item.discount!.toStringAsFixed(0)}% OFF',
                               style: ThemeProvider.sans(
                                 size: 10,
                                 weight: FontWeight.w700,
@@ -401,9 +454,6 @@ class _SpecialistScreenState extends State<SpecialistScreen> {
               ),
             ),
           );
-        }),
-      ],
-    );
   }
 
   Widget _gallery(SpecialistController value) {

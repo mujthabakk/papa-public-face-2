@@ -83,6 +83,17 @@ class AppointmentDetailController extends GetxController
     return paymentOptions?.showCod == true && method < 2;
   }
 
+  bool get canManageBooking {
+    final s = appointmentInfo.status ?? -1;
+    return s == 0 || s == 1 || s == 7;
+  }
+
+  void goReschedule() {
+    Get.delete<RescheduleSlotController>(force: true);
+    Get.toNamed(AppRouter.getRescheduleSlotRoutes(),
+        arguments: [appointmentId, uid, type]);
+  }
+
   bool get showPayNow {
     final status = appointmentInfo.status ?? 0;
     if (status == 2 || status == 5 || status == 6) return false;
