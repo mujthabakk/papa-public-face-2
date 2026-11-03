@@ -52,7 +52,8 @@ class _TopProductScreenState extends State<TopProductScreen> {
                   slivers: [
                     SliverToBoxAdapter(
                       child: Padding(
-                        padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+                        padding: Desktop.pagePadding(context)
+                            .copyWith(bottom: 0),
                         child: Column(
                           children: [
                             Row(
@@ -113,7 +114,7 @@ class _TopProductScreenState extends State<TopProductScreen> {
                       )
                     else
                     SliverPadding(
-                      padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+                      padding: Desktop.pagePadding(context),
                       sliver: SliverGrid(
                         gridDelegate: Desktop.productGrid(context),
                         delegate: SliverChildBuilderDelegate(

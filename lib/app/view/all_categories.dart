@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:salon_user/app/controller/all_categories_controller.dart';
 import 'package:salon_user/app/env.dart';
+import 'package:salon_user/app/helper/desktop.dart';
 import 'package:salon_user/app/util/theme.dart';
 import 'package:salon_user/app/view/widgets/elite_ui.dart';
 
@@ -40,13 +41,16 @@ class _AllCategoriesScreenState extends State<AllCategoriesScreen> {
   Widget build(BuildContext context) {
     return GetBuilder<AllCategoriesController>(
       builder: (value) {
+        final desktop = Desktop.of(context);
         return Scaffold(
           backgroundColor: ThemeProvider.backgroundColor,
-          appBar: EliteAppBar(
-            showBack: true,
-            title: 'Top Services'.tr,
-            onMore: () {},
-          ),
+          appBar: desktop
+              ? null
+              : EliteAppBar(
+                  showBack: true,
+                  title: 'Top Services'.tr,
+                  onMore: () {},
+                ),
           body: value.apiCalled == false
               ? const Center(
                   child: CircularProgressIndicator(color: ThemeProvider.gold),
@@ -57,6 +61,24 @@ class _AllCategoriesScreenState extends State<AllCategoriesScreen> {
                       title: 'No categories yet',
                       icon: Icons.grid_view_outlined,
                     )
+                  : desktop
+                      ? WebInnerPage(
+                          title: 'Top Services'.tr,
+                          expandMain: true,
+                          main: GridView.builder(
+                            padding: EdgeInsets.zero,
+                            itemCount: value.categoriesList.length,
+                            gridDelegate:
+                                const SliverGridDelegateWithFixedCrossAxisCount(
+                              crossAxisCount: 3,
+                              mainAxisSpacing: 14,
+                              crossAxisSpacing: 14,
+                              childAspectRatio: 1.2,
+                            ),
+                            itemBuilder: (_, i) =>
+                                _card(value, value.categoriesList[i], i),
+                          ),
+                        )
                   : ListView(
                   padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
                   children: [

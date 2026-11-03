@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:salon_user/app/controller/appointment_detail_controller.dart';
 import 'package:salon_user/app/env.dart';
+import 'package:salon_user/app/helper/desktop.dart';
 import 'package:salon_user/app/helper/router.dart';
 import 'package:salon_user/app/helper/tax_availability.dart';
 import 'package:salon_user/app/util/theme.dart';
@@ -20,31 +21,51 @@ class _AppointmentDetailScreenState extends State<AppointmentDetailScreen> {
   Widget build(BuildContext context) {
     return GetBuilder<AppointmentDetailController>(
       builder: (value) {
+        final desktop = Desktop.of(context);
         return Scaffold(
           backgroundColor: ThemeProvider.backgroundColor,
-          appBar: EliteAppBar(
-            showBack: true,
-            title: 'Invoice'.tr,
-            onMore: value.openHelpModal,
-          ),
+          appBar: desktop
+              ? null
+              : EliteAppBar(
+                  showBack: true,
+                  title: 'Invoice'.tr,
+                  onMore: value.openHelpModal,
+                ),
           body: value.apiCalled != true
               ? const Center(
                   child: CircularProgressIndicator(color: ThemeProvider.gold),
                 )
-              : ListView(
-                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-                  children: [
-                    _successHeader(value),
-                    const SizedBox(height: 22),
-                    _transactionCard(value),
-                    const SizedBox(height: 14),
-                    _receiptCard(value),
-                    const SizedBox(height: 14),
-                    _providerCard(value),
-                  ],
-                ),
-          bottomNavigationBar:
-              value.apiCalled == false ? const SizedBox() : _bottomBar(value),
+              : desktop
+                  ? WebInnerPage(
+                      title: 'Invoice'.tr,
+                      main: Column(
+                        children: [
+                          _successHeader(value),
+                          const SizedBox(height: 22),
+                          _transactionCard(value),
+                          const SizedBox(height: 14),
+                          _receiptCard(value),
+                          const SizedBox(height: 14),
+                          _providerCard(value),
+                        ],
+                      ),
+                      side: _bottomBar(value),
+                    )
+                  : ListView(
+                      padding: Desktop.pagePadding(context),
+                      children: [
+                        _successHeader(value),
+                        const SizedBox(height: 22),
+                        _transactionCard(value),
+                        const SizedBox(height: 14),
+                        _receiptCard(value),
+                        const SizedBox(height: 14),
+                        _providerCard(value),
+                      ],
+                    ),
+          bottomNavigationBar: desktop || value.apiCalled == false
+              ? const SizedBox()
+              : _bottomBar(value),
         );
       },
     );

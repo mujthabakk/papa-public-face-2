@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:salon_user/app/controller/refer_and_earn_controller.dart';
+import 'package:salon_user/app/helper/desktop.dart';
 import 'package:salon_user/app/util/theme.dart';
 import 'package:salon_user/app/view/widgets/elite_ui.dart';
 
@@ -17,19 +18,24 @@ class _ReferAndEarnScreenState extends State<ReferAndEarnScreen> {
     return GetBuilder<ReferAndEarnController>(
       builder: (value) {
         final amount = elitePrice('', '', value.referralData.amount);
+        final desktop = Desktop.of(context);
         return Scaffold(
           backgroundColor: ThemeProvider.backgroundColor,
-          appBar: EliteAppBar(
-            showBack: true,
-            title: 'Refer & Earn'.tr,
-            onMore: () {},
-          ),
+          appBar: desktop
+              ? null
+              : EliteAppBar(
+                  showBack: true,
+                  title: 'Refer & Earn'.tr,
+                  onMore: () {},
+                ),
           body: value.apiCalled == false
               ? const Center(
                   child: CircularProgressIndicator(color: ThemeProvider.gold),
                 )
-              : ListView(
-                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
+              : Builder(builder: (_) {
+                  final list = ListView(
+                  padding: EdgeInsets.fromLTRB(
+                      desktop ? 0 : 16, 8, desktop ? 0 : 16, 32),
                   children: [
                     EliteCard(
                       child: Column(
@@ -157,7 +163,15 @@ class _ReferAndEarnScreenState extends State<ReferAndEarnScreen> {
                           size: 11, color: ThemeProvider.greyColor),
                     ),
                   ],
-                ),
+                );
+                  return desktop
+                      ? WebInnerPage(
+                          title: 'Refer & Earn'.tr,
+                          expandMain: true,
+                          main: list,
+                        )
+                      : list;
+                }),
         );
       },
     );

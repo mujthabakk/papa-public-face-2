@@ -4,6 +4,7 @@ import 'package:salon_user/app/backend/models/coupons_model.dart';
 import 'package:salon_user/app/backend/models/timed_offer_model.dart';
 import 'package:salon_user/app/controller/timed_offer_controller.dart';
 import 'package:salon_user/app/env.dart';
+import 'package:salon_user/app/helper/desktop.dart';
 import 'package:salon_user/app/util/theme.dart';
 import 'package:salon_user/app/view/widgets/elite_ui.dart';
 
@@ -21,16 +22,20 @@ class TimedOfferScreen extends StatelessWidget {
     return GetBuilder<TimedOfferController>(
       builder: (value) {
         final header = value.header;
+        final desktop = Desktop.of(context);
+        final title = value.showAllCampaigns
+            ? 'Shop Discounts'.tr
+            : (value.campaignName.isNotEmpty
+                ? value.campaignName
+                : (header?.name ?? 'Flash Offer'));
         return Scaffold(
           backgroundColor: ThemeProvider.backgroundColor,
-          appBar: EliteAppBar(
-            showBack: true,
-            title: value.showAllCampaigns
-                ? 'Shop Discounts'.tr
-                : (value.campaignName.isNotEmpty
-                    ? value.campaignName
-                    : (header?.name ?? 'Flash Offer')),
-          ),
+          appBar: desktop
+              ? null
+              : EliteAppBar(
+                  showBack: true,
+                  title: title,
+                ),
           body: value.apiCalled == false
               ? const Center(
                   child: CircularProgressIndicator(color: ThemeProvider.gold),
@@ -41,8 +46,10 @@ class TimedOfferScreen extends StatelessWidget {
                       subtitle: 'Check back soon for new deals.',
                       icon: Icons.timer_outlined,
                     )
-                  : ListView(
-                      padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+                  : Builder(builder: (_) {
+                      final list = ListView(
+                      padding: EdgeInsets.fromLTRB(
+                          desktop ? 0 : 16, 8, desktop ? 0 : 16, 24),
                       children: value.showAllCampaigns
                           ? [
                               for (final group in value.campaignGroups) ...[
@@ -51,7 +58,15 @@ class TimedOfferScreen extends StatelessWidget {
                               ],
                             ]
                           : _campaignBlock(value, value.rows),
-                    ),
+                    );
+                      return desktop
+                          ? WebInnerPage(
+                              title: title,
+                              expandMain: true,
+                              main: list,
+                            )
+                          : list;
+                    }),
         );
       },
     );

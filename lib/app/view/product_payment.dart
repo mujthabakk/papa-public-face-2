@@ -4,6 +4,7 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:salon_user/app/controller/product_cart_controller.dart';
 import 'package:salon_user/app/controller/product_payment_controller.dart';
 import 'package:salon_user/app/env.dart';
+import 'package:salon_user/app/helper/desktop.dart';
 import 'package:salon_user/app/helper/map_style.dart';
 import 'package:salon_user/app/helper/tax_availability.dart';
 import 'package:salon_user/app/util/theme.dart';
@@ -45,45 +46,78 @@ class _ProductPaymentScreenState extends State<ProductPaymentScreen> {
   Widget build(BuildContext context) {
     return GetBuilder<ProductPaymentController>(
       builder: (value) {
+        final desktop = Desktop.of(context);
         return Scaffold(
           backgroundColor: ThemeProvider.backgroundColor,
-          appBar: EliteAppBar(
-            showBack: true,
-            title: 'Checkout'.tr,
-            onMore: () {},
-          ),
+          appBar: desktop
+              ? null
+              : EliteAppBar(
+                  showBack: true,
+                  title: 'Checkout'.tr,
+                  onMore: () {},
+                ),
           body: value.paymentAPICalled == false
               ? const Center(
                   child: CircularProgressIndicator(color: ThemeProvider.gold),
                 )
-              : ListView(
-                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-                  children: [
-                    _address(value),
-                    const SizedBox(height: 16),
-                    _payments(value),
-                    const SizedBox(height: 16),
-                    _wallet(value),
-                    const SizedBox(height: 16),
-                    EliteCard(
-                      child: TextField(
-                        controller: value.notesEditor,
-                        maxLines: 3,
-                        style: ThemeProvider.sans(size: 13),
-                        decoration: InputDecoration(
-                          hintText: 'Add delivery notes...',
-                          hintStyle: ThemeProvider.sans(
-                              size: 13, color: ThemeProvider.greyColor),
-                          border: InputBorder.none,
-                        ),
+              : desktop
+                  ? WebInnerPage(
+                      title: 'Checkout'.tr,
+                      main: Column(
+                        children: [
+                          _address(value),
+                          const SizedBox(height: 16),
+                          _payments(value),
+                          const SizedBox(height: 16),
+                          _wallet(value),
+                          const SizedBox(height: 16),
+                          EliteCard(
+                            child: TextField(
+                              controller: value.notesEditor,
+                              maxLines: 3,
+                              style: ThemeProvider.sans(size: 13),
+                              decoration: InputDecoration(
+                                hintText: 'Add delivery notes...',
+                                hintStyle: ThemeProvider.sans(
+                                    size: 13, color: ThemeProvider.greyColor),
+                                border: InputBorder.none,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          _promo(value),
+                        ],
                       ),
+                      side: _summary(value),
+                    )
+                  : ListView(
+                      padding: Desktop.pagePadding(context),
+                      children: [
+                        _address(value),
+                        const SizedBox(height: 16),
+                        _payments(value),
+                        const SizedBox(height: 16),
+                        _wallet(value),
+                        const SizedBox(height: 16),
+                        EliteCard(
+                          child: TextField(
+                            controller: value.notesEditor,
+                            maxLines: 3,
+                            style: ThemeProvider.sans(size: 13),
+                            decoration: InputDecoration(
+                              hintText: 'Add delivery notes...',
+                              hintStyle: ThemeProvider.sans(
+                                  size: 13, color: ThemeProvider.greyColor),
+                              border: InputBorder.none,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        _summary(value),
+                        const SizedBox(height: 12),
+                        _promo(value),
+                      ],
                     ),
-                    const SizedBox(height: 16),
-                    _summary(value),
-                    const SizedBox(height: 12),
-                    _promo(value),
-                  ],
-                ),
         );
       },
     );

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:salon_user/app/controller/top_specialist_controller.dart';
 import 'package:salon_user/app/env.dart';
+import 'package:salon_user/app/helper/desktop.dart';
 import 'package:salon_user/app/helper/router.dart';
 import 'package:salon_user/app/util/theme.dart';
 import 'package:salon_user/app/view/widgets/elite_ui.dart';
@@ -25,12 +26,15 @@ class _TopSpecialistScreenState extends State<TopSpecialistScreen> {
         if (_sortByRating) {
           list.sort((a, b) => (b.rating ?? 0).compareTo(a.rating ?? 0));
         }
+        final desktop = Desktop.of(context);
         return Scaffold(
           backgroundColor: ThemeProvider.backgroundColor,
-          appBar: EliteAppBar(
-            showBack: true,
-            title: 'Wellness Experts'.tr,
-          ),
+          appBar: desktop
+              ? null
+              : EliteAppBar(
+                  showBack: true,
+                  title: 'Wellness Experts'.tr,
+                ),
           body: value.apiCalled == false
               ? Padding(
                   padding: const EdgeInsets.all(16),
@@ -42,8 +46,10 @@ class _TopSpecialistScreenState extends State<TopSpecialistScreen> {
                       title: 'No experts nearby',
                       icon: Icons.person_outline,
                     )
-                  : ListView(
-                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
+                  : Builder(builder: (_) {
+                  final page = ListView(
+                  padding: EdgeInsets.fromLTRB(
+                      desktop ? 0 : 16, 8, desktop ? 0 : 16, 32),
                   children: [
                     Text(
                       'Wellness Experts'.tr,
@@ -71,9 +77,32 @@ class _TopSpecialistScreenState extends State<TopSpecialistScreen> {
                       ],
                     ),
                     const SizedBox(height: 18),
-                    ...list.map((item) => _expertCard(value, item)),
+                    if (Desktop.of(context))
+                      GridView.builder(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        itemCount: list.length,
+                        gridDelegate:
+                            const SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 2,
+                          mainAxisSpacing: 12,
+                          crossAxisSpacing: 12,
+                          childAspectRatio: 1.4,
+                        ),
+                        itemBuilder: (_, i) => _expertCard(value, list[i]),
+                      )
+                    else
+                      ...list.map((item) => _expertCard(value, item)),
                   ],
-                ),
+                );
+                  return desktop
+                      ? WebInnerPage(
+                          title: 'Wellness Experts'.tr,
+                          expandMain: true,
+                          main: page,
+                        )
+                      : page;
+                }),
         );
       },
     );
@@ -238,6 +267,7 @@ class _TopSpecialistScreenState extends State<TopSpecialistScreen> {
               ),
               const Spacer(),
               EliteGoldButton(
+                expand: false,
                 label: 'BOOK NOW'.tr,
                 onTap: () => value.onSpecialist(item.uid as int),
               ),

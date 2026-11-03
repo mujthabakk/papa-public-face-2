@@ -570,6 +570,7 @@
 //     }
 //   }
 // }
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:geocoding/geocoding.dart' as LocationGeo;
 import 'package:geocoding/geocoding.dart';
@@ -584,6 +585,7 @@ import 'package:salon_user/app/backend/parse/new_address_parse.dart';
 import 'package:salon_user/app/controller/address_controller.dart';
 import 'package:salon_user/app/controller/address_list_controller.dart';
 import 'package:salon_user/app/env.dart';
+import 'package:salon_user/app/helper/maps_js.dart';
 import 'package:salon_user/app/helper/uuid_generator.dart';
 import 'package:salon_user/app/util/theme.dart';
 import 'package:salon_user/app/util/toast.dart';
@@ -1090,6 +1092,12 @@ class NewAddressController extends GetxController implements GetxService {
 
   Future<void> getPlacesList(String value) async {
     try {
+      if (kIsWeb) {
+        _getList = await MapsJs.autocomplete(value);
+        isConfirmed = false;
+        update();
+        return;
+      }
       String googleURL =
           'https://maps.googleapis.com/maps/api/place/autocomplete/json';
       var sessionToken = Uuid().generateV4();

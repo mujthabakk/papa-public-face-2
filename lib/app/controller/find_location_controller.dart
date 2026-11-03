@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:geolocator/geolocator.dart';
@@ -9,6 +10,8 @@ import 'package:salon_user/app/backend/parse/find_location_parse.dart';
 import 'package:salon_user/app/backend/parse/languages_parse.dart';
 import 'package:salon_user/app/controller/languages_controller.dart';
 import 'package:salon_user/app/env.dart';
+import 'package:salon_user/app/helper/geo_lookup.dart';
+import 'package:salon_user/app/helper/maps_js.dart';
 import 'package:salon_user/app/helper/post_login_nav.dart';
 import 'package:salon_user/app/helper/uuid_generator.dart';
 import 'package:salon_user/app/util/theme.dart';
@@ -181,24 +184,12 @@ class FindLocationController extends GetxController implements GetxService {
 
       if (updateSearchText) {
         try {
-          List<Placemark> placemarks =
-              await placemarkFromCoordinates(myLat.value, myLng.value);
-
+          final geo = await reverseGeocode(myLat.value, myLng.value);
           if (requestId != _locationRequestId || _hasManualSelection) {
             return;
           }
-
-          if (placemarks.isNotEmpty) {
-            Placemark placeMark = placemarks[0];
-            String name = placeMark.name.toString();
-            String subLocality = placeMark.subLocality.toString();
-            String locality = placeMark.locality.toString();
-            String administrativeArea = placeMark.administrativeArea.toString();
-            String postalCode = placeMark.postalCode.toString();
-            String country = placeMark.country.toString();
-            String address =
-                "$name,$subLocality,$locality,$administrativeArea,$postalCode,$country";
-            searchbarText.text = address;
+          if (geo != null && geo.address.isNotEmpty) {
+            searchbarText.text = geo.address;
           }
         } catch (e) {
           debugPrint("Error getting address: $e");
@@ -248,30 +239,24 @@ class FindLocationController extends GetxController implements GetxService {
     determinePosition().then((value) async {
       Get.back();
       debugPrint(value.toString());
-      List<Placemark> newPlace =
-          await placemarkFromCoordinates(value.latitude, value.longitude);
-      Placemark placeMark = newPlace[0];
-      String name = placeMark.name.toString();
-      String subLocality = placeMark.subLocality.toString();
-      String locality = placeMark.locality.toString();
-      String administrativeArea = placeMark.administrativeArea.toString();
-      String postalCode = placeMark.postalCode.toString();
-      String country = placeMark.country.toString();
-      String address =
-          "$name,$subLocality,$locality,$administrativeArea,$postalCode,$country";
-      debugPrint(address);
+      final geo = await reverseGeocode(value.latitude, value.longitude);
+      final address = (geo?.address.isNotEmpty == true)
+          ? geo!.address
+          : '${value.latitude}, ${value.longitude}';
       parser.saveLatLng(value.latitude, value.longitude, address);
       await _persistLocationPrefs(
         value.latitude,
         value.longitude,
-        placeMark.isoCountryCode,
+        geo?.iso,
       );
 
       await PostLoginNav.finishAfterLocation();
     }).catchError((error) async {
       Get.back();
       showToast(error.toString());
-      await Geolocator.openLocationSettings();
+      if (!kIsWeb) {
+        await Geolocator.openLocationSettings();
+      }
     });
   }
 
@@ -335,6 +320,12 @@ class FindLocationController extends GetxController implements GetxService {
   }
 
   Future<void> getPlacesList(String value) async {
+    if (kIsWeb) {
+      _getList = await MapsJs.autocomplete(value);
+      isConfirmed = false;
+      update();
+      return;
+    }
     String googleURL =
         'https://maps.googleapis.com/maps/api/place/autocomplete/json';
     var sessionToken = Uuid().generateV4();
@@ -381,6 +372,31 @@ class FindLocationController extends GetxController implements GetxService {
 
   Future<void> getLatLngFromPlaceId(String placeId,
       {String? fallbackAddress}) async {
+    if (kIsWeb) {
+      final geo = await MapsJs.details(placeId);
+      if (geo?.lat != null && geo?.lng != null) {
+        _hasManualSelection = true;
+        _locationRequestId++;
+        _getList = [];
+        myLat.value = geo!.lat!;
+        myLng.value = geo.lng!;
+        mapZoom = 13;
+        searchbarText.text =
+            geo.address.isNotEmpty ? geo.address : (fallbackAddress ?? '');
+        isConfirmed = true;
+        final pin = LatLng(geo.lat!, geo.lng!);
+        _setPin(pin, bumpMap: true);
+        update();
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          _moveCameraSafely(pin, zoom: mapZoom);
+        });
+        return;
+      }
+      if (fallbackAddress != null && fallbackAddress.isNotEmpty) {
+        await getLatLngFromAddress(fallbackAddress);
+      }
+      return;
+    }
     final url =
         'https://maps.googleapis.com/maps/api/place/details/json?place_id=$placeId&fields=geometry,formatted_address&key=${Environments.googleMapsKey}';
     final response = await parser.getPlacesList(url);
@@ -452,18 +468,9 @@ class FindLocationController extends GetxController implements GetxService {
     _moveCameraSafely(newPosition, zoom: mapZoom);
 
     try {
-      List<Placemark> placemarks = await placemarkFromCoordinates(lat, lng);
-      if (placemarks.isNotEmpty) {
-        Placemark placeMark = placemarks[0];
-        String name = placeMark.name.toString();
-        String subLocality = placeMark.subLocality.toString();
-        String locality = placeMark.locality.toString();
-        String administrativeArea = placeMark.administrativeArea.toString();
-        String postalCode = placeMark.postalCode.toString();
-        String country = placeMark.country.toString();
-        String address =
-            "$name,$subLocality,$locality,$administrativeArea,$postalCode,$country";
-        searchbarText.text = address;
+      final geo = await reverseGeocode(lat, lng);
+      if (geo != null && geo.address.isNotEmpty) {
+        searchbarText.text = geo.address;
       }
     } catch (e) {
       debugPrint("Error getting address: $e");
@@ -479,12 +486,9 @@ class FindLocationController extends GetxController implements GetxService {
     String iso = '';
     String placeCountry = '';
     try {
-      final marks =
-          await placemarkFromCoordinates(myLat.value, myLng.value);
-      if (marks.isNotEmpty) {
-        iso = (marks.first.isoCountryCode ?? '').toUpperCase();
-        placeCountry = (marks.first.country ?? '').trim();
-      }
+      final geo = await reverseGeocode(myLat.value, myLng.value);
+      iso = geo?.iso ?? '';
+      placeCountry = geo?.country ?? '';
     } catch (_) {}
     await _persistLocationPrefs(
       myLat.value,

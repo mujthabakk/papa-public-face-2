@@ -3,6 +3,8 @@ import 'package:photo_view/photo_view.dart';
 import 'package:photo_view/photo_view_gallery.dart';
 import 'package:salon_user/app/env.dart';
 import 'package:salon_user/app/helper/desktop.dart';
+import 'package:salon_user/app/helper/media_cache.dart';
+import 'package:salon_user/app/view/widgets/elite_ui.dart';
 
 class ImageGalleryScreen extends StatelessWidget {
   final List<String> gallery;
@@ -18,12 +20,12 @@ class ImageGalleryScreen extends StatelessWidget {
       backgroundColor: Colors.black,
       appBar: AppBar(backgroundColor: Colors.black),
       body: PhotoViewGallery.builder(
-        scrollPhysics: const BouncingScrollPhysics(),
+        scrollPhysics: const ClampingScrollPhysics(),
         itemCount: gallery.length,
         builder: (context, index) {
           return PhotoViewGalleryPageOptions(
-            imageProvider:
-                NetworkImage('${Environments.imageURL}${gallery[index]}'),
+            imageProvider: MediaCache.provider(
+                Environments.mediaUrl(gallery[index])),
             minScale: PhotoViewComputedScale.contained,
             maxScale: PhotoViewComputedScale.covered * 2,
           );
@@ -69,15 +71,8 @@ class GridGallery extends StatelessWidget {
               padding: const EdgeInsets.all(10.0),
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(5),
-                child: FadeInImage(
-                  image:
-                      NetworkImage('${Environments.imageURL}${gallery[index]}'),
-                  placeholder:
-                      const AssetImage("assets/images/placeholder.jpeg"),
-                  imageErrorBuilder: (context, error, stackTrace) {
-                    return Image.asset('assets/images/notfound.png',
-                        fit: BoxFit.cover);
-                  },
+                child: EliteNetworkImage(
+                  url: gallery[index],
                   fit: BoxFit.cover,
                 ),
               ),

@@ -2,8 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:get/get.dart';
 import 'package:salon_user/app/controller/intro_controller.dart';
+import 'package:salon_user/app/helper/desktop.dart';
+import 'package:salon_user/app/helper/router.dart';
 import 'package:salon_user/app/util/constant.dart';
 import 'package:salon_user/app/util/theme.dart';
+import 'package:salon_user/app/view/widgets/elite_ui.dart';
 
 class IntroScreen extends StatefulWidget {
   const IntroScreen({Key? key}) : super(key: key);
@@ -15,10 +18,33 @@ class IntroScreen extends StatefulWidget {
 class _IntroScreenState extends State<IntroScreen> {
   final CarouselSliderController _controller = CarouselSliderController();
   int currentIndex = 0;
-  List items = [0, 1, 2, 3];
+  static const _slides = [
+    (
+      'assets/sliders/1.png',
+      'Discover Your Perfect Hair Look',
+      'Book top-rated hair stylists for cuts, colors, and styles that suit your vibe',
+    ),
+    (
+      'assets/sliders/2.png',
+      'Glow Up Starts Here',
+      'Facials, makeup, skincare & more — all at your fingertips.',
+    ),
+    (
+      'assets/sliders/3.png',
+      'Crush Your Fitness Goals',
+      'Find the best gyms and certified trainers near you. Book your session today!',
+    ),
+    (
+      'assets/sliders/4.png',
+      'Relax. Recharge. Repeat',
+      'Pamper yourself with spa therapies, massages, and self-care treatments',
+    ),
+  ];
+
   @override
   Widget build(BuildContext context) {
     return GetBuilder<IntroController>(builder: (value) {
+      if (Desktop.of(context)) return _webLanding();
       return Scaffold(
         extendBodyBehindAppBar: true,
         backgroundColor: ThemeProvider.backgroundColor,
@@ -34,7 +60,7 @@ class _IntroScreenState extends State<IntroScreen> {
                   _buildBottomNavigationBar2()
                 else if (currentIndex == 2)
                   _buildBottomNavigationBar3()
-                else if (currentIndex == 3)
+                else
                   _buildBottomNavigationBar4()
               ],
             ),
@@ -42,6 +68,145 @@ class _IntroScreenState extends State<IntroScreen> {
         ),
       );
     });
+  }
+
+  Widget _webLanding() {
+    final slide = _slides[currentIndex];
+    return Scaffold(
+      backgroundColor: ThemeProvider.backgroundColor,
+      body: Row(
+        children: [
+          Expanded(
+            flex: 7,
+            child: Container(
+              color: ThemeProvider.surface,
+              child: Column(
+                children: [
+                  Align(
+                    alignment: Alignment.topLeft,
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(32, 28, 32, 0),
+                      child: Text(
+                        AppConstants.appName,
+                        style: ThemeProvider.serif(
+                          size: 22,
+                          color: ThemeProvider.gold,
+                          letterSpacing: 3,
+                          weight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                  ),
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.all(48),
+                      child: Image.asset(slide.$1, fit: BoxFit.contain),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          Expanded(
+            flex: 5,
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                return SingleChildScrollView(
+                  padding: const EdgeInsets.fromLTRB(56, 48, 56, 48),
+                  child: ConstrainedBox(
+                    constraints:
+                        BoxConstraints(minHeight: constraints.maxHeight - 96),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          'WELCOME'.tr,
+                          style: ThemeProvider.sans(
+                            size: 12,
+                            weight: FontWeight.w700,
+                            color: ThemeProvider.gold,
+                            letterSpacing: 2,
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          slide.$2.tr,
+                          style: ThemeProvider.serif(
+                            size: 40,
+                            weight: FontWeight.w700,
+                            color: Colors.white,
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          slide.$3.tr,
+                          style: ThemeProvider.sans(
+                            size: 16,
+                            color: ThemeProvider.greyColor,
+                          ),
+                        ),
+                        const SizedBox(height: 28),
+                        Row(
+                          children: List.generate(_slides.length, (i) {
+                            final on = i == currentIndex;
+                            return GestureDetector(
+                              onTap: () => setState(() => currentIndex = i),
+                              child: AnimatedContainer(
+                                duration: const Duration(milliseconds: 200),
+                                width: on ? 28 : 8,
+                                height: 8,
+                                margin: const EdgeInsets.only(right: 8),
+                                decoration: BoxDecoration(
+                                  color: ThemeProvider.gold
+                                      .withValues(alpha: on ? 1 : 0.35),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                              ),
+                            );
+                          }),
+                        ),
+                        const SizedBox(height: 36),
+                        EliteGoldButton(
+                          label: currentIndex == _slides.length - 1
+                              ? 'Get Started'.tr
+                              : 'Next'.tr,
+                          onTap: () {
+                            if (currentIndex == _slides.length - 1) {
+                              Get.find<IntroController>().onGetStarted();
+                            } else {
+                              setState(() => currentIndex++);
+                            }
+                          },
+                        ),
+                        const SizedBox(height: 12),
+                        EliteGoldButton(
+                          label: 'Skip to location'.tr,
+                          outlined: true,
+                          onTap: () => Get.find<IntroController>().onSkip(),
+                        ),
+                        const SizedBox(height: 20),
+                        TextButton(
+                          onPressed: () =>
+                              Get.toNamed(AppRouter.getLoginRoute()),
+                          child: Text(
+                            'Already have an account? Sign in'.tr,
+                            style: ThemeProvider.sans(
+                              size: 13,
+                              color: ThemeProvider.gold,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   Widget getLanguages() {
@@ -88,7 +253,7 @@ class _IntroScreenState extends State<IntroScreen> {
         scrollDirection: Axis.horizontal,
       ),
       carouselController: _controller,
-      items: items.map((i) {
+      items: List.generate(_slides.length, (i) {
         return Builder(
           builder: (BuildContext context) {
             return Container(
@@ -103,7 +268,7 @@ class _IntroScreenState extends State<IntroScreen> {
                     _buildSlide2(context)
                   else if (i == 2)
                     _buildSlide3(context)
-                  else if (i == 3)
+                  else
                     _buildSlide4(context),
                   _buildDots()
                 ],
@@ -111,7 +276,7 @@ class _IntroScreenState extends State<IntroScreen> {
             );
           },
         );
-      }).toList(),
+      }),
     );
   }
 
@@ -217,7 +382,7 @@ class _IntroScreenState extends State<IntroScreen> {
         children: [
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
-            children: items.asMap().entries.map((entry) {
+            children: _slides.asMap().entries.map((entry) {
               return GestureDetector(
                 onTap: () => _controller.animateToPage(entry.key),
                 child: Container(

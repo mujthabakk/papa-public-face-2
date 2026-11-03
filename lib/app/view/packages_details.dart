@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:salon_user/app/controller/packages_details_controller.dart';
 import 'package:salon_user/app/env.dart';
+import 'package:salon_user/app/helper/desktop.dart';
 import 'package:salon_user/app/util/theme.dart';
 import 'package:salon_user/app/view/widgets/elite_ui.dart';
 import 'package:salon_user/app/view/imageviewer.dart';
@@ -52,6 +53,91 @@ class _PackagesDetailsScreenState extends State<PackagesDetailsScreen> {
             backgroundColor: ThemeProvider.backgroundColor,
             body: Center(
               child: CircularProgressIndicator(color: ThemeProvider.gold),
+            ),
+          );
+        }
+
+        if (Desktop.of(context)) {
+          return Scaffold(
+            backgroundColor: ThemeProvider.backgroundColor,
+            body: Row(
+              children: [
+                Expanded(
+                  child: Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      Image.network(
+                        '${Environments.imageURL}${controller.packagesDetails.cover}',
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) =>
+                            Image.asset('assets/images/notfound.png',
+                                fit: BoxFit.cover),
+                      ),
+                      Positioned(
+                        top: 16,
+                        left: 16,
+                        child: IconButton(
+                          icon: const Icon(Icons.arrow_back,
+                              color: ThemeProvider.gold),
+                          onPressed: controller.onBack,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Expanded(
+                  child: Column(
+                    children: [
+                      Expanded(
+                        child: ListView(
+                          padding: const EdgeInsets.fromLTRB(32, 28, 32, 24),
+                          children: [
+                            Text(
+                              controller.packagesDetails.name ?? '',
+                              style: ThemeProvider.serif(
+                                size: 28,
+                                color: ThemeProvider.gold,
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+                            _sectionTitle(
+                                'Services Included'.tr, Icons.spa_outlined),
+                            EliteCard(child: _servicesList(controller)),
+                            const SizedBox(height: 16),
+                            _sectionTitle(
+                                'Specialist'.tr, Icons.people_alt_outlined),
+                            EliteCard(child: _specialistList(controller)),
+                            const SizedBox(height: 16),
+                            _sectionTitle(
+                                'Package Details'.tr, Icons.info_outline),
+                            EliteCard(child: _packageMeta(controller)),
+                            if ((controller.packagesDetails.descriptions ?? '')
+                                .isNotEmpty) ...[
+                              const SizedBox(height: 16),
+                              _sectionTitle(
+                                  'About'.tr, Icons.description_outlined),
+                              EliteCard(
+                                child: Text(
+                                  controller.packagesDetails.descriptions ?? '',
+                                  style: ThemeProvider.sans(
+                                      size: 14, color: Colors.white70),
+                                ),
+                              ),
+                            ],
+                            if (controller.gallery.isNotEmpty) ...[
+                              const SizedBox(height: 16),
+                              _sectionTitle(
+                                  'Photos'.tr, Icons.photo_library_outlined),
+                              _gallery(controller),
+                            ],
+                          ],
+                        ),
+                      ),
+                      _bottomBar(controller),
+                    ],
+                  ),
+                ),
+              ],
             ),
           );
         }

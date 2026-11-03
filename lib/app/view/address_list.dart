@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:salon_user/app/controller/address_list_controller.dart';
+import 'package:salon_user/app/helper/desktop.dart';
 import 'package:salon_user/app/util/theme.dart';
 import 'package:salon_user/app/view/widgets/elite_ui.dart';
 
@@ -16,17 +17,72 @@ class _AddressListScreenState extends State<AddressListScreen> {
   Widget build(BuildContext context) {
     return GetBuilder<AddressListController>(
       builder: (value) {
+        final desktop = Desktop.of(context);
         return Scaffold(
           backgroundColor: ThemeProvider.backgroundColor,
-          appBar: EliteAppBar(
-            showBack: true,
-            title: 'Select Address'.tr,
-            onMore: value.onNewAddress,
-          ),
+          appBar: desktop
+              ? null
+              : EliteAppBar(
+                  showBack: true,
+                  title: 'Select Address'.tr,
+                  onMore: value.onNewAddress,
+                ),
           body: value.apiCalled == false
               ? const Center(
                   child: CircularProgressIndicator(color: ThemeProvider.gold),
                 )
+              : desktop
+                  ? WebInnerPage(
+                      title: 'Select Address'.tr,
+                      expandMain: true,
+                      main: value.addressList.isEmpty
+                          ? const EliteApiUnavailable(
+                              minHeight: 180,
+                              title: 'No saved addresses',
+                              subtitle: 'Add an address to continue.',
+                              icon: Icons.location_on_outlined,
+                            )
+                          : GridView.builder(
+                              padding: EdgeInsets.zero,
+                              itemCount: value.addressList.length,
+                              gridDelegate:
+                                  const SliverGridDelegateWithFixedCrossAxisCount(
+                                crossAxisCount: 2,
+                                mainAxisSpacing: 12,
+                                crossAxisSpacing: 12,
+                                childAspectRatio: 2.4,
+                              ),
+                              itemBuilder: (context, i) {
+                                final a = value.addressList[i];
+                                final selected =
+                                    value.selectedAddressId == a.id.toString();
+                                return EliteCard(
+                                  margin: EdgeInsets.zero,
+                                  borderColor:
+                                      selected ? ThemeProvider.gold : null,
+                                  child: RadioListTile<String>(
+                                    value: a.id.toString(),
+                                    groupValue: value.selectedAddressId,
+                                    activeColor: ThemeProvider.gold,
+                                    onChanged: (data) =>
+                                        value.saveAdd(data.toString()),
+                                    title: Text(
+                                      value.titles[a.title as int],
+                                      style: ThemeProvider.serif(size: 16),
+                                    ),
+                                    subtitle: Text(
+                                      '${a.address} ${a.house} ${a.landmark} ${a.pincode}',
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: ThemeProvider.sans(
+                                          size: 12,
+                                          color: ThemeProvider.greyColor),
+                                    ),
+                                  ),
+                                );
+                              },
+                            ),
+                    )
               : value.addressList.isEmpty
                   ? const EliteApiUnavailable(
                       minHeight: 180,

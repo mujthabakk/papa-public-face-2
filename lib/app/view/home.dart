@@ -57,26 +57,31 @@ class _HomeScreenState extends State<HomeScreen> {
                   ? _buildSkeleton()
                   : Column(
                       children: [
-                        SafeArea(
-                          bottom: false,
-                          child: GetBuilder<CommonNotificationController>(
-                            builder: (notify) => EliteAppBar(
-                              title: _hiName(),
-                              onMenu: () =>
-                                  _scaffoldKey.currentState?.openDrawer(),
-                              onNotification: () => Get.toNamed(
-                                  AppRouter.getNotificatinRoutes()),
-                              notificationCount: notify.unreadCount,
-                              onLanguage: () => Get.find<LanguagesController>()
-                                  .showLanguagePicker(),
-                              onCountry: () => Get.find<LanguagesController>()
-                                  .showCountryPicker(),
+                        if (!Desktop.of(context))
+                          SafeArea(
+                            bottom: false,
+                            child: GetBuilder<CommonNotificationController>(
+                              builder: (notify) => EliteAppBar(
+                                title: _hiName(),
+                                onMenu: () =>
+                                    _scaffoldKey.currentState?.openDrawer(),
+                                onNotification: () => Get.toNamed(
+                                    AppRouter.getNotificatinRoutes()),
+                                notificationCount: notify.unreadCount,
+                                onLanguage: () =>
+                                    Get.find<LanguagesController>()
+                                        .showLanguagePicker(),
+                                onCountry: () =>
+                                    Get.find<LanguagesController>()
+                                        .showCountryPicker(),
+                              ),
                             ),
                           ),
-                        ),
                         Expanded(
                           child: ListView(
-                                  padding: const EdgeInsets.only(bottom: 90),
+                                  physics: const ClampingScrollPhysics(),
+                                  padding: EdgeInsets.only(
+                                      bottom: Desktop.listBottom(context)),
                                   children: [
                                     const SizedBox(height: 8),
                                     EliteSearchBar(
@@ -170,7 +175,9 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
                       ],
                     ),
-              bottomNavigationBar: GetBuilder<ServiceCartController>(
+              bottomNavigationBar: Desktop.of(context)
+                  ? null
+                  : GetBuilder<ServiceCartController>(
                 builder: (cartController) {
                   if (cartController.totalItemsInCart <= 0) {
                     return const SizedBox.shrink();
@@ -227,8 +234,11 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _banners(HomeController value) {
+    final desktop = Desktop.of(context);
+    final h = desktop ? 380.0 : 160.0;
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
+      padding: EdgeInsets.fromLTRB(desktop ? 40 : 16, desktop ? 8 : 4,
+          desktop ? 40 : 16, 8),
       child: CarouselSlider.builder(
         itemCount: value.bannerList.length,
         itemBuilder: (context, index, realIndex) {
@@ -244,14 +254,14 @@ class _HomeScreenState extends State<HomeScreen> {
               child: EliteNetworkImage(
                 url: url,
                 width: double.infinity,
-                height: 160,
+                height: h,
                 fit: BoxFit.cover,
               ),
             ),
           );
         },
         options: CarouselOptions(
-          height: 160,
+          height: h,
           viewportFraction: 1,
           autoPlay: value.bannerList.length > 1,
           autoPlayInterval: const Duration(seconds: 4),
@@ -265,29 +275,41 @@ class _HomeScreenState extends State<HomeScreen> {
     final timed = value.timedOffers;
     final cats = value.categoriesList;
     final total = timed.length + cats.length;
+    Widget tile(int index) {
+      if (index < timed.length) {
+        final item = timed[index];
+        return _categoryIcon(
+          name: item.name ?? '',
+          cover: item.image ?? '',
+          onTap: () => value.onTimedOffer(item),
+        );
+      }
+      final item = cats[index - timed.length];
+      return _categoryIcon(
+        name: item.name ?? '',
+        cover: item.cover ?? '',
+        onTap: () =>
+            value.onCategoriesList(item.id as int, item.name.toString()),
+      );
+    }
+
+    if (Desktop.of(context)) {
+      return Padding(
+        padding: const EdgeInsets.fromLTRB(40, 0, 40, 8),
+        child: Wrap(
+          spacing: 12,
+          runSpacing: 12,
+          children: List.generate(total, tile),
+        ),
+      );
+    }
     return SizedBox(
       height: 118,
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 12),
         itemCount: total,
-        itemBuilder: (context, index) {
-          if (index < timed.length) {
-            final item = timed[index];
-            return _categoryIcon(
-              name: item.name ?? '',
-              cover: item.image ?? '',
-              onTap: () => value.onTimedOffer(item),
-            );
-          }
-          final item = cats[index - timed.length];
-          return _categoryIcon(
-            name: item.name ?? '',
-            cover: item.cover ?? '',
-            onTap: () =>
-                value.onCategoriesList(item.id as int, item.name.toString()),
-          );
-        },
+        itemBuilder: (context, index) => tile(index),
       ),
     );
   }
@@ -303,8 +325,8 @@ class _HomeScreenState extends State<HomeScreen> {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        width: 88,
-        margin: const EdgeInsets.symmetric(horizontal: 6),
+        width: Desktop.of(context) ? 108 : 88,
+        margin: EdgeInsets.symmetric(horizontal: Desktop.of(context) ? 0 : 6),
         child: Column(
           children: [
             Container(
@@ -342,6 +364,46 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _freelancers(HomeController value) {
+    if (Desktop.of(context)) {
+      return Padding(
+        padding: const EdgeInsets.fromLTRB(40, 0, 40, 8),
+        child: Wrap(
+          spacing: 16,
+          runSpacing: 16,
+          children: List.generate(value.individualList.length, (index) {
+            final item = value.individualList[index];
+            final name =
+                '${item.userInfo?.firstName ?? ''} ${item.userInfo?.lastName ?? ''}'
+                    .trim();
+            return GestureDetector(
+              onTap: () => value.onSpecialist(item.uid as int),
+              child: SizedBox(
+                width: 120,
+                child: Column(
+                  children: [
+                    EliteNetworkImage(
+                      url:
+                          '${Environments.imageURL}${item.userInfo?.cover ?? ''}',
+                      height: 120,
+                      width: 120,
+                      radius: BorderRadius.circular(12),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      name,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: ThemeProvider.sans(
+                          size: 12, weight: FontWeight.w600),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          }),
+        ),
+      );
+    }
     return SizedBox(
       height: 168,
       child: ListView.builder(
@@ -389,6 +451,78 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _offers(HomeController value) {
     if (value.offersList.isEmpty) return const SizedBox.shrink();
+    if (Desktop.of(context)) {
+      final cols = MediaQuery.sizeOf(context).width >= 1200 ? 3 : 2;
+      return Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 40),
+        child: GridView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          itemCount: value.offersList.length,
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: cols,
+            mainAxisSpacing: 16,
+            crossAxisSpacing: 16,
+            childAspectRatio: 1.7,
+          ),
+          itemBuilder: (context, index) {
+            final offer = value.offersList[index];
+            final isPercent = offer.type == 1;
+            final discountLabel = isPercent
+                ? '${(offer.discount ?? 0).toStringAsFixed(0)}% OFF'
+                : '${elitePrice(value.currencySide, value.currencySymbol, offer.discount, digits: 0)} OFF';
+            final imageUrl = Environments.mediaUrl(offer.coverPath);
+            return GestureDetector(
+              onTap: () => value.openExclusiveOffer(offer),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(14),
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    if (imageUrl.isNotEmpty)
+                      EliteNetworkImage(url: imageUrl, fit: BoxFit.cover)
+                    else
+                      const ColoredBox(color: Color(0xFF1A1A1A)),
+                    const DecoratedBox(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [Color(0x66000000), Color(0xCC000000)],
+                        ),
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.all(18),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(discountLabel,
+                              style: ThemeProvider.sans(
+                                  size: 22,
+                                  weight: FontWeight.w800,
+                                  color: ThemeProvider.gold)),
+                          const Spacer(),
+                          Text(offer.name ?? '',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: ThemeProvider.serif(size: 18)),
+                          Text('VIEW DETAILS  →'.tr,
+                              style: ThemeProvider.sans(
+                                  size: 12,
+                                  weight: FontWeight.w700,
+                                  color: ThemeProvider.gold)),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        ),
+      );
+    }
     return SizedBox(
       height: 150,
       child: ListView.separated(
@@ -493,6 +627,54 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _productStores(HomeController value) {
+    if (Desktop.of(context)) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 40),
+        child: GridView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          itemCount: value.productSellers.length,
+          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 3,
+            mainAxisSpacing: 12,
+            crossAxisSpacing: 12,
+            childAspectRatio: 2.6,
+          ),
+          itemBuilder: (_, i) {
+            final s = value.productSellers[i];
+            return GestureDetector(
+              onTap: () => value.onProductSeller(s),
+              child: Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: ThemeProvider.surface,
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: Row(
+                  children: [
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(10),
+                      child: EliteNetworkImage(
+                        url: Environments.mediaUrl(s.cover),
+                        width: 64,
+                        height: 64,
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(s.displayName,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: ThemeProvider.serif(size: 14)),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        ),
+      );
+    }
     return SizedBox(
       height: 112,
       child: ListView.separated(
@@ -681,7 +863,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
     if (Desktop.of(context)) {
       return Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16),
+        padding: const EdgeInsets.symmetric(horizontal: 40),
         child: GridView.builder(
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
@@ -705,6 +887,78 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _centers(HomeController value) {
+    if (Desktop.of(context)) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 40),
+        child: GridView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          itemCount: value.salonList.length,
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: Desktop.salonColumns(context),
+            mainAxisSpacing: 16,
+            crossAxisSpacing: 16,
+            childAspectRatio: 0.9,
+          ),
+          itemBuilder: (context, index) {
+            final item = value.salonList[index];
+            return GestureDetector(
+              onTap: () => value.onServices(item.uid as int),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: ThemeProvider.surface,
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                clipBehavior: Clip.antiAlias,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      child: EliteNetworkImage(
+                        url: '${Environments.imageURL}${item.cover}',
+                        width: double.infinity,
+                        fit: BoxFit.cover,
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(14, 12, 14, 14),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(item.name ?? '',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: ThemeProvider.serif(size: 16)),
+                          const SizedBox(height: 10),
+                          SizedBox(
+                            width: double.infinity,
+                            height: 36,
+                            child: ElevatedButton(
+                              onPressed: () =>
+                                  value.onServices(item.uid as int),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: ThemeProvider.gold,
+                                foregroundColor: Colors.black,
+                                elevation: 0,
+                              ),
+                              child: Text('BOOK NOW'.tr,
+                                  style: ThemeProvider.sans(
+                                      size: 11,
+                                      weight: FontWeight.w700,
+                                      color: Colors.black)),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        ),
+      );
+    }
     return SizedBox(
       height: 248,
       child: ListView.separated(
@@ -826,6 +1080,58 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _topPartners(HomeController value) {
+    if (Desktop.of(context)) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 40),
+        child: GridView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          itemCount: value.topPartners.length,
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: Desktop.salonColumns(context),
+            mainAxisSpacing: 16,
+            crossAxisSpacing: 16,
+            childAspectRatio: 0.9,
+          ),
+          itemBuilder: (context, index) {
+            final item = value.topPartners[index];
+            final cover = item.cover ?? '';
+            final imageUrl = cover.startsWith('http')
+                ? cover
+                : '${Environments.imageURL}$cover';
+            return GestureDetector(
+              onTap: () => value.onTopPartner(item),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: ThemeProvider.surface,
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                clipBehavior: Clip.antiAlias,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      child: EliteNetworkImage(
+                        url: imageUrl,
+                        width: double.infinity,
+                        fit: BoxFit.cover,
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.all(14),
+                      child: Text(item.name ?? '',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: ThemeProvider.serif(size: 16)),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        ),
+      );
+    }
     return SizedBox(
       height: 248,
       child: ListView.separated(

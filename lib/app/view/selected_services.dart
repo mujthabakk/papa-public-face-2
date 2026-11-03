@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import 'package:salon_user/app/controller/selected_services_controller.dart';
 import 'package:salon_user/app/controller/service_cart_controller.dart';
 import 'package:salon_user/app/env.dart';
+import 'package:salon_user/app/helper/desktop.dart';
 import 'package:salon_user/app/util/theme.dart';
 import 'package:salon_user/app/view/widgets/elite_ui.dart';
 
@@ -18,17 +19,51 @@ class _SelectedServicesScreenState extends State<SelectedServicesScreen> {
   Widget build(BuildContext context) {
     return GetBuilder<SelectedServicesController>(
       builder: (value) {
+        final desktop = Desktop.of(context);
         return Scaffold(
           backgroundColor: ThemeProvider.backgroundColor,
-          appBar: EliteAppBar(
-            showBack: true,
-            title: 'Wellness Services'.tr,
-            onMore: () {},
-          ),
+          appBar: desktop
+              ? null
+              : EliteAppBar(
+                  showBack: true,
+                  title: 'Wellness Services'.tr,
+                  onMore: () {},
+                ),
           body: value.apiCalled == false
               ? const Center(
                   child: CircularProgressIndicator(color: ThemeProvider.gold),
                 )
+              : desktop
+                  ? WebInnerPage(
+                      title: 'Wellness Services'.tr,
+                      main: Column(
+                        children: [
+                          _hero(value),
+                          const SizedBox(height: 18),
+                          if (value.servicesList.isEmpty)
+                            const EliteApiUnavailable(
+                              minHeight: 160,
+                              title: 'No treatments available',
+                              icon: Icons.spa_outlined,
+                            )
+                          else
+                            ...value.servicesList.asMap().entries.map(
+                                  (e) => _card(value, e.value, e.key),
+                                ),
+                        ],
+                      ),
+                      side: GetBuilder<ServiceCartController>(
+                        builder: (cart) {
+                          if (cart.totalItemsInCart <= 0) {
+                            return const SizedBox.shrink();
+                          }
+                          return EliteGoldButton(
+                            label: 'BOOK NOW'.tr,
+                            onTap: value.onCheckout,
+                          );
+                        },
+                      ),
+                    )
               : ListView(
                   padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
                   children: [
@@ -65,7 +100,9 @@ class _SelectedServicesScreenState extends State<SelectedServicesScreen> {
                           ),
                   ],
                 ),
-          bottomNavigationBar: GetBuilder<ServiceCartController>(
+          bottomNavigationBar: desktop
+              ? null
+              : GetBuilder<ServiceCartController>(
             builder: (cart) {
               if (cart.totalItemsInCart <= 0) return const SizedBox.shrink();
               return Container(

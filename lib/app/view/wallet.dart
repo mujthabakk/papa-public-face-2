@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 import 'package:salon_user/app/controller/wallet_controller.dart';
+import 'package:salon_user/app/helper/desktop.dart';
 import 'package:salon_user/app/util/theme.dart';
 import 'package:salon_user/app/view/widgets/elite_ui.dart';
 
@@ -17,20 +18,40 @@ class _WalletScreenState extends State<WalletScreen> {
   Widget build(BuildContext context) {
     return GetBuilder<WalletController>(
       builder: (value) {
+        final desktop = Desktop.of(context);
         return Scaffold(
           backgroundColor: ThemeProvider.backgroundColor,
-          appBar: EliteAppBar(
-            showBack: true,
-            title: 'Redeem Rewards'.tr,
-            onMore: () {},
-          ),
+          appBar: desktop
+              ? null
+              : EliteAppBar(
+                  showBack: true,
+                  title: 'Redeem Rewards'.tr,
+                  onMore: () {},
+                ),
           body: value.apiCalled == false
               ? const Center(
                   child: CircularProgressIndicator(color: ThemeProvider.gold),
                 )
               : ListView(
-                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+                  padding: desktop
+                      ? const EdgeInsets.fromLTRB(120, 16, 120, 32)
+                      : Desktop.pagePadding(context),
                   children: [
+                    if (desktop) ...[
+                      Row(
+                        children: [
+                          IconButton(
+                            onPressed: () => Get.back(),
+                            icon: const Icon(Icons.arrow_back_ios_new,
+                                color: ThemeProvider.gold, size: 18),
+                          ),
+                          Text('Redeem Rewards'.tr,
+                              style: ThemeProvider.serif(
+                                  size: 28, weight: FontWeight.w700)),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                    ],
                     EliteCard(
                       child: Column(
                         children: [

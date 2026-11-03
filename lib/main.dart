@@ -5,7 +5,9 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:salon_user/app/controller/languages_controller.dart';
 import 'package:salon_user/app/controller/product_cart_controller.dart';
 import 'package:salon_user/app/controller/service_cart_controller.dart';
+import 'package:flutter/foundation.dart';
 import 'package:salon_user/app/helper/desktop.dart';
+import 'package:salon_user/app/view/widgets/web_shell.dart';
 import 'package:salon_user/app/helper/init.dart';
 import 'package:get/get.dart';
 import 'package:salon_user/app/helper/router.dart';
@@ -64,7 +66,7 @@ class MyApp extends StatelessWidget {
       Get.find<ProductCartController>().getCart();
     }
     return ScreenUtilInit(
-      designSize: const Size(360, 690),
+      designSize: kIsWeb ? const Size(1440, 900) : const Size(360, 690),
       minTextAdapt: true,
       splitScreenMode: true,
       builder: (context, child) {
@@ -82,6 +84,15 @@ class MyApp extends StatelessWidget {
                   ? Transition.fadeIn
                   : Transition.native,
               scrollBehavior: const DesktopScrollBehavior(),
+              routingCallback: (routing) {
+                final name = routing?.current ?? '';
+                if (name.isEmpty || Desktop.route.value == name) return;
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  if (Desktop.route.value != name) {
+                    Desktop.route.value = name;
+                  }
+                });
+              },
               translations: LocaleString(),
               locale: localeCtrl.appLocale,
               fallbackLocale: const Locale('en', 'US'),
@@ -93,7 +104,13 @@ class MyApp extends StatelessWidget {
                   textDirection: TextDirection.ltr,
                   child: DefaultTextStyle(
                     style: ThemeProvider.sans(size: 14),
-                    child: DesktopPageFrame(child: page),
+                    child: ValueListenableBuilder<String>(
+                      valueListenable: Desktop.route,
+                      builder: (_, route, __) => WebShell(
+                        route: route,
+                        child: page,
+                      ),
+                    ),
                   ),
                 );
               },

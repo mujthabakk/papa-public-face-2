@@ -27,18 +27,60 @@ class ProductSellerScreen extends StatelessWidget {
                   child: CircularProgressIndicator(color: ThemeProvider.gold),
                 )
               : listingSellers
-                  ? _sellers(c)
+                  ? _sellers(context, c)
                   : _products(context, c),
         );
       },
     );
   }
 
-  Widget _sellers(ProductSellerController c) {
+  Widget _sellers(BuildContext context, ProductSellerController c) {
     if (c.sellers.isEmpty) {
       return const EliteApiUnavailable(
         title: 'No stores yet',
         icon: Icons.storefront_outlined,
+      );
+    }
+    if (Desktop.of(context)) {
+      return GridView.builder(
+        padding: const EdgeInsets.fromLTRB(8, 12, 8, 24),
+        itemCount: c.sellers.length,
+        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: 3,
+          mainAxisSpacing: 12,
+          crossAxisSpacing: 12,
+          childAspectRatio: 2.4,
+        ),
+        itemBuilder: (_, i) {
+          final s = c.sellers[i];
+          return GestureDetector(
+            onTap: () => c.openSeller(s),
+            child: EliteCard(
+              margin: EdgeInsets.zero,
+              child: Row(
+                children: [
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(10),
+                    child: EliteNetworkImage(
+                      url: Environments.mediaUrl(s.cover),
+                      width: 56,
+                      height: 56,
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      s.displayName,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: ThemeProvider.serif(size: 14),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
       );
     }
     return ListView.separated(

@@ -2,9 +2,11 @@ import 'package:country_code_picker/country_code_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:salon_user/app/controller/login_controller.dart';
+import 'package:salon_user/app/helper/desktop.dart';
 import 'package:salon_user/app/helper/router.dart';
 import 'package:salon_user/app/util/theme.dart';
 import 'package:salon_user/app/view/widgets/elite_ui.dart';
+import 'package:salon_user/app/view/widgets/web_shell.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({Key? key}) : super(key: key);
@@ -37,13 +39,9 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return GetBuilder<LoginController>(builder: (value) {
-      return Scaffold(
-        backgroundColor: ThemeProvider.backgroundColor,
-        body: SafeArea(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 24),
-            child: Column(
+      final form = Column(
               children: [
+                if (!Desktop.of(context)) ...[
                 const SizedBox(height: 40),
                 Text('PAPA BEAR'.tr,
                   style: ThemeProvider.serif(
@@ -53,9 +51,16 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                 ),
                 const SizedBox(height: 8),
-                Text('Sign in to your elite account'.tr,
+                ],
+                Text(
+                  Desktop.of(context)
+                      ? 'Sign in'.tr
+                      : 'Sign in to your elite account'.tr,
                   style: ThemeProvider.sans(
-                      size: 13, color: ThemeProvider.greyColor),
+                      size: Desktop.of(context) ? 22 : 13,
+                      color: Desktop.of(context)
+                          ? Colors.white
+                          : ThemeProvider.greyColor),
                 ),
                 const SizedBox(height: 36),
                 if (value.loginVersion == 0) ...[
@@ -154,7 +159,36 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                 ),
               ],
-            ),
+            );
+      if (Desktop.of(context)) {
+        return Scaffold(
+          backgroundColor: ThemeProvider.backgroundColor,
+          body: Row(
+            children: [
+              const Expanded(flex: 6, child: DesktopBrandPane()),
+              Expanded(
+                flex: 5,
+                child: Center(
+                  child: SizedBox(
+                    width: 440,
+                    child: SingleChildScrollView(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 24, vertical: 32),
+                      child: form,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      }
+      return Scaffold(
+        backgroundColor: ThemeProvider.backgroundColor,
+        body: SafeArea(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: 24),
+            child: form,
           ),
         ),
       );

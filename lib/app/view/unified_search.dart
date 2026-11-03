@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import 'package:salon_user/app/backend/models/salon_model.dart';
 import 'package:salon_user/app/controller/unified_search_controller.dart';
 import 'package:salon_user/app/env.dart';
+import 'package:salon_user/app/helper/desktop.dart';
 import 'package:salon_user/app/helper/router.dart';
 import 'package:salon_user/app/util/theme.dart';
 import 'package:salon_user/app/view/widgets/elite_ui.dart';
@@ -63,7 +64,7 @@ class _UnifiedSearchScreenState extends State<UnifiedSearchScreen> {
     return Column(
       children: [
         Padding(
-          padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+          padding: Desktop.pagePadding(context).copyWith(bottom: 8),
           child: SizedBox(
             height: 44,
             child: Stack(
@@ -635,7 +636,7 @@ class _UnifiedSearchScreenState extends State<UnifiedSearchScreen> {
     }
 
     return ListView(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+      padding: Desktop.pagePadding(context),
       children: [
         Row(
           children: [

@@ -5,8 +5,9 @@ import 'package:salon_user/app/backend/models/salon_social_model.dart';
 import 'package:salon_user/app/controller/checkout_controller.dart';
 import 'package:salon_user/app/controller/product_cart_controller.dart';
 import 'package:salon_user/app/controller/service_cart_controller.dart';
-import 'package:salon_user/app/controller/tabs_controller.dart';
 import 'package:salon_user/app/env.dart';
+import 'package:salon_user/app/helper/desktop.dart';
+import 'package:salon_user/app/helper/media_cache.dart';
 import 'package:salon_user/app/helper/locale_helper.dart';
 import 'package:salon_user/app/helper/router.dart';
 import 'package:salon_user/app/util/theme.dart';
@@ -55,9 +56,11 @@ class EliteAppBar extends StatelessWidget implements PreferredSizeWidget {
       child: AppBar(
         backgroundColor: ThemeProvider.backgroundColor,
         elevation: 0,
-        centerTitle: true,
+        centerTitle: !Desktop.of(context),
         automaticallyImplyLeading: false,
-        leadingWidth: leadingLabel != null ? 110 : 56,
+        leadingWidth: leadingLabel != null
+            ? 110
+            : (Desktop.of(context) && !showBack ? 12 : 56),
         leading: leadingLabel != null
             ? TextButton.icon(
                 onPressed: () => Get.back(),
@@ -73,19 +76,21 @@ class EliteAppBar extends StatelessWidget implements PreferredSizeWidget {
                   ),
                 ),
               )
-            : IconButton(
-                icon: Icon(
-                  showBack ? Icons.arrow_back_ios_new : Icons.menu,
-                  color: ThemeProvider.gold,
-                  size: 22,
-                ),
-                onPressed: showBack
-                    ? (onBack ?? () => Get.back())
-                    : (onMenu ??
-                        () {
-                          Scaffold.maybeOf(context)?.openDrawer();
-                        }),
-              ),
+            : (Desktop.of(context) && !showBack
+                ? const SizedBox.shrink()
+                : IconButton(
+                    icon: Icon(
+                      showBack ? Icons.arrow_back_ios_new : Icons.menu,
+                      color: ThemeProvider.gold,
+                      size: 22,
+                    ),
+                    onPressed: showBack
+                        ? (onBack ?? () => Get.back())
+                        : (onMenu ??
+                            () {
+                              Scaffold.maybeOf(context)?.openDrawer();
+                            }),
+                  )),
         title: FittedBox(
           fit: BoxFit.scaleDown,
           child: Text(
@@ -115,7 +120,7 @@ class EliteAppBar extends StatelessWidget implements PreferredSizeWidget {
                   const Icon(Icons.search, color: ThemeProvider.gold, size: 22),
               onPressed: onSearch,
             ),
-          if (onNotification != null)
+          if (onNotification != null && !Desktop.of(context))
             IconButton(
               tooltip: 'Notifications'.tr,
               onPressed: onNotification,
@@ -137,14 +142,14 @@ class EliteAppBar extends StatelessWidget implements PreferredSizeWidget {
                 ),
               ),
             ),
-          if (onLanguage != null)
+          if (onLanguage != null && !Desktop.of(context))
             IconButton(
               tooltip: 'Language'.tr,
               icon: const Icon(Icons.translate,
                   color: ThemeProvider.gold, size: 22),
               onPressed: onLanguage,
             ),
-          if (onCountry != null)
+          if (onCountry != null && !Desktop.of(context))
             IconButton(
               tooltip: 'Country/Region'.tr,
               icon: const Icon(Icons.public,
@@ -180,7 +185,8 @@ class EliteSearchBar extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        margin: const EdgeInsets.symmetric(horizontal: 16),
+        margin: EdgeInsets.symmetric(
+            horizontal: Desktop.of(context) ? 40 : 16),
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
         decoration: BoxDecoration(
           color: ThemeProvider.surface,
@@ -229,12 +235,15 @@ class EliteSectionHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 22, 16, 12),
+      padding: EdgeInsets.fromLTRB(
+          Desktop.of(context) ? 28 : 16, 22, Desktop.of(context) ? 28 : 16, 12),
       child: Row(
         children: [
           Expanded(
             child: Text(
               title,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
               style: ThemeProvider.serif(
                 size: 20,
                 weight: FontWeight.w600,
@@ -315,20 +324,18 @@ class EliteNetworkImage extends StatelessWidget {
               : (w * dpr).round().clamp(64, 1080);
           child = CachedNetworkImage(
             imageUrl: Environments.mediaUrl(url),
+            cacheManager: MediaCache.manager,
+            cacheKey: Environments.mediaUrl(url),
             width: w,
             height: h,
             memCacheWidth: cacheW,
             fit: fit,
-            placeholder: (context, url) => Container(
-              width: w,
-              height: h,
+            fadeInDuration: const Duration(milliseconds: 120),
+            fadeOutDuration: Duration.zero,
+            useOldImageOnUrlChange: true,
+            placeholder: (context, url) => ColoredBox(
               color: ThemeProvider.surface,
-              child: const Center(
-                child: CircularProgressIndicator(
-                  color: ThemeProvider.gold,
-                  strokeWidth: 2,
-                ),
-              ),
+              child: SizedBox(width: w, height: h),
             ),
             errorWidget: (context, url, error) => Image.asset(
               'assets/images/notfound.png',
@@ -350,6 +357,7 @@ class EliteGoldButton extends StatelessWidget {
   final VoidCallback onTap;
   final bool outlined;
   final bool enabled;
+  final bool expand;
   final IconData? icon;
 
   const EliteGoldButton({
@@ -358,17 +366,30 @@ class EliteGoldButton extends StatelessWidget {
     required this.onTap,
     this.outlined = false,
     this.enabled = true,
+    this.expand = true,
     this.icon,
   }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
+    Widget wrap(Widget button) {
+      if (!expand) return button;
+      return LayoutBuilder(
+        builder: (context, constraints) {
+          if (constraints.hasBoundedWidth) {
+            return SizedBox(width: constraints.maxWidth, child: button);
+          }
+          return button;
+        },
+      );
+    }
+
     if (outlined) {
-      return OutlinedButton(
+      return wrap(OutlinedButton(
         onPressed: enabled ? onTap : null,
         style: OutlinedButton.styleFrom(
           foregroundColor: ThemeProvider.gold,
-          minimumSize: const Size(double.infinity, 42),
+          minimumSize: const Size(72, 42),
           side: const BorderSide(color: ThemeProvider.gold),
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
           shape: RoundedRectangleBorder(
@@ -378,6 +399,8 @@ class EliteGoldButton extends StatelessWidget {
         child: icon == null
             ? Text(
                 label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
                 style: ThemeProvider.sans(
                   size: 11,
                   weight: FontWeight.w700,
@@ -393,6 +416,8 @@ class EliteGoldButton extends StatelessWidget {
                   const SizedBox(width: 6),
                   Text(
                     label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                     style: ThemeProvider.sans(
                       size: 11,
                       weight: FontWeight.w700,
@@ -402,10 +427,12 @@ class EliteGoldButton extends StatelessWidget {
                   ),
                 ],
               ),
-      );
+      ));
     }
     final child = Text(
       label,
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
       style: ThemeProvider.sans(
         size: 11,
         weight: FontWeight.w700,
@@ -413,7 +440,7 @@ class EliteGoldButton extends StatelessWidget {
         letterSpacing: 0.6,
       ),
     );
-    return ElevatedButton(
+    return wrap(ElevatedButton(
       onPressed: enabled ? onTap : null,
       style: ElevatedButton.styleFrom(
         backgroundColor:
@@ -439,7 +466,7 @@ class EliteGoldButton extends StatelessWidget {
                 child,
               ],
             ),
-    );
+    ));
   }
 }
 
@@ -1210,6 +1237,101 @@ class EliteConnectSection extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+/// Two-column inner page for web. Mobile screens must not use this widget.
+class WebInnerPage extends StatelessWidget {
+  final String title;
+  final String? subtitle;
+  final Widget main;
+  final Widget? side;
+  final double sideWidth;
+  final bool expandMain;
+
+  const WebInnerPage({
+    Key? key,
+    required this.title,
+    required this.main,
+    this.subtitle,
+    this.side,
+    this.sideWidth = 360,
+    this.expandMain = false,
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return Align(
+      alignment: Alignment.topCenter,
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 1280),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(32, 12, 32, 28),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  IconButton(
+                    onPressed: () => Get.back(),
+                    icon: const Icon(Icons.arrow_back_ios_new,
+                        color: ThemeProvider.gold, size: 18),
+                  ),
+                  Expanded(
+                    child: Text(
+                      title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: ThemeProvider.serif(
+                          size: 28, weight: FontWeight.w700),
+                    ),
+                  ),
+                ],
+              ),
+              if (subtitle != null)
+                Padding(
+                  padding: const EdgeInsets.only(left: 48, bottom: 4),
+                  child: Text(
+                    subtitle!,
+                    style: ThemeProvider.sans(
+                        size: 13, color: ThemeProvider.greyColor),
+                  ),
+                ),
+              const SizedBox(height: 16),
+              Expanded(
+                child: side == null
+                    ? (expandMain ? main : _webScroll(main, primary: true))
+                    : Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(
+                            child: expandMain
+                                ? main
+                                : _webScroll(main, primary: true),
+                          ),
+                          const SizedBox(width: 28),
+                          SizedBox(
+                            width: sideWidth,
+                            child: _webScroll(side),
+                          ),
+                        ],
+                      ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  static Widget _webScroll(Widget? child, {bool primary = false}) {
+    return SingleChildScrollView(
+      primary: primary,
+      physics: const ClampingScrollPhysics(
+        parent: AlwaysScrollableScrollPhysics(),
+      ),
+      child: child,
     );
   }
 }

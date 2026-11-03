@@ -3,9 +3,10 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:salon_user/app/controller/add_review_controller.dart';
-import 'package:salon_user/app/env.dart';
 import 'package:salon_user/app/helper/star_rating.dart';
+import 'package:salon_user/app/helper/desktop.dart';
 import 'package:salon_user/app/util/theme.dart';
+import 'package:salon_user/app/view/widgets/elite_ui.dart';
 
 class AddReviewScreen extends StatefulWidget {
   const AddReviewScreen({Key? key}) : super(key: key);
@@ -18,23 +19,24 @@ class _AddReviewScreenState extends State<AddReviewScreen> {
   @override
   Widget build(BuildContext context) {
     return GetBuilder<AddReviewController>(builder: (value) {
+      final desktop = Desktop.of(context);
       return Scaffold(
         backgroundColor: ThemeProvider.backgroundColor,
-        appBar: AppBar(
-          backgroundColor: ThemeProvider.appColor,
-          title: Text(
-            '${'Add Review to'.tr} ${value.name}',
-            style: ThemeProvider.titleStyle,
-          ),
-        ),
+        appBar: desktop
+            ? null
+            : AppBar(
+                backgroundColor: ThemeProvider.appColor,
+                title: Text(
+                  '${'Add Review to'.tr} ${value.name}',
+                  style: ThemeProvider.titleStyle,
+                ),
+              ),
         body: value.apiCalled == false
             ? const Center(
                 child: CircularProgressIndicator(color: ThemeProvider.gold),
               )
-            : SingleChildScrollView(
-                child: Container(
-                  margin: const EdgeInsets.all(16),
-                  child: Container(
+            : Builder(builder: (_) {
+                final card = Container(
                     width: double.infinity,
                     decoration: BoxDecoration(
                       color: ThemeProvider.whiteColor,
@@ -58,19 +60,10 @@ class _AddReviewScreenState extends State<AddReviewScreen> {
                           ),
                           width: 100,
                           height: 100,
-                          child: FadeInImage(
-                            image: NetworkImage(
-                                '${Environments.imageURL}${value.cover.toString()}'),
-                            placeholder: const AssetImage(
-                                "assets/images/placeholder.jpeg"),
-                            imageErrorBuilder: (context, error, stackTrace) {
-                              return Image.asset(
-                                'assets/images/notfound.png',
-                                fit: BoxFit.cover,
-                                height: 100,
-                                width: 100,
-                              );
-                            },
+                          child: EliteNetworkImage(
+                            url: value.cover.toString(),
+                            width: 100,
+                            height: 100,
                             fit: BoxFit.cover,
                           ),
                         ),
@@ -159,9 +152,19 @@ class _AddReviewScreenState extends State<AddReviewScreen> {
                         )
                       ],
                     ),
-                  ),
-                ),
-              ),
+                  );
+                return desktop
+                    ? WebInnerPage(
+                        title: '${'Add Review to'.tr} ${value.name}',
+                        main: card,
+                      )
+                    : SingleChildScrollView(
+                        child: Container(
+                          margin: const EdgeInsets.all(16),
+                          child: card,
+                        ),
+                      );
+              }),
       );
     });
   }

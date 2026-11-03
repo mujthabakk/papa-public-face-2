@@ -62,17 +62,18 @@ class _NearScreenState extends State<NearScreen> {
 
     return Column(
       children: [
-        SafeArea(
-          bottom: false,
-          child: GetBuilder<CommonNotificationController>(
-            builder: (notify) => EliteAppBar(
-              onMenu: () => _scaffoldKey.currentState?.openDrawer(),
-              onNotification: () =>
-                  Get.toNamed(AppRouter.getNotificatinRoutes()),
-              notificationCount: notify.unreadCount,
+        if (!Desktop.of(context))
+          SafeArea(
+            bottom: false,
+            child: GetBuilder<CommonNotificationController>(
+              builder: (notify) => EliteAppBar(
+                onMenu: () => _scaffoldKey.currentState?.openDrawer(),
+                onNotification: () =>
+                    Get.toNamed(AppRouter.getNotificatinRoutes()),
+                notificationCount: notify.unreadCount,
+              ),
             ),
           ),
-        ),
         EliteSearchBar(
           hint: 'Search shops, freelancers, services...'.tr,
           onTap: () {
@@ -96,11 +97,11 @@ class _NearScreenState extends State<NearScreen> {
         ),
         Expanded(
           child: ListView(
-            padding: const EdgeInsets.only(bottom: 90),
+            padding: EdgeInsets.only(bottom: Desktop.listBottom(context)),
             children: [
               if (_chip == 0 && value.markers.isNotEmpty)
                 Container(
-                  height: 180,
+                  height: Desktop.of(context) ? 360 : 180,
                   margin: const EdgeInsets.fromLTRB(16, 14, 16, 0),
                   clipBehavior: Clip.antiAlias,
                   decoration: BoxDecoration(
@@ -198,7 +199,7 @@ class _NearScreenState extends State<NearScreen> {
                       crossAxisCount: Desktop.salonColumns(context),
                       mainAxisSpacing: 12,
                       crossAxisSpacing: 12,
-                      childAspectRatio: 1.55,
+                      childAspectRatio: 1.25,
                     ),
                     itemBuilder: (_, i) =>
                         _centerCard(value, salons[i], tight: true),
@@ -353,6 +354,7 @@ class _NearScreenState extends State<NearScreen> {
               EliteGoldButton(
                 label: 'BOOK NOW'.tr,
                 icon: Icons.calendar_today,
+                expand: false,
                 onTap: () => value.onServices(item.uid as int),
               ),
             ],

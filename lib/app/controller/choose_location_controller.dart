@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:geocoding/geocoding.dart';
 import 'package:get/get.dart';
 import 'package:salon_user/app/backend/parse/choose_location_parse.dart';
 import 'package:salon_user/app/backend/parse/languages_parse.dart';
 import 'package:salon_user/app/controller/languages_controller.dart';
+import 'package:salon_user/app/helper/geo_lookup.dart';
 import 'package:salon_user/app/helper/post_login_nav.dart';
 import 'package:salon_user/app/helper/router.dart';
 import 'package:salon_user/app/util/theme.dart';
@@ -26,11 +26,9 @@ class ChooseLocationController extends GetxController implements GetxService {
     String placeCountry = '';
     try {
       if (lat != 0 && lng != 0) {
-        final marks = await placemarkFromCoordinates(lat, lng);
-        if (marks.isNotEmpty) {
-          iso = (marks.first.isoCountryCode ?? '').toUpperCase();
-          placeCountry = (marks.first.country ?? '').trim();
-        }
+        final geo = await reverseGeocode(lat, lng);
+        iso = geo?.iso ?? '';
+        placeCountry = geo?.country ?? '';
       }
     } catch (_) {}
     await _persistLocationPrefs(lat, lng, iso.length == 2 ? iso : null);
@@ -92,20 +90,12 @@ class ChooseLocationController extends GetxController implements GetxService {
     _determinePosition().then((value) async {
       Get.back();
       debugPrint(value.toString());
-      List<Placemark> newPlace =
-          await placemarkFromCoordinates(value.latitude, value.longitude);
-      Placemark placeMark = newPlace[0];
-      String name = placeMark.name.toString();
-      String subLocality = placeMark.subLocality.toString();
-      String locality = placeMark.locality.toString();
-      String administrativeArea = placeMark.administrativeArea.toString();
-      String postalCode = placeMark.postalCode.toString();
-      String country = placeMark.country.toString();
-      String address =
-          "$name,$subLocality,$locality,$administrativeArea,$postalCode,$country";
-      debugPrint(address);
+      final geo = await reverseGeocode(value.latitude, value.longitude);
+      final address = (geo?.address.isNotEmpty == true)
+          ? geo!.address
+          : '${value.latitude}, ${value.longitude}';
       parser.saveLatLng(value.latitude, value.longitude, address);
-      final iso = (placeMark.isoCountryCode ?? '').toUpperCase();
+      final iso = (geo?.iso ?? '').toUpperCase();
       await _persistLocationPrefs(
         value.latitude,
         value.longitude,
@@ -114,7 +104,7 @@ class ChooseLocationController extends GetxController implements GetxService {
       if (iso.length == 2 && Get.isRegistered<LanguagesController>()) {
         await Get.find<LanguagesController>().applyCountryFromLocation(
           iso,
-          placeCountryName: country,
+          placeCountryName: geo?.country ?? '',
           reloadHome: false,
         );
       }
@@ -122,7 +112,10 @@ class ChooseLocationController extends GetxController implements GetxService {
       await PostLoginNav.finishAfterLocation();
     }).catchError((error) async {
       Get.back();
-      showToast(error.toString());
+      final text = error.toString();
+      if (!text.toLowerCase().contains('unexpected null')) {
+        showToast(text);
+      }
       // Check for specific errors to decide which settings to open
       if (error.toString().contains('permanently denied')) {
         await Geolocator.openAppSettings();

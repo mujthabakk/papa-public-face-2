@@ -33,6 +33,8 @@ class _TabScreenState extends State<TabScreen> {
       AccountScreen(),
     ];
     final desktop = Desktop.of(context);
+    // Web uses the top site header; native desktop keeps the left rail.
+    final showRail = desktop && !GetPlatform.isWeb;
     return GetBuilder<LanguagesController>(
       builder: (_) {
         return GetBuilder<TabsController>(builder: (value) {
@@ -93,7 +95,7 @@ class _TabScreenState extends State<TabScreen> {
                     ),
               body: Row(
                 children: [
-                  if (desktop) _rail(value),
+                  if (showRail) _rail(value),
                   Expanded(
                     child: IndexedStack(
                       index: value.tabId,

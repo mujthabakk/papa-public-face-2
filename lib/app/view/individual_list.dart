@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:salon_user/app/controller/individual_list_controller.dart';
 import 'package:salon_user/app/controller/service_cart_controller.dart';
-import 'package:salon_user/app/env.dart';
 import 'package:salon_user/app/util/theme.dart';
 import 'package:salon_user/app/view/widgets/elite_ui.dart';
 
@@ -79,17 +78,9 @@ class _IndividualListScreenState extends State<IndividualListScreen> {
                                               BorderRadius.circular(5),
                                           child: SizedBox.fromSize(
                                             size: const Size.fromRadius(40),
-                                            child: FadeInImage(
-                                              image: NetworkImage(
-                                                  '${Environments.imageURL}${value.servicesList[i].cover}'),
-                                              placeholder: const AssetImage(
-                                                  "assets/images/placeholder.jpeg"),
-                                              imageErrorBuilder:
-                                                  (context, error, stackTrace) {
-                                                return Image.asset(
-                                                    'assets/images/notfound.png',
-                                                    fit: BoxFit.cover);
-                                              },
+                                            child: EliteNetworkImage(
+                                              url: value.servicesList[i].cover
+                                                  .toString(),
                                               fit: BoxFit.cover,
                                             ),
                                           ),

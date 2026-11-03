@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:salon_user/app/backend/models/common_notification_model.dart';
 import 'package:salon_user/app/controller/common_notification_controller.dart';
+import 'package:salon_user/app/helper/desktop.dart';
 import 'package:salon_user/app/util/theme.dart';
+import 'package:salon_user/app/view/widgets/elite_ui.dart';
 
 class NotificationScreen extends StatefulWidget {
   const NotificationScreen({Key? key}) : super(key: key);
@@ -19,9 +21,12 @@ class _NotificationScreenState extends State<NotificationScreen> {
     return GetBuilder<CommonNotificationController>(
       builder: (controller) {
         final items = _filtered(controller.notificationList);
+        final desktop = Desktop.of(context);
         return Scaffold(
           backgroundColor: ThemeProvider.backgroundColor,
-          appBar: AppBar(
+          appBar: desktop
+              ? null
+              : AppBar(
             backgroundColor: ThemeProvider.backgroundColor,
             elevation: 0,
             leading: IconButton(
@@ -47,7 +52,8 @@ class _NotificationScreenState extends State<NotificationScreen> {
               ),
             ],
           ),
-          body: Column(
+          body: Builder(builder: (_) {
+            final col = Column(
             children: [
               SizedBox(
                 height: 44,
@@ -87,7 +93,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
                             ),
                           )
                         : ListView.builder(
-                            padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+                            padding: Desktop.pagePadding(context),
                             itemCount: items.length,
                             itemBuilder: (context, index) {
                               final n = items[index];
@@ -117,7 +123,15 @@ class _NotificationScreenState extends State<NotificationScreen> {
                           ),
               ),
             ],
-          ),
+          );
+            return desktop
+                ? WebInnerPage(
+                    title: 'Notifications'.tr,
+                    expandMain: true,
+                    main: col,
+                  )
+                : col;
+          }),
         );
       },
     );

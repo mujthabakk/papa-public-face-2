@@ -44,18 +44,19 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
               : Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    SafeArea(
-                      bottom: false,
-                      child: GetBuilder<CommonNotificationController>(
-                        builder: (notify) => EliteAppBar(
-                          onMenu: () =>
-                              _scaffoldKey.currentState?.openDrawer(),
-                          onNotification: () =>
-                              Get.toNamed(AppRouter.getNotificatinRoutes()),
-                          notificationCount: notify.unreadCount,
+                    if (!Desktop.of(context))
+                      SafeArea(
+                        bottom: false,
+                        child: GetBuilder<CommonNotificationController>(
+                          builder: (notify) => EliteAppBar(
+                            onMenu: () =>
+                                _scaffoldKey.currentState?.openDrawer(),
+                            onNotification: () =>
+                                Get.toNamed(AppRouter.getNotificatinRoutes()),
+                            notificationCount: notify.unreadCount,
+                          ),
                         ),
                       ),
-                    ),
                     Padding(
                       padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
                       child: Row(
@@ -95,7 +96,8 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
                           icon: Icons.grid_view_outlined,
                         )
                           : GridView.builder(
-                              padding: const EdgeInsets.fromLTRB(16, 0, 16, 100),
+                              padding: EdgeInsets.fromLTRB(
+                                  16, 0, 16, Desktop.listBottom(context)),
                               itemCount: controller.productsList.length,
                               gridDelegate:
                                   SliverGridDelegateWithFixedCrossAxisCount(

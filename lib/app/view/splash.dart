@@ -7,9 +7,11 @@ import 'package:get/get.dart';
 import 'package:salon_user/app/controller/languages_controller.dart';
 import 'package:salon_user/app/controller/splash_controller.dart';
 import 'package:salon_user/app/env.dart';
+import 'package:salon_user/app/helper/desktop.dart';
 import 'package:salon_user/app/helper/router.dart';
 import 'package:salon_user/app/util/theme.dart';
 import 'package:salon_user/app/util/toast.dart';
+import 'package:salon_user/app/view/widgets/web_shell.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({Key? key}) : super(key: key);
@@ -73,8 +75,8 @@ class _SplashScreenState extends State<SplashScreen> {
   }
 
   Future<void> _updateConnectionStatus(List<ConnectivityResult> result) async {
-    bool isNotConnected = !result.contains(ConnectivityResult.wifi) &&
-        !result.contains(ConnectivityResult.mobile);
+    final isNotConnected = result.isEmpty ||
+        result.every((r) => r == ConnectivityResult.none);
     if (isNotConnected) {
       showToast('No Internet Connection'.tr);
     }
@@ -83,6 +85,58 @@ class _SplashScreenState extends State<SplashScreen> {
   @override
   Widget build(BuildContext context) {
     return GetBuilder<SplashController>(builder: (value) {
+      if (Desktop.of(context)) {
+        return Scaffold(
+          backgroundColor: ThemeProvider.backgroundColor,
+          body: Row(
+            children: [
+              const Expanded(flex: 6, child: DesktopBrandPane()),
+              Expanded(
+                flex: 5,
+                child: Center(
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 420),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Welcome'.tr,
+                          style: ThemeProvider.serif(
+                            size: 40,
+                            weight: FontWeight.w700,
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        Text(
+                          'Loading your salon & shop...'.tr,
+                          style: ThemeProvider.sans(
+                              size: 16, color: ThemeProvider.greyColor),
+                        ),
+                        const SizedBox(height: 32),
+                        const SizedBox(
+                          width: 28,
+                          height: 28,
+                          child: CircularProgressIndicator(
+                            color: ThemeProvider.gold,
+                            strokeWidth: 2.4,
+                          ),
+                        ),
+                        const SizedBox(height: 48),
+                        Text(
+                          '${'Developed By'.tr} ${Environments.companyName}',
+                          style: ThemeProvider.sans(
+                              size: 12, color: ThemeProvider.greyColor),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      }
       return Scaffold(
         backgroundColor: Colors.black,
         body: Stack(alignment: AlignmentDirectional.center, children: [

@@ -8,6 +8,7 @@ import 'package:salon_user/app/controller/languages_controller.dart';
 import 'package:salon_user/app/controller/reschedule_slot_controller.dart';
 import 'package:salon_user/app/controller/tabs_controller.dart';
 import 'package:salon_user/app/env.dart';
+import 'package:salon_user/app/helper/desktop.dart';
 import 'package:salon_user/app/helper/router.dart';
 import 'package:salon_user/app/util/theme.dart';
 import 'package:salon_user/app/view/widgets/elite_ui.dart';
@@ -101,7 +102,12 @@ class _BookingScreenState extends State<BookingScreen> {
                               color: ThemeProvider.gold),
                         )
                       : ListView(
-                          padding: const EdgeInsets.fromLTRB(16, 8, 16, 100),
+                          padding: EdgeInsets.fromLTRB(
+                            Desktop.of(context) ? 32 : 16,
+                            8,
+                            Desktop.of(context) ? 32 : 16,
+                            Desktop.listBottom(context),
+                          ),
                           children: [
                             Text(
                               'NEXT SESSIONS'.tr,
@@ -120,6 +126,18 @@ class _BookingScreenState extends State<BookingScreen> {
                                 subtitle:
                                     'Your upcoming appointments will appear here.',
                                 icon: Icons.calendar_today_outlined,
+                              )
+                            else if (Desktop.of(context))
+                              GridView.count(
+                                shrinkWrap: true,
+                                physics: const NeverScrollableScrollPhysics(),
+                                crossAxisCount: 2,
+                                mainAxisSpacing: 12,
+                                crossAxisSpacing: 12,
+                                childAspectRatio: 1.55,
+                                children: c.appointmentList
+                                    .map((a) => _upcoming(c, a))
+                                    .toList(),
                               )
                             else
                               ...c.appointmentList.map((a) => _upcoming(c, a)),
@@ -207,7 +225,12 @@ class _BookingScreenState extends State<BookingScreen> {
             Row(
               children: [
                 Expanded(
-                  child: Text(_title(a), style: ThemeProvider.serif(size: 18)),
+                  child: Text(
+                    _title(a),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: ThemeProvider.serif(size: 18),
+                  ),
                 ),
                 Container(
                   padding:

@@ -49,10 +49,13 @@ class _ProductsDetailsScreenState extends State<ProductsDetailsScreen> {
                     ),
                     const SizedBox(height: 4),
                     Text(value.productsList.name ?? '',
+                        maxLines: 3,
+                        overflow: TextOverflow.ellipsis,
                         style: ThemeProvider.serif(
                             size: 28, weight: FontWeight.w700)),
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.end,
+                    Wrap(
+                      crossAxisAlignment: WrapCrossAlignment.end,
+                      spacing: 10,
                       children: [
                         Text(
                           elitePrice(
@@ -65,8 +68,7 @@ class _ProductsDetailsScreenState extends State<ProductsDetailsScreen> {
                               color: ThemeProvider.gold,
                               weight: FontWeight.w700),
                         ),
-                        if (value.displayMrp != null) ...[
-                          const SizedBox(width: 10),
+                        if (value.displayMrp != null)
                           Text(
                             elitePrice(
                               value.currencySide,
@@ -80,7 +82,6 @@ class _ProductsDetailsScreenState extends State<ProductsDetailsScreen> {
                               decoration: TextDecoration.lineThrough,
                             ),
                           ),
-                        ],
                       ],
                     ),
                     Padding(
@@ -449,9 +450,12 @@ class _ProductsDetailsScreenState extends State<ProductsDetailsScreen> {
       ),
       const SizedBox(height: 4),
       Text(value.productsList.name ?? '',
+          maxLines: 3,
+          overflow: TextOverflow.ellipsis,
           style: ThemeProvider.serif(size: 28, weight: FontWeight.w700)),
-      Row(
-        crossAxisAlignment: CrossAxisAlignment.end,
+      Wrap(
+        crossAxisAlignment: WrapCrossAlignment.end,
+        spacing: 10,
         children: [
           Text(
             elitePrice(
@@ -462,8 +466,7 @@ class _ProductsDetailsScreenState extends State<ProductsDetailsScreen> {
             style: ThemeProvider.price(
                 size: 26, color: ThemeProvider.gold, weight: FontWeight.w700),
           ),
-          if (value.displayMrp != null) ...[
-            const SizedBox(width: 10),
+          if (value.displayMrp != null)
             Text(
               elitePrice(
                 value.currencySide,
@@ -475,7 +478,6 @@ class _ProductsDetailsScreenState extends State<ProductsDetailsScreen> {
                 color: ThemeProvider.greyColor,
               ).copyWith(decoration: TextDecoration.lineThrough),
             ),
-          ],
         ],
       ),
       Padding(

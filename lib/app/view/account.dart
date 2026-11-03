@@ -6,6 +6,7 @@ import 'package:salon_user/app/controller/languages_controller.dart';
 import 'package:salon_user/app/controller/tabs_controller.dart';
 import 'package:salon_user/app/controller/timed_offer_controller.dart';
 import 'package:salon_user/app/env.dart';
+import 'package:salon_user/app/helper/desktop.dart';
 import 'package:salon_user/app/helper/pwa.dart';
 import 'package:salon_user/app/helper/router.dart';
 import 'package:salon_user/app/util/constant.dart';
@@ -34,19 +35,20 @@ class _AccountScreenState extends State<AccountScreen> {
             backgroundColor: ThemeProvider.backgroundColor,
             drawer: const SideMenuScreen(),
             body: ListView(
-              padding: const EdgeInsets.only(bottom: 100),
+              padding: EdgeInsets.only(bottom: Desktop.listBottom(context)),
               children: [
-                SafeArea(
-                  bottom: false,
-                  child: GetBuilder<CommonNotificationController>(
-                    builder: (notify) => EliteAppBar(
-                      onMenu: () => _scaffoldKey.currentState?.openDrawer(),
-                      onNotification: () =>
-                          Get.toNamed(AppRouter.getNotificatinRoutes()),
-                      notificationCount: notify.unreadCount,
+                if (!Desktop.of(context))
+                  SafeArea(
+                    bottom: false,
+                    child: GetBuilder<CommonNotificationController>(
+                      builder: (notify) => EliteAppBar(
+                        onMenu: () => _scaffoldKey.currentState?.openDrawer(),
+                        onNotification: () =>
+                            Get.toNamed(AppRouter.getNotificatinRoutes()),
+                        notificationCount: notify.unreadCount,
+                      ),
                     ),
                   ),
-                ),
                 const SizedBox(height: 12),
                 Center(
                   child: Stack(

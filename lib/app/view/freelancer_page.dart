@@ -30,16 +30,20 @@ class _SpecialistScreenState extends State<SpecialistScreen> {
       builder: (value) {
         return Scaffold(
           backgroundColor: ThemeProvider.backgroundColor,
-          appBar: EliteAppBar(
-            showBack: true,
-            title: 'Expert Profile'.tr,
-            onMore: () {},
-          ),
+          appBar: Desktop.of(context)
+              ? null
+              : EliteAppBar(
+                  showBack: true,
+                  title: 'Expert Profile'.tr,
+                  onMore: () {},
+                ),
           body: value.apiCalled == false
               ? const Center(
                   child: CircularProgressIndicator(color: ThemeProvider.gold),
                 )
-              : ListView(
+              : Desktop.of(context)
+                  ? _webPage(value)
+                  : ListView(
                   padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
                   children: [
                     _header(value),
@@ -87,6 +91,76 @@ class _SpecialistScreenState extends State<SpecialistScreen> {
               : _bottomBar(value),
         );
       },
+    );
+  }
+
+  Widget _webPage(SpecialistController value) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.fromLTRB(32, 20, 32, 40),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 360,
+            child: Column(
+              children: [
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: IconButton(
+                    icon: const Icon(Icons.arrow_back_ios_new,
+                        color: ThemeProvider.gold, size: 18),
+                    onPressed: () => Get.back(),
+                  ),
+                ),
+                _header(value),
+                const SizedBox(height: 20),
+                _backgroundCard(value),
+                const SizedBox(height: 22),
+                EliteConnectSection(
+                  links: value.individualDetails.contactLinks,
+                  isAuthenticated: value.parser.isLogin(),
+                  onLoginRequired: () {
+                    Get.delete<LoginController>(force: true);
+                    AppRouter.openLogin();
+                  },
+                  onCall: value.callIndividual,
+                  onChat: value.onChat,
+                  onWebsite: value.openWebsite,
+                  onInstagram: value.openInstagram,
+                  onYoutube: value.openYoutube,
+                  onFacebook: value.openFacebook,
+                  onWhatsapp: value.openWhatsapp,
+                  onTwitter: value.openTwitter,
+                  onLinkedin: value.openLinkedin,
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 28),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (value.servicesList.isNotEmpty)
+                  _services(value)
+                else
+                  const EliteApiUnavailable(
+                    title: 'No services available',
+                    icon: Icons.spa_outlined,
+                  ),
+                const SizedBox(height: 22),
+                if (value.gallery.isNotEmpty)
+                  _gallery(value)
+                else
+                  const EliteApiUnavailable(
+                    title: 'No photos yet',
+                    icon: Icons.photo_outlined,
+                  ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 

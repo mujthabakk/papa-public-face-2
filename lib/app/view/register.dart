@@ -3,8 +3,10 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:salon_user/app/controller/register_controller.dart';
+import 'package:salon_user/app/helper/desktop.dart';
 import 'package:salon_user/app/util/theme.dart';
 import 'package:salon_user/app/view/widgets/elite_ui.dart';
+import 'package:salon_user/app/view/widgets/web_shell.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({Key? key}) : super(key: key);
@@ -39,10 +41,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   @override
   Widget build(BuildContext context) {
     return GetBuilder<RegisterController>(builder: (value) {
-      return Scaffold(
-        backgroundColor: ThemeProvider.backgroundColor,
-        appBar: EliteAppBar(showBack: true, title: 'Create Account'.tr),
-        body: ListView(
+      final fields = ListView(
           padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
           children: [
             TextField(
@@ -151,7 +150,35 @@ class _RegisterScreenState extends State<RegisterScreen> {
             const SizedBox(height: 20),
             EliteGoldButton(label: 'CREATE ACCOUNT'.tr, onTap: value.onRegister),
           ],
-        ),
+        );
+      if (Desktop.of(context)) {
+        return Scaffold(
+          backgroundColor: ThemeProvider.backgroundColor,
+          body: Row(
+            children: [
+              const Expanded(
+                flex: 6,
+                child: DesktopBrandPane(
+                  subtitle: 'Create your account to book and shop.',
+                ),
+              ),
+              Expanded(
+                flex: 5,
+                child: Column(
+                  children: [
+                    EliteAppBar(showBack: true, title: 'Create Account'.tr),
+                    Expanded(child: fields),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        );
+      }
+      return Scaffold(
+        backgroundColor: ThemeProvider.backgroundColor,
+        appBar: EliteAppBar(showBack: true, title: 'Create Account'.tr),
+        body: fields,
       );
     });
   }

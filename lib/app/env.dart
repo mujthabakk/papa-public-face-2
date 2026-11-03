@@ -3,6 +3,8 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 class Environments {
   static const String appName = 'PapaBear';
   static const String companyName = 'PapaBear';
+  // Enable Maps JavaScript API, Places API, Geocoding API, Maps SDK for
+  // Android/iOS. Web referrers: http://localhost:* and GitHub Pages origin.
   static const String googleMapsKey = 'AIzaSyAm5bmta_KNZlZBGUlmpmrr-oWP1QYI4_I';
 
   //static const String apiBaseURL = 'https://leadfutureai.com/';

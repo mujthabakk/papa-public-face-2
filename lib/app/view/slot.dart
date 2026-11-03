@@ -41,30 +41,57 @@ class _SlotScreenState extends State<SlotScreen> {
   Widget build(BuildContext context) {
     return GetBuilder<SlotController>(
       builder: (value) {
+        final desktop = Desktop.of(context);
         return Scaffold(
           backgroundColor: ThemeProvider.backgroundColor,
-          appBar: EliteAppBar(
-            showBack: true,
-            leadingLabel: 'CANCEL',
-            title: 'Service Booking'.tr,
-          ),
+          appBar: desktop
+              ? null
+              : EliteAppBar(
+                  showBack: true,
+                  leadingLabel: 'CANCEL',
+                  title: 'Service Booking'.tr,
+                ),
           body: value.apiCalled == false
               ? const Center(
                   child: CircularProgressIndicator(color: ThemeProvider.gold),
                 )
-              : ListView(
-                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-                  children: [
-                    _featured(),
-                    _practitioners(value),
-                    const SizedBox(height: 18),
-                    _availability(value),
-                    _serviceDetails(),
-                    const SizedBox(height: 18),
-                    _summary(value),
-                  ],
-                ),
-          bottomNavigationBar: _bottom(value),
+              : desktop
+                  ? WebInnerPage(
+                      title: 'Service Booking'.tr,
+                      main: Column(
+                        children: [
+                          _featured(),
+                          _practitioners(value),
+                          const SizedBox(height: 18),
+                          _availability(value),
+                        ],
+                      ),
+                      side: Column(
+                        children: [
+                          _serviceDetails(),
+                          const SizedBox(height: 18),
+                          _summary(value),
+                          const SizedBox(height: 12),
+                          EliteGoldButton(
+                            label: 'Continue'.tr,
+                            onTap: value.onPayment,
+                          ),
+                        ],
+                      ),
+                    )
+                  : ListView(
+                      padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+                      children: [
+                        _featured(),
+                        _practitioners(value),
+                        const SizedBox(height: 18),
+                        _availability(value),
+                        _serviceDetails(),
+                        const SizedBox(height: 18),
+                        _summary(value),
+                      ],
+                    ),
+          bottomNavigationBar: desktop ? null : _bottom(value),
         );
       },
     );

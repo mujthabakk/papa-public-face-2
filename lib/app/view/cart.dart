@@ -4,6 +4,7 @@ import 'package:salon_user/app/controller/cart_controller.dart';
 import 'package:salon_user/app/controller/product_cart_controller.dart';
 import 'package:salon_user/app/controller/tabs_controller.dart';
 import 'package:salon_user/app/env.dart';
+import 'package:salon_user/app/helper/desktop.dart';
 import 'package:salon_user/app/helper/router.dart';
 import 'package:salon_user/app/helper/tax_availability.dart';
 import 'package:salon_user/app/util/theme.dart';
@@ -29,36 +30,61 @@ class _CartScreenState extends State<CartScreen> {
   Widget build(BuildContext context) {
     return GetBuilder<CartController>(
       builder: (value) {
+        final desktop = Desktop.of(context);
         return Scaffold(
           backgroundColor: ThemeProvider.backgroundColor,
-          appBar: EliteAppBar(
-            showBack: true,
-            title: 'My Cart'.tr,
-            onMore: _noop,
-          ),
+          appBar: desktop
+              ? null
+              : EliteAppBar(
+                  showBack: true,
+                  title: 'My Cart'.tr,
+                  onMore: _noop,
+                ),
           body: value.savedInCart.isEmpty
               ? _empty()
-              : ListView(
-                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-                  children: [
-                    Text('Cart Selection'.tr,
-                        style: ThemeProvider.serif(
-                            size: 28, weight: FontWeight.w700)),
-                    const SizedBox(height: 4),
-                    Text('Review your premium wellness curated list.'.tr,
-                      style: ThemeProvider.sans(
-                          size: 13, color: ThemeProvider.greyColor),
+              : desktop
+                  ? WebInnerPage(
+                      title: 'Cart Selection'.tr,
+                      subtitle:
+                          'Review your premium wellness curated list.'.tr,
+                      main: Column(
+                        children: List.generate(
+                          value.savedInCart.length,
+                          (i) => _item(value, i),
+                        ),
+                      ),
+                      side: Column(
+                        children: [
+                          _summary(value),
+                          const SizedBox(height: 12),
+                          EliteGoldButton(
+                            label: 'Proceed to Checkout  ›'.tr,
+                            onTap: value.onCheckout,
+                          ),
+                        ],
+                      ),
+                    )
+                  : ListView(
+                      padding: Desktop.pagePadding(context),
+                      children: [
+                        Text('Cart Selection'.tr,
+                            style: ThemeProvider.serif(
+                                size: 28, weight: FontWeight.w700)),
+                        const SizedBox(height: 4),
+                        Text('Review your premium wellness curated list.'.tr,
+                          style: ThemeProvider.sans(
+                              size: 13, color: ThemeProvider.greyColor),
+                        ),
+                        const SizedBox(height: 16),
+                        ...List.generate(
+                          value.savedInCart.length,
+                          (i) => _item(value, i),
+                        ),
+                        _summary(value),
+                      ],
                     ),
-                    const SizedBox(height: 16),
-                    ...List.generate(
-                      value.savedInCart.length,
-                      (i) => _item(value, i),
-                    ),
-                    _summary(value),
-                  ],
-                ),
           bottomNavigationBar:
-              value.savedInCart.isEmpty ? null : _bottom(value),
+              value.savedInCart.isEmpty || desktop ? null : _bottom(value),
         );
       },
     );
@@ -76,9 +102,12 @@ class _CartScreenState extends State<CartScreen> {
           const SizedBox(height: 16),
           Text('Your cart is empty'.tr, style: ThemeProvider.serif(size: 22)),
           const SizedBox(height: 20),
-          EliteGoldButton(
-            label: 'Continue Shopping'.tr,
-            onTap: _continueShopping,
+          ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 320),
+            child: EliteGoldButton(
+              label: 'Continue Shopping'.tr,
+              onTap: _continueShopping,
+            ),
           ),
         ],
       ),
@@ -185,8 +214,12 @@ class _CartScreenState extends State<CartScreen> {
                 Row(
                   children: [
                     Expanded(
-                      child: Text(item.name ?? '',
-                          style: ThemeProvider.serif(size: 16)),
+                      child: Text(
+                        item.name ?? '',
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: ThemeProvider.serif(size: 16),
+                      ),
                     ),
                     GestureDetector(
                       onTap: () => value.deleteProductFromCart(index),

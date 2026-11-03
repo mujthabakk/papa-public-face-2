@@ -6,6 +6,7 @@ import 'package:salon_user/app/backend/models/coupons_model.dart';
 import 'package:salon_user/app/controller/coupon_controller.dart';
 import 'package:salon_user/app/controller/wallet_controller.dart';
 import 'package:salon_user/app/env.dart';
+import 'package:salon_user/app/helper/desktop.dart';
 import 'package:salon_user/app/helper/router.dart';
 import 'package:salon_user/app/util/theme.dart';
 import 'package:salon_user/app/util/toast.dart';
@@ -31,19 +32,23 @@ class _CouponScreenState extends State<CouponScreen> {
   Widget build(BuildContext context) {
     return GetBuilder<CouponController>(
       builder: (value) {
+        final desktop = Desktop.of(context);
+        final title = value.action == 'browse'
+            ? (value.singleOffer
+                ? (value.seedOffer?.name ??
+                    (value.couponList.isNotEmpty
+                        ? value.couponList.first.name
+                        : null) ??
+                    'Offer Details')
+                : 'Exclusive Offers')
+            : 'Redeem Rewards';
         return Scaffold(
           backgroundColor: ThemeProvider.backgroundColor,
-          appBar: EliteAppBar(
+          appBar: desktop
+              ? null
+              : EliteAppBar(
             showBack: true,
-            title: value.action == 'browse'
-                ? (value.singleOffer
-                    ? (value.seedOffer?.name ??
-                        (value.couponList.isNotEmpty
-                            ? value.couponList.first.name
-                            : null) ??
-                        'Offer Details')
-                    : 'Exclusive Offers')
-                : 'Redeem Rewards',
+            title: title,
             onMore: () {},
           ),
           body: value.apiCalled == false
@@ -51,8 +56,31 @@ class _CouponScreenState extends State<CouponScreen> {
                   child: CircularProgressIndicator(color: ThemeProvider.gold),
                 )
               : ListView(
-                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+                  padding: desktop
+                      ? const EdgeInsets.fromLTRB(120, 16, 120, 32)
+                      : Desktop.pagePadding(context),
                   children: [
+                    if (desktop) ...[
+                      Row(
+                        children: [
+                          IconButton(
+                            onPressed: () => Get.back(),
+                            icon: const Icon(Icons.arrow_back_ios_new,
+                                color: ThemeProvider.gold, size: 18),
+                          ),
+                          Expanded(
+                            child: Text(
+                              title,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: ThemeProvider.serif(
+                                  size: 28, weight: FontWeight.w700),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                    ],
                     if (Get.isRegistered<WalletController>())
                       EliteCard(
                         child: Column(

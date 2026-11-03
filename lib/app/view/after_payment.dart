@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:salon_user/app/controller/payment_socket_controller.dart';
+import 'package:salon_user/app/helper/desktop.dart';
 import 'package:salon_user/app/util/theme.dart';
 import 'package:salon_user/app/view/widgets/elite_ui.dart';
 
@@ -62,6 +63,69 @@ class AfterPaymentScreen extends StatelessWidget {
                     ),
                   ),
                 )
+              : Desktop.of(context)
+                  ? WebInnerPage(
+                      title: 'After Payment'.tr,
+                      expandMain: true,
+                      main: GridView.builder(
+                        padding: EdgeInsets.zero,
+                        itemCount: items.length,
+                        gridDelegate:
+                            const SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 2,
+                          mainAxisSpacing: 12,
+                          crossAxisSpacing: 12,
+                          childAspectRatio: 2.6,
+                        ),
+                        itemBuilder: (context, index) {
+                          final item = items[index];
+                          final subtitle = item.amount.isNotEmpty
+                              ? item.amount
+                              : (item.message.isNotEmpty
+                                  ? item.message
+                                  : 'Service completed'.tr);
+                          return Container(
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF1C1C1C),
+                              borderRadius: BorderRadius.circular(12),
+                              border:
+                                  Border.all(color: const Color(0xFF3A3A3A)),
+                            ),
+                            child: ListTile(
+                              contentPadding:
+                                  const EdgeInsets.fromLTRB(14, 8, 8, 8),
+                              leading: const Icon(Icons.payments_outlined,
+                                  color: ThemeProvider.gold, size: 26),
+                              title: Text(
+                                item.label,
+                                style: ThemeProvider.sans(
+                                  size: 15,
+                                  weight: FontWeight.w600,
+                                  color: ThemeProvider.gold,
+                                ),
+                              ),
+                              subtitle: Text(
+                                subtitle,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                                style: ThemeProvider.sans(
+                                  size: 12,
+                                  color: ThemeProvider.greyColor,
+                                ),
+                              ),
+                              trailing: ElevatedButton(
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: ThemeProvider.gold,
+                                  foregroundColor: Colors.black,
+                                ),
+                                onPressed: () => pay.openPendingPay(item),
+                                child: Text('Pay'.tr),
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    )
               : ListView.separated(
                   padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
                   itemCount: items.length,

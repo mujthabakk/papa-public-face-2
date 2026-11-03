@@ -5,6 +5,7 @@ import 'package:salon_user/app/controller/payment_controller.dart';
 import 'package:salon_user/app/controller/service_cart_controller.dart';
 import 'package:salon_user/app/controller/slot_controller.dart';
 import 'package:salon_user/app/env.dart';
+import 'package:salon_user/app/helper/desktop.dart';
 import 'package:salon_user/app/helper/map_style.dart';
 import 'package:salon_user/app/helper/tax_availability.dart';
 import 'package:salon_user/app/util/theme.dart';
@@ -46,39 +47,66 @@ class _PaymentScreenState extends State<PaymentScreen> {
   Widget build(BuildContext context) {
     return GetBuilder<PaymentController>(
       builder: (value) {
+        final desktop = Desktop.of(context);
         return Scaffold(
           backgroundColor: ThemeProvider.backgroundColor,
-          appBar: EliteAppBar(
-            showBack: true,
-            title: 'Checkout'.tr,
-            onMore: () {},
-          ),
+          appBar: desktop
+              ? null
+              : EliteAppBar(
+                  showBack: true,
+                  title: 'Checkout'.tr,
+                  onMore: () {},
+                ),
           body: value.apiCalled == false
               ? const Center(
                   child: CircularProgressIndicator(color: ThemeProvider.gold),
                 )
-              : ListView(
-                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-                  children: [
-                    if (value.salonDetails.serviceAtHome == 1) ...[
-                      _homeOrSalon(value),
-                      const SizedBox(height: 16),
-                    ],
-                    _schedule(value),
-                    const SizedBox(height: 16),
-                    _address(value),
-                    const SizedBox(height: 16),
-                    _payments(value),
-                    const SizedBox(height: 16),
-                    _wallet(value),
-                    const SizedBox(height: 16),
-                    _notes(value),
-                    const SizedBox(height: 16),
-                    _summary(value),
-                    const SizedBox(height: 12),
-                    _promo(value),
-                  ],
-                ),
+              : desktop
+                  ? WebInnerPage(
+                      title: 'Checkout'.tr,
+                      main: Column(
+                        children: [
+                          if (value.salonDetails.serviceAtHome == 1) ...[
+                            _homeOrSalon(value),
+                            const SizedBox(height: 16),
+                          ],
+                          _schedule(value),
+                          const SizedBox(height: 16),
+                          _address(value),
+                          const SizedBox(height: 16),
+                          _payments(value),
+                          const SizedBox(height: 16),
+                          _wallet(value),
+                          const SizedBox(height: 16),
+                          _notes(value),
+                          const SizedBox(height: 16),
+                          _promo(value),
+                        ],
+                      ),
+                      side: _summary(value),
+                    )
+                  : ListView(
+                      padding: Desktop.pagePadding(context),
+                      children: [
+                        if (value.salonDetails.serviceAtHome == 1) ...[
+                          _homeOrSalon(value),
+                          const SizedBox(height: 16),
+                        ],
+                        _schedule(value),
+                        const SizedBox(height: 16),
+                        _address(value),
+                        const SizedBox(height: 16),
+                        _payments(value),
+                        const SizedBox(height: 16),
+                        _wallet(value),
+                        const SizedBox(height: 16),
+                        _notes(value),
+                        const SizedBox(height: 16),
+                        _summary(value),
+                        const SizedBox(height: 12),
+                        _promo(value),
+                      ],
+                    ),
         );
       },
     );

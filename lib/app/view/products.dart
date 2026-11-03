@@ -47,7 +47,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
                   slivers: [
                     SliverToBoxAdapter(
                       child: Padding(
-                        padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+                        padding: Desktop.pagePadding(context).copyWith(bottom: 8),
                         child: Container(
                           padding: const EdgeInsets.symmetric(horizontal: 12),
                           decoration: BoxDecoration(
@@ -80,7 +80,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
                       )
                     else
                       SliverPadding(
-                        padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+                        padding: Desktop.pagePadding(context),
                         sliver: SliverGrid(
                           gridDelegate:
                               Desktop.productGrid(context),
@@ -96,7 +96,8 @@ class _ProductsScreenState extends State<ProductsScreen> {
               Get.find<ProductCartController>().savedInCart.isNotEmpty
                   ? Container(
                       color: ThemeProvider.backgroundColor,
-                      padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+                      padding: Desktop.pagePadding(context)
+                          .copyWith(top: 8, bottom: 16),
                       child: SafeArea(
                         child: EliteGoldButton(
                           label: 'VIEW CART'.tr,

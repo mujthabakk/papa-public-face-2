@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 import 'package:salon_user/app/controller/reschedule_slot_controller.dart';
+import 'package:salon_user/app/helper/desktop.dart';
 import 'package:salon_user/app/util/theme.dart';
 import 'package:salon_user/app/view/widgets/elite_ui.dart';
 
@@ -27,18 +28,23 @@ class _RescheduleSlotScreenState extends State<RescheduleSlotScreen> {
           14,
           (i) => DateTime.now().add(Duration(days: i)),
         );
+        final desktop = Desktop.of(context);
         return Scaffold(
           backgroundColor: ThemeProvider.backgroundColor,
-          appBar: EliteAppBar(
-            showBack: true,
-            title: 'Reschedule Slots'.tr,
-          ),
+          appBar: desktop
+              ? null
+              : EliteAppBar(
+                  showBack: true,
+                  title: 'Reschedule Slots'.tr,
+                ),
           body: value.apiCalled == false
               ? const Center(
                   child: CircularProgressIndicator(color: ThemeProvider.gold),
                 )
-              : ListView(
-                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+              : Builder(builder: (_) {
+                  final list = ListView(
+                  padding: EdgeInsets.fromLTRB(
+                      desktop ? 0 : 16, 8, desktop ? 0 : 16, 24),
                   children: [
                     Text(
                       'Select Date'.tr,
@@ -172,8 +178,22 @@ class _RescheduleSlotScreenState extends State<RescheduleSlotScreen> {
                         }),
                       ),
                   ],
-                ),
-          bottomNavigationBar: SafeArea(
+                );
+                  return desktop
+                      ? WebInnerPage(
+                          title: 'Reschedule Slots'.tr,
+                          expandMain: true,
+                          main: list,
+                          side: EliteGoldButton(
+                            label: 'Reschedule Appointment'.tr,
+                            onTap: value.onUpdateAppointmentStatus,
+                          ),
+                        )
+                      : list;
+                }),
+          bottomNavigationBar: desktop
+              ? const SizedBox()
+              : SafeArea(
             child: Padding(
               padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
               child: EliteGoldButton(

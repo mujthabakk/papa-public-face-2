@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import 'package:salon_user/app/controller/account_controller.dart';
 import 'package:salon_user/app/controller/languages_controller.dart';
 import 'package:salon_user/app/env.dart';
+import 'package:salon_user/app/helper/desktop.dart';
 import 'package:salon_user/app/util/constant.dart';
 import 'package:salon_user/app/util/theme.dart';
 import 'package:salon_user/app/view/widgets/elite_ui.dart';
@@ -23,11 +24,16 @@ class _LanguagesScreenState extends State<LanguagesScreen> {
             ? Get.find<AccountController>()
             : null;
         final selected = lang.selectedLanguage;
+        final desktop = Desktop.of(context);
         return Scaffold(
           backgroundColor: ThemeProvider.backgroundColor,
-          appBar: EliteAppBar(showBack: true, title: 'PAPA BEAR'.tr),
-          body: ListView(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
+          appBar: desktop
+              ? null
+              : EliteAppBar(showBack: true, title: 'PAPA BEAR'.tr),
+          body: Builder(builder: (_) {
+            final list = ListView(
+            padding: EdgeInsets.fromLTRB(
+                desktop ? 0 : 16, 8, desktop ? 0 : 16, 32),
             children: [
               if (account != null && account.parser.haveLoggedIn())
                 EliteCard(
@@ -119,7 +125,15 @@ class _LanguagesScreenState extends State<LanguagesScreen> {
                     size: 11, color: ThemeProvider.greyColor),
               ),
             ],
-          ),
+          );
+            return desktop
+                ? WebInnerPage(
+                    title: 'PAPA BEAR'.tr,
+                    expandMain: true,
+                    main: list,
+                  )
+                : list;
+          }),
         );
       },
     );

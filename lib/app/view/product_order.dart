@@ -7,6 +7,7 @@ import 'package:salon_user/app/controller/add_review_controller.dart';
 import 'package:salon_user/app/controller/booking_controller.dart';
 import 'package:salon_user/app/controller/product_order_controller.dart';
 import 'package:salon_user/app/env.dart';
+import 'package:salon_user/app/helper/desktop.dart';
 import 'package:salon_user/app/helper/router.dart';
 import 'package:salon_user/app/util/theme.dart';
 import 'package:salon_user/app/view/widgets/elite_ui.dart';
@@ -34,23 +35,30 @@ class _ProductOrderScreenState extends State<ProductOrderScreen> {
   Widget build(BuildContext context) {
     return GetBuilder<ProductOrderController>(
       builder: (c) {
+        final desktop = Desktop.of(context);
         return Scaffold(
           backgroundColor: ThemeProvider.backgroundColor,
-          appBar: EliteAppBar(
-            showBack: true,
-            title: 'My History'.tr,
-            onMore: c.getProductById,
-          ),
+          appBar: desktop
+              ? null
+              : EliteAppBar(
+                  showBack: true,
+                  title: 'My History'.tr,
+                  onMore: c.getProductById,
+                ),
           body: !c.parser.haveLoggedIn()
               ? Center(
                   child: Text('Please log in to view history'.tr,
                       style:
                           ThemeProvider.sans(size: 13, color: Colors.white70)),
                 )
-              : Column(
-                  children: [
-                    Container(
-                      margin: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+              : desktop
+                  ? WebInnerPage(
+                      title: 'My History'.tr,
+                      expandMain: true,
+                      main: Column(
+                        children: [
+                          Container(
+                            margin: const EdgeInsets.fromLTRB(0, 0, 0, 12),
                       padding: const EdgeInsets.all(4),
                       decoration: BoxDecoration(
                         color: ThemeProvider.surface,
@@ -68,6 +76,28 @@ class _ProductOrderScreenState extends State<ProductOrderScreen> {
                     ),
                   ],
                 ),
+                    )
+                  : Column(
+                      children: [
+                        Container(
+                          margin: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+                          padding: const EdgeInsets.all(4),
+                          decoration: BoxDecoration(
+                            color: ThemeProvider.surface,
+                            borderRadius: BorderRadius.circular(24),
+                          ),
+                          child: Row(
+                            children: [
+                              _seg('Services', 0),
+                              _seg('Products', 1),
+                            ],
+                          ),
+                        ),
+                        Expanded(
+                          child: _tab == 0 ? _services() : _products(c),
+                        ),
+                      ],
+                    ),
         );
       },
     );
@@ -121,7 +151,7 @@ class _ProductOrderScreenState extends State<ProductOrderScreen> {
           );
         }
         return ListView.builder(
-          padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+          padding: Desktop.pagePadding(context).copyWith(top: 0),
           itemCount: list.length,
           itemBuilder: (_, i) => _serviceCard(b, list[i]),
         );
@@ -294,7 +324,7 @@ class _ProductOrderScreenState extends State<ProductOrderScreen> {
       );
     }
     return ListView.builder(
-      padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+      padding: Desktop.pagePadding(context).copyWith(top: 0),
       itemCount: list.length,
       itemBuilder: (_, i) => _productCard(c, list[i]),
     );
@@ -346,9 +376,13 @@ class _ProductOrderScreenState extends State<ProductOrderScreen> {
                   Row(
                     children: [
                       Expanded(
-                        child: Text(name ?? '',
-                            style: ThemeProvider.serif(
-                                size: 18, color: ThemeProvider.gold)),
+                        child: Text(
+                          name ?? '',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: ThemeProvider.serif(
+                              size: 18, color: ThemeProvider.gold),
+                        ),
                       ),
                       Text(
                         elitePrice(

@@ -4,6 +4,7 @@ import 'package:salon_user/app/controller/checkout_controller.dart';
 import 'package:salon_user/app/controller/service_cart_controller.dart';
 import 'package:salon_user/app/env.dart';
 import 'package:salon_user/app/helper/tax_availability.dart';
+import 'package:salon_user/app/helper/desktop.dart';
 import 'package:salon_user/app/util/theme.dart';
 import 'package:salon_user/app/view/widgets/elite_ui.dart';
 
@@ -43,6 +44,27 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     return GetBuilder<CheckoutController>(
       builder: (value) {
         final cart = Get.find<ServiceCartController>();
+        final desktop = Desktop.of(context);
+        if (desktop) {
+          return Scaffold(
+            backgroundColor: ThemeProvider.backgroundColor,
+            body: WebInnerPage(
+              title: 'Cart Selection'.tr,
+              subtitle: 'Review your premium wellness curated list.'.tr,
+              main: Column(children: _cartLines(value)),
+              side: Column(
+                children: [
+                  _billCard(value, cart),
+                  const SizedBox(height: 12),
+                  EliteGoldButton(
+                    label: 'Proceed to Checkout  ›'.tr,
+                    onTap: value.onSlot,
+                  ),
+                ],
+              ),
+            ),
+          );
+        }
         return Scaffold(
           backgroundColor: ThemeProvider.backgroundColor,
           appBar: EliteAppBar(
@@ -61,6 +83,27 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                     size: 13, color: ThemeProvider.greyColor),
               ),
               const SizedBox(height: 16),
+              ..._cartLines(value),
+              _billCard(value, cart),
+            ],
+          ),
+          bottomNavigationBar: Container(
+            color: ThemeProvider.backgroundColor,
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+            child: SafeArea(
+              child: EliteGoldButton(
+                label: 'Proceed to Checkout  ›'.tr,
+                onTap: value.onSlot,
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  List<Widget> _cartLines(CheckoutController value) {
+    return [
               ...(value.savedInCart.services ?? []).asMap().entries.map(
                     (e) => _line(
                       cover: e.value.cover,
@@ -98,7 +141,11 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                       onDelete: () => value.deletePackageFromCart(e.key),
                     ),
                   ),
-              EliteCard(
+    ];
+  }
+
+  Widget _billCard(CheckoutController value, ServiceCartController cart) {
+    return EliteCard(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -292,21 +339,6 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                     ),
                   ],
                 ),
-              ),
-            ],
-          ),
-          bottomNavigationBar: Container(
-            color: ThemeProvider.backgroundColor,
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-            child: SafeArea(
-              child: EliteGoldButton(
-                label: 'Proceed to Checkout  ›'.tr,
-                onTap: value.onSlot,
-              ),
-            ),
-          ),
-        );
-      },
     );
   }
 
@@ -359,8 +391,12 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                 Row(
                   children: [
                     Expanded(
-                      child: Text(title ?? '',
-                          style: ThemeProvider.serif(size: 16)),
+                      child: Text(
+                        title ?? '',
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: ThemeProvider.serif(size: 16),
+                      ),
                     ),
                     GestureDetector(
                       onTap: onDelete,

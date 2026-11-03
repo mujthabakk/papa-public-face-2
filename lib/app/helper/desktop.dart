@@ -1,16 +1,32 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
-import 'package:get/get.dart';
-import 'package:salon_user/app/util/theme.dart';
 
 /// Layout breakpoints. APIs stay the same; chrome and density change.
 class Desktop {
   static const double tablet = 700;
   static const double desktop = 1024;
   static const double wide = 1400;
-  static const double contentMax = 1360;
+  static const double contentMax = 1280;
   static const double sidebarWidth = 232;
+  static final ValueNotifier<String> route = ValueNotifier<String>('/');
+
+  static bool isMainShell(String route) =>
+      route == '/tabs' || route == '/home';
+
+  static bool hideSiteChrome(String route) {
+    const hidden = {
+      '/',
+      '/splash',
+      '/welcome',
+      '/login',
+      '/register',
+      '/reset_password',
+      '/choose_location',
+      '/find_location',
+    };
+    return hidden.contains(route);
+  }
 
   static bool get isDesktopPlatform {
     if (kIsWeb) return true;
@@ -26,8 +42,8 @@ class Desktop {
 
   static bool of(BuildContext context) {
     final w = MediaQuery.sizeOf(context).width;
-    // Web should use the desktop shell on laptops/tablets.
-    if (kIsWeb) return w >= tablet;
+    // Phone-width browsers keep the mobile UI. Everything else on web is desktop.
+    if (kIsWeb) return w >= 600;
     return w >= desktop;
   }
 
@@ -67,6 +83,8 @@ class Desktop {
     return const EdgeInsets.fromLTRB(16, 8, 16, 24);
   }
 
+  static double listBottom(BuildContext context) => of(context) ? 28 : 100;
+
   static SliverGridDelegate productGrid(BuildContext context) {
     return SliverGridDelegateWithFixedCrossAxisCount(
       crossAxisCount: productColumns(context),
@@ -98,26 +116,49 @@ class DesktopScrollBehavior extends MaterialScrollBehavior {
         PointerDeviceKind.trackpad,
         PointerDeviceKind.stylus,
       };
+
+  @override
+  ScrollPhysics getScrollPhysics(BuildContext context) =>
+      const ClampingScrollPhysics(parent: AlwaysScrollableScrollPhysics());
+
+  @override
+  Widget buildOverscrollIndicator(
+    BuildContext context,
+    Widget child,
+    ScrollableDetails details,
+  ) {
+    return child;
+  }
 }
 
-/// Centers pushed routes on a wide canvas so phone layouts stay readable.
+/// Pass-through. Pages own their own max-width; locking the navigator
+/// height was blocking mouse-wheel scroll on web.
 class DesktopPageFrame extends StatelessWidget {
   final Widget child;
   const DesktopPageFrame({Key? key, required this.child}) : super(key: key);
 
   @override
+  Widget build(BuildContext context) => child;
+}
+
+/// Optional inner content width for list pages that should not stretch.
+class DesktopContent extends StatelessWidget {
+  final Widget child;
+  final double maxWidth;
+  const DesktopContent({
+    Key? key,
+    required this.child,
+    this.maxWidth = Desktop.contentMax,
+  }) : super(key: key);
+
+  @override
   Widget build(BuildContext context) {
     if (!Desktop.of(context)) return child;
-    // Tabs already use a full-width sidebar + content shell.
-    if (Get.currentRoute == '/tabs') return child;
-    return ColoredBox(
-      color: ThemeProvider.backgroundColor,
-      child: Align(
-        alignment: Alignment.topCenter,
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: Desktop.contentMax),
-          child: SizedBox(width: double.infinity, child: child),
-        ),
+    return Align(
+      alignment: Alignment.topCenter,
+      child: ConstrainedBox(
+        constraints: BoxConstraints(maxWidth: maxWidth),
+        child: child,
       ),
     );
   }

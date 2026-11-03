@@ -73,19 +73,412 @@ class _ServicesScreenState extends State<ServicesScreen> {
   Widget build(BuildContext context) {
     return GetBuilder<ServicesController>(
       builder: (value) {
+        final desktop = Desktop.of(context);
         return Scaffold(
           backgroundColor: ThemeProvider.backgroundColor,
           body: value.apiCalled == false
               ? const Center(
                   child: CircularProgressIndicator(color: ThemeProvider.gold),
                 )
-              : CustomScrollView(
-                  slivers: [
-                    _hero(value),
-                    SliverToBoxAdapter(child: _body(value)),
+              : desktop
+                  ? _webPage(value)
+                  : CustomScrollView(
+                      slivers: [
+                        _hero(value),
+                        SliverToBoxAdapter(child: _body(value)),
+                      ],
+                    ),
+          bottomNavigationBar:
+              desktop ? _webBottomBar(value) : _bottomBar(value),
+        );
+      },
+    );
+  }
+
+  Widget _webPage(ServicesController value) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.fromLTRB(32, 20, 32, 40),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _webHero(value),
+          const SizedBox(height: 28),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(flex: 7, child: _webMain(value)),
+              const SizedBox(width: 28),
+              SizedBox(width: 340, child: _webSidebar(value)),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _webHero(ServicesController value) {
+    final cover =
+        '${Environments.imageURL}${value.salonDetails.cover ?? ''}';
+    final hoursLabel = OpenHours.label(value.salonDetails.timing);
+    final isOpen = OpenHours.isOpen(value.salonDetails.timing);
+    return SizedBox(
+      height: 340,
+      child: Row(
+        children: [
+          Expanded(
+            flex: 3,
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(16),
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  EliteNetworkImage(url: cover, fit: BoxFit.cover),
+                  const DecoratedBox(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.centerLeft,
+                        end: Alignment.centerRight,
+                        colors: [Colors.transparent, Color(0x660D0D0D)],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(width: 24),
+          Expanded(
+            flex: 2,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.arrow_back_ios_new,
+                          color: ThemeProvider.gold, size: 18),
+                      onPressed: () => Get.back(),
+                    ),
+                    Text('Salon'.tr,
+                        style: ThemeProvider.sans(
+                            size: 12, color: ThemeProvider.greyColor)),
+                    const Spacer(),
+                    IconButton(
+                      icon: Icon(
+                        _liked ? Icons.favorite : Icons.favorite_border,
+                        color: ThemeProvider.gold,
+                      ),
+                      onPressed: () => setState(() => _liked = !_liked),
+                    ),
                   ],
                 ),
-          bottomNavigationBar: _bottomBar(value),
+                Text(
+                  value.salonDetails.name ?? '',
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: ThemeProvider.serif(
+                      size: 32, weight: FontWeight.w700),
+                ),
+                const SizedBox(height: 10),
+                Wrap(
+                  spacing: 10,
+                  runSpacing: 8,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 10, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: isOpen
+                            ? const Color(0xFF2E7D32)
+                            : ThemeProvider.greyColor,
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text(
+                        isOpen ? 'Open'.tr : 'Closed'.tr,
+                        style: ThemeProvider.sans(
+                          size: 11,
+                          weight: FontWeight.w700,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                    _meta(
+                      Icons.star,
+                      '${(value.salonDetails.rating ?? 0).toStringAsFixed(1)} (${value.salonDetails.totalRating ?? 0})',
+                    ),
+                    if (hoursLabel.isNotEmpty)
+                      _meta(Icons.access_time, hoursLabel,
+                          color: ThemeProvider.gold),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                if ((value.salonDetails.address ?? '').isNotEmpty)
+                  _meta(Icons.location_on, value.salonDetails.address ?? ''),
+                const Spacer(),
+                Row(
+                  children: [
+                    _webAction(Icons.language, 'Website'.tr, value.openWebsite),
+                    _webAction(Icons.phone_outlined, 'Call'.tr, value.callSalon),
+                    _webAction(
+                        Icons.chat_bubble_outline, 'Chat'.tr, value.onChat),
+                    _webAction(
+                        Icons.near_me_outlined, 'Map'.tr, value.openMap),
+                    _webAction(Icons.share_outlined, 'Share'.tr, value.share),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _webAction(IconData icon, String label, VoidCallback onTap) {
+    return Padding(
+      padding: const EdgeInsets.only(right: 8),
+      child: OutlinedButton.icon(
+        onPressed: onTap,
+        style: OutlinedButton.styleFrom(
+          foregroundColor: ThemeProvider.gold,
+          side: const BorderSide(color: Color(0x44F2D338)),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        ),
+        icon: Icon(icon, size: 16),
+        label: Text(label, style: ThemeProvider.sans(size: 12)),
+      ),
+    );
+  }
+
+  Widget _webMain(ServicesController value) {
+    final loggedIn = value.parser.isLogin();
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (loggedIn)
+          EliteCard(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('About'.tr,
+                    style: ThemeProvider.serif(
+                        size: 22, color: ThemeProvider.gold)),
+                const SizedBox(height: 10),
+                Text(
+                  (value.salonDetails.about ?? '').isEmpty ||
+                          value.salonDetails.about == 'NA'
+                      ? 'No details added yet'.tr
+                      : value.salonDetails.about ?? '',
+                  style: ThemeProvider.sans(size: 14, color: Colors.white70),
+                ),
+              ],
+            ),
+          )
+        else
+          EliteLoginPromptCard(
+            message: 'Opps, Please Login or Register first!'.tr,
+            onTap: () {
+              Get.delete<LoginController>(force: true);
+              AppRouter.openLogin();
+            },
+          ),
+        const SizedBox(height: 18),
+        _chipBlock('Facilities'.tr, value.salonDetails.facilities),
+        _chipBlock('Features'.tr, value.salonDetails.features),
+        _catalogTabs(value),
+        if (value.catalogTab == 0)
+          _webServiceGrid(value)
+        else if (value.packagesList.isNotEmpty)
+          _webPackageGrid(value)
+        else
+          const EliteApiUnavailable(
+            title: 'No treatments available',
+            icon: Icons.inventory_2_outlined,
+          ),
+        if (value.gallery.isNotEmpty) _webGallery(value),
+        if (value.specialistList.isNotEmpty) _specialists(value),
+        _webReviews(value),
+      ],
+    );
+  }
+
+  Widget _webSidebar(ServicesController value) {
+    return Column(
+      children: [
+        _location(value),
+        const SizedBox(height: 16),
+        _socialLinks(value),
+      ],
+    );
+  }
+
+  Widget _webServiceGrid(ServicesController value) {
+    final entries = <MapEntry<int, ServicesModel>>[];
+    for (var i = 0; i < value.servicesList.length; i++) {
+      entries.add(MapEntry(i, value.servicesList[i]));
+    }
+    if (entries.isEmpty) {
+      return const EliteApiUnavailable(
+        title: 'No services available',
+        icon: Icons.spa_outlined,
+      );
+    }
+    return GridView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      itemCount: entries.length,
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 2,
+        mainAxisSpacing: 14,
+        crossAxisSpacing: 14,
+        childAspectRatio: 1.05,
+      ),
+      itemBuilder: (_, i) =>
+          _serviceCard(value, entries[i].value, entries[i].key),
+    );
+  }
+
+  Widget _webPackageGrid(ServicesController value) {
+    return GridView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      itemCount: value.packagesList.length,
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 2,
+        mainAxisSpacing: 14,
+        crossAxisSpacing: 14,
+        childAspectRatio: 1.15,
+      ),
+      itemBuilder: (_, i) => _packageCard(value, value.packagesList[i]),
+    );
+  }
+
+  Widget _webGallery(ServicesController value) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        EliteSectionBar(title: 'Gallery'.tr),
+        GridView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          itemCount: value.gallery.length,
+          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 4,
+            mainAxisSpacing: 10,
+            crossAxisSpacing: 10,
+          ),
+          itemBuilder: (_, i) => GestureDetector(
+            onTap: () => Get.to(() => ImageGalleryScreen(
+                  gallery: value.gallery,
+                  initialIndex: i,
+                )),
+            child: EliteNetworkImage(
+              url: '${Environments.imageURL}${value.gallery[i]}',
+              radius: BorderRadius.circular(10),
+            ),
+          ),
+        ),
+        const SizedBox(height: 18),
+      ],
+    );
+  }
+
+  Widget _webReviews(ServicesController value) {
+    if (!_askedReviews) {
+      _askedReviews = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        value.getOwnerReviews();
+      });
+    }
+    final list = value.ownerReviewsList;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        EliteSectionBar(title: 'Reviews'.tr, trailing: '${list.length}'),
+        if (list.isEmpty)
+          const EliteApiUnavailable(
+            title: 'No reviews yet',
+            subtitle: 'Be the first to share your experience.',
+            icon: Icons.rate_review_outlined,
+          )
+        else
+          GridView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: list.take(6).length,
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 2,
+              mainAxisSpacing: 12,
+              crossAxisSpacing: 12,
+              childAspectRatio: 2.2,
+            ),
+            itemBuilder: (_, i) {
+              final r = list[i];
+              final name =
+                  '${r.user?.firstName ?? ''} ${r.user?.lastName ?? ''}'
+                      .trim();
+              return EliteCard(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            name.isEmpty ? 'Guest' : name,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: ThemeProvider.serif(size: 15),
+                          ),
+                        ),
+                        const Icon(Icons.star,
+                            size: 14, color: ThemeProvider.gold),
+                        Text(
+                          ' ${(r.rating ?? 0).toStringAsFixed(1)}',
+                          style: ThemeProvider.sans(
+                              size: 12, color: ThemeProvider.gold),
+                        ),
+                      ],
+                    ),
+                    if ((r.notes ?? '').isNotEmpty) ...[
+                      const SizedBox(height: 6),
+                      Text(
+                        r.notes!,
+                        maxLines: 3,
+                        overflow: TextOverflow.ellipsis,
+                        style: ThemeProvider.sans(
+                            size: 12, color: Colors.white70),
+                      ),
+                    ],
+                  ],
+                ),
+              );
+            },
+          ),
+      ],
+    );
+  }
+
+  Widget _webBottomBar(ServicesController value) {
+    return GetBuilder<ServiceCartController>(
+      builder: (cart) {
+        if (cart.totalItemsInCart <= 0 || cart.servicesFrom != 'salon') {
+          return const SizedBox.shrink();
+        }
+        return Container(
+          color: ThemeProvider.backgroundColor,
+          padding: const EdgeInsets.fromLTRB(32, 10, 32, 16),
+          child: Align(
+            alignment: Alignment.centerRight,
+            child: SizedBox(
+              width: 360,
+              child: EliteGoldButton(
+                label:
+                    'BOOK NOW  ·  ${elitePrice(value.currencySide, value.currencySymbol, cart.totalPrice, digits: 2)}',
+                onTap: value.onCheckout,
+              ),
+            ),
+          ),
         );
       },
     );
@@ -681,6 +1074,9 @@ class _ServicesScreenState extends State<ServicesScreen> {
 
   Widget _serviceCard(
       ServicesController value, ServicesModel service, int index) {
+    if (Desktop.of(context)) {
+      return _serviceCardWeb(value, service, index);
+    }
     final selected = service.isChecked == true;
     final hasOffer = service.hasSalePrice || service.offerBadge.isNotEmpty;
     final offerPercent = service.discount ?? 0;
@@ -831,6 +1227,70 @@ class _ServicesScreenState extends State<ServicesScreen> {
     );
   }
 
+  Widget _serviceCardWeb(
+      ServicesController value, ServicesModel service, int index) {
+    final selected = service.isChecked == true;
+    final hasOffer = service.hasSalePrice || service.offerBadge.isNotEmpty;
+    final offerPrice = service.displayPrice;
+    return EliteCard(
+      padding: const EdgeInsets.all(12),
+      borderColor: selected ? ThemeProvider.gold : null,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          ClipRRect(
+            borderRadius: BorderRadius.circular(10),
+            child: SizedBox(
+              height: 130,
+              width: double.infinity,
+              child: EliteNetworkImage(
+                url: service.imageCover,
+                fit: BoxFit.cover,
+              ),
+            ),
+          ),
+          const SizedBox(height: 10),
+          Text(
+            service.name ?? '',
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: ThemeProvider.serif(size: 16),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            elitePrice(value.currencySide, value.currencySymbol, offerPrice),
+            style: ThemeProvider.price(
+                size: 16, weight: FontWeight.w700, color: ThemeProvider.gold),
+          ),
+          if (hasOffer)
+            Text(
+              elitePrice(
+                  value.currencySide, value.currencySymbol, service.price),
+              style: ThemeProvider.sans(size: 12, color: ThemeProvider.greyColor)
+                  .copyWith(decoration: TextDecoration.lineThrough),
+            ),
+          const Spacer(),
+          Align(
+            alignment: Alignment.centerRight,
+            child: TextButton(
+              onPressed: () =>
+                  value.updateServiceStatusInCart(index, !selected),
+              child: Text(
+                selected ? 'SELECTED' : 'SELECT',
+                style: ThemeProvider.sans(
+                  size: 11,
+                  weight: FontWeight.w700,
+                  color: ThemeProvider.gold,
+                  letterSpacing: 1,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _chip(IconData icon, String label) {
     return Row(
       mainAxisSize: MainAxisSize.min,
@@ -933,6 +1393,7 @@ class _ServicesScreenState extends State<ServicesScreen> {
                       ],
                       const Spacer(),
                       EliteGoldButton(
+                        expand: false,
                         label: 'Book Bundle'.tr,
                         onTap: () => value.onPackagesDetails(
                             package.id as int, package.name.toString()),
@@ -977,7 +1438,7 @@ class _ServicesScreenState extends State<ServicesScreen> {
             ClipRRect(
               borderRadius: BorderRadius.circular(12),
               child: SizedBox(
-                height: 140,
+                height: Desktop.of(context) ? 220 : 140,
                 child: GoogleMap(
                   style: Utils.mapStyles,
                   markers: {
@@ -1145,9 +1606,14 @@ class _ServicesScreenState extends State<ServicesScreen> {
                 children: [
                   Row(
                     children: [
-                      Text(name.isEmpty ? 'Guest' : name,
-                          style: ThemeProvider.serif(size: 15)),
-                      const Spacer(),
+                      Expanded(
+                        child: Text(
+                          name.isEmpty ? 'Guest' : name,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: ThemeProvider.serif(size: 15),
+                        ),
+                      ),
                       const Icon(Icons.star, size: 14, color: ThemeProvider.gold),
                       Text(
                         ' ${(r.rating ?? 0).toStringAsFixed(1)}',
