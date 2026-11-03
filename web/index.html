@@ -50,83 +50,102 @@
     }
     #pwa-splash .label { letter-spacing: 2px; font-size: 13px; }
   </style>
-  <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAm5bmta_KNZlZBGUlmpmrr-oWP1QYI4_I&libraries=places"></script>
   <script>
-    window.papaMapsAutocomplete = function (input) {
+    window.papaMapsReady = false;
+    window.__papaMapsWaiters = [];
+    window.papaInitMaps = function () {
+      window.papaMapsReady = true;
+      (window.__papaMapsWaiters || []).forEach(function (fn) { fn(); });
+      window.__papaMapsWaiters = [];
+    };
+    function papaWhenMapsReady() {
       return new Promise(function (resolve) {
-        if (!window.google || !google.maps || !google.maps.places) {
-          resolve([]);
+        if (window.google && google.maps && google.maps.places) {
+          resolve();
           return;
         }
-        var svc = new google.maps.places.AutocompleteService();
-        svc.getPlacePredictions({ input: input }, function (preds) {
-          if (!preds) { resolve([]); return; }
-          resolve(preds.map(function (p) {
-            return { description: p.description, place_id: p.place_id };
-          }));
+        window.__papaMapsWaiters.push(resolve);
+        setTimeout(resolve, 8000);
+      });
+    }
+    window.papaMapsAutocomplete = function (input) {
+      return papaWhenMapsReady().then(function () {
+        if (!window.google || !google.maps || !google.maps.places) return [];
+        return new Promise(function (resolve) {
+          var svc = new google.maps.places.AutocompleteService();
+          svc.getPlacePredictions({ input: input }, function (preds) {
+            if (!preds) { resolve([]); return; }
+            resolve(preds.map(function (p) {
+              return { description: p.description, place_id: p.place_id };
+            }));
+          });
         });
       });
     };
     window.papaMapsDetails = function (placeId) {
-      return new Promise(function (resolve) {
-        if (!window.google || !google.maps || !google.maps.places) {
-          resolve(null);
-          return;
-        }
-        var el = document.createElement('div');
-        var svc = new google.maps.places.PlacesService(el);
-        svc.getDetails({
-          placeId: placeId,
-          fields: ['geometry', 'formatted_address', 'address_components']
-        }, function (place) {
-          if (!place || !place.geometry || !place.geometry.location) {
-            resolve(null);
-            return;
-          }
-          var iso = '', country = '';
-          (place.address_components || []).forEach(function (c) {
-            if (c.types.indexOf('country') >= 0) {
-              iso = c.short_name;
-              country = c.long_name;
+      return papaWhenMapsReady().then(function () {
+        if (!window.google || !google.maps || !google.maps.places) return null;
+        return new Promise(function (resolve) {
+          var el = document.createElement('div');
+          var svc = new google.maps.places.PlacesService(el);
+          svc.getDetails({
+            placeId: placeId,
+            fields: ['geometry', 'formatted_address', 'address_components']
+          }, function (place) {
+            if (!place || !place.geometry || !place.geometry.location) {
+              resolve(null);
+              return;
             }
-          });
-          resolve({
-            lat: place.geometry.location.lat(),
-            lng: place.geometry.location.lng(),
-            address: place.formatted_address || '',
-            iso: iso,
-            country: country
+            var iso = '', country = '';
+            (place.address_components || []).forEach(function (c) {
+              if (c.types.indexOf('country') >= 0) {
+                iso = c.short_name;
+                country = c.long_name;
+              }
+            });
+            resolve({
+              lat: place.geometry.location.lat(),
+              lng: place.geometry.location.lng(),
+              address: place.formatted_address || '',
+              iso: iso,
+              country: country
+            });
           });
         });
       });
     };
     window.papaMapsGeocode = function (lat, lng) {
-      return new Promise(function (resolve) {
-        if (!window.google || !google.maps || !google.maps.Geocoder) {
-          resolve(null);
-          return;
-        }
-        var geocoder = new google.maps.Geocoder();
-        geocoder.geocode({ location: { lat: lat, lng: lng } }, function (results) {
-          if (!results || !results[0]) { resolve(null); return; }
-          var r = results[0];
-          var iso = '', country = '';
-          (r.address_components || []).forEach(function (c) {
-            if (c.types.indexOf('country') >= 0) {
-              iso = c.short_name;
-              country = c.long_name;
-            }
-          });
-          resolve({
-            address: r.formatted_address || '',
-            iso: iso,
-            country: country
+      return papaWhenMapsReady().then(function () {
+        if (!window.google || !google.maps || !google.maps.Geocoder) return null;
+        return new Promise(function (resolve) {
+          var geocoder = new google.maps.Geocoder();
+          geocoder.geocode({ location: { lat: lat, lng: lng } }, function (results) {
+            if (!results || !results[0]) { resolve(null); return; }
+            var r = results[0];
+            var iso = '', country = '';
+            (r.address_components || []).forEach(function (c) {
+              if (c.types.indexOf('country') >= 0) {
+                iso = c.short_name;
+                country = c.long_name;
+              }
+            });
+            resolve({
+              address: r.formatted_address || '',
+              iso: iso,
+              country: country
+            });
           });
         });
       });
     };
   </script>
+  <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAm5bmta_KNZlZBGUlmpmrr-oWP1QYI4_I&libraries=places&callback=papaInitMaps"></script>
   <script>
+    if (navigator.vendor === 'Apple Computer, Inc.' && 'serviceWorker' in navigator) {
+      navigator.serviceWorker.getRegistrations().then(function (regs) {
+        regs.forEach(function (r) { r.unregister(); });
+      });
+    }
     window.__pwaDeferred = null;
     window.__pwaCanInstall = function () { return !!window.__pwaDeferred; };
     window.__pwaStandalone = function () {
@@ -151,6 +170,12 @@
       var el = document.getElementById('pwa-splash');
       if (el) el.remove();
     });
+    setTimeout(function () {
+      var el = document.getElementById('pwa-splash');
+      if (el && el.querySelector('.label')) {
+        el.querySelector('.label').textContent = 'STILL LOADING…';
+      }
+    }, 12000);
   </script>
 </head>
 <body>
@@ -158,6 +183,6 @@
     <div class="mark">P</div>
     <div class="label">PAPABEAR</div>
   </div>
-  <script src="flutter_bootstrap.js" async></script>
+  <script src="flutter_bootstrap.js"></script>
 </body>
 </html>
