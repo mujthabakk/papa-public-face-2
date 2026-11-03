@@ -10,9 +10,11 @@ import 'package:salon_user/app/backend/models/coupons_model.dart';
 import 'package:salon_user/app/backend/models/payment_models.dart';
 import 'package:salon_user/app/backend/models/salon_details_model.dart';
 import 'package:salon_user/app/backend/models/pricing_model.dart';
+import 'package:salon_user/app/backend/parse/cashback_parse.dart';
 import 'package:salon_user/app/backend/parse/payment_parse.dart';
 import 'package:salon_user/app/backend/parse/pricing_parse.dart';
 import 'package:salon_user/app/controller/address_list_controller.dart';
+import 'package:salon_user/app/controller/common_notification_controller.dart';
 import 'package:salon_user/app/controller/coupon_controller.dart';
 import 'package:salon_user/app/controller/service_cart_controller.dart';
 import 'package:salon_user/app/controller/slot_controller.dart';
@@ -73,6 +75,11 @@ class PaymentController extends GetxController implements GetxService {
   PricingBookingFields? bookingFields;
   bool haveAddress = false;
 
+  double cashbackPercent = 0;
+  double get cashbackPreview => cashbackPercent <= 0
+      ? 0
+      : double.parse((_grandTotal * cashbackPercent / 100).toStringAsFixed(2));
+
   late CouponsModel _selectedCoupon = CouponsModel();
   CouponsModel get selectedCoupon => _selectedCoupon;
 
@@ -95,6 +102,7 @@ class PaymentController extends GetxController implements GetxService {
   int appointmentsTo = 0;
 
   late Razorpay _razorpay;
+  int _pendingBookId = 0;
 
   PaymentController({required this.parser});
 
@@ -110,6 +118,7 @@ class PaymentController extends GetxController implements GetxService {
 
     // Load salon details and then do calculations
     getSalonDetails();
+    loadCashback();
 
     currencySide = parser.getCurrencySide();
     currencySymbol = parser.getCurrencySymbol();
@@ -124,6 +133,17 @@ class PaymentController extends GetxController implements GetxService {
     _razorpay.on(Razorpay.EVENT_PAYMENT_SUCCESS, _handlePaymentSuccess);
     _razorpay.on(Razorpay.EVENT_PAYMENT_ERROR, _handlePaymentError);
     _razorpay.on(Razorpay.EVENT_EXTERNAL_WALLET, _handleExternalWallet);
+  }
+
+  Future<void> loadCashback() async {
+    try {
+      if (!Get.isRegistered<CashbackParser>()) return;
+      cashbackPercent =
+          await Get.find<CashbackParser>().percentFor('partner');
+    } catch (e) {
+      cashbackPercent = 0;
+    }
+    update();
   }
 
   @override
@@ -152,6 +172,7 @@ class PaymentController extends GetxController implements GetxService {
     final cancelled = (response.message ?? '')
         .toLowerCase()
         .contains('cancelled');
+    _cancelPendingCheckout();
     showToast(cancelled
         ? 'Payment cancelled'.tr
         : 'Payment failed. Please try again.'.tr);
@@ -772,18 +793,25 @@ class PaymentController extends GetxController implements GetxService {
 
       _showProgressDialog('Please wait'.tr);
 
-      final appointmentId = await _createPendingAppointment();
+      final created = await _createPendingAppointment();
       _closePaymentDialog();
-      if (appointmentId == null) return;
+      if (created == null) return;
+
+      _pendingBookId = created.id;
+      if (created.bookingConfirmed && !created.paymentPending) {
+        _showOrderSuccessDialog();
+        return;
+      }
 
       _showProgressDialog('Opening Payment...'.tr);
 
-      final result = await parser.generateCheckoutPaymentUrl(
-        appointmentId: appointmentId,
+      final result = await parser.generatePaymentUrl(
+        appointmentId: created.id,
       );
       _closePaymentDialog();
 
       if (!result.success || result.data == null) {
+        await _cancelPendingCheckout();
         showToast(result.message.isNotEmpty
             ? result.message
             : 'Unable to start payment.');
@@ -792,30 +820,37 @@ class PaymentController extends GetxController implements GetxService {
 
       final paymentData = result.data!;
       if (paymentData.paymentUrl.isEmpty) {
+        await _cancelPendingCheckout();
         showToast('Payment URL not available.');
         return;
       }
 
       final verifyResult = await openUpgradePaymentWebView(
         paymentUrl: paymentData.paymentUrl,
-        appointmentId: paymentData.appointmentId,
+        appointmentId: paymentData.appointmentId > 0
+            ? paymentData.appointmentId
+            : created.id,
         paymentLinkId: paymentData.paymentLinkId,
       );
 
       if (verifyResult is! CheckoutVerifyData || !verifyResult.isPaid) {
-        showToast('Payment not completed.');
+        await _cancelPendingCheckout();
+        showToast('Payment cancelled'.tr);
         return;
       }
 
+      _pendingBookId = 0;
       _showOrderSuccessDialog();
     } catch (e) {
       debugPrint('Checkout payment error: $e');
       _closePaymentDialog();
+      await _cancelPendingCheckout();
       showToast('Payment not completed.');
     }
   }
 
-  Future<int?> _createPendingAppointment() async {
+  Future<({int id, bool paymentPending, bool bookingConfirmed})?>
+      _createPendingAppointment() async {
     final param = _buildOrderParams(status: 8, paid: 'PENDING');
     debugPrint('Create Pending Appointment Params: $param');
     final response = await parser.createAppoinments(param);
@@ -836,13 +871,27 @@ class PaymentController extends GetxController implements GetxService {
 
     final data = ApiBody.asObject(map['data']);
     final appointmentId = ApiBody.asInt(
-      data?['appointment_id'] ?? data?['id'],
+      data?['appointment_id'] ?? data?['id'] ?? data?['book_id'],
     );
     if (appointmentId <= 0) {
       showToast('Appointment id missing from server.');
       return null;
     }
-    return appointmentId;
+    return (
+      id: appointmentId,
+      paymentPending: map['payment_pending'] == true,
+      bookingConfirmed: map['booking_confirmed'] == true,
+    );
+  }
+
+  Future<void> _cancelPendingCheckout() async {
+    final bookId = _pendingBookId;
+    if (bookId <= 0) return;
+    _pendingBookId = 0;
+    await parser.cancelCheckoutPayment(appointmentId: bookId);
+    if (Get.isRegistered<CommonNotificationController>()) {
+      await Get.find<CommonNotificationController>().refreshNotifications();
+    }
   }
 
   Map<String, dynamic> _buildOrderParams({
@@ -987,6 +1036,11 @@ class PaymentController extends GetxController implements GetxService {
 
     if (response.statusCode == 200) {
       debugPrint('Order Create Success: ${response.bodyString}');
+      final map = ApiBody.asMap(response.body);
+      if (map?['payment_pending'] == true) {
+        showToast('Payment is still pending.');
+        return;
+      }
       _showOrderSuccessDialog();
     } else {
       debugPrint(

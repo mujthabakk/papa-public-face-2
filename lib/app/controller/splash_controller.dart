@@ -30,7 +30,7 @@ class SplashController extends GetxController implements GetxService {
     FirebaseMessaging.instance.getToken().then((value) {
       debugPrint(value.toString());
       parser.saveDeviceToken(value.toString());
-    });
+    }).catchError((_) {});
   }
 
   Future<bool> initSharedData() {
@@ -45,15 +45,8 @@ class SplashController extends GetxController implements GetxService {
     bool isSuccess = false;
 
     try {
-      final results = await Future.wait([
-        parser.getAppSettingsByLanguage(lang),
-        parser.getAppSettings(),
-      ]);
-      final langResponse = results[0];
-      final defaultResponse = results[1];
-
-      final langMap = ApiBody.asMap(langResponse.body);
-      final defaultMap = ApiBody.asMap(defaultResponse.body);
+      final langResponse = await parser.getAppSettingsByLanguage(lang);
+      Response? defaultResponse;
 
       Map<String, dynamic>? settingsJson;
       Map<String, dynamic>? supportJson;
@@ -77,17 +70,21 @@ class SplashController extends GetxController implements GetxService {
         }
       }
 
-      // Prefer language settings; fill missing support from default.
-      absorb(langMap);
-      absorb(defaultMap);
+      absorb(ApiBody.asMap(langResponse.body));
+      if (settingsJson == null) {
+        defaultResponse = await parser.getAppSettings();
+        absorb(ApiBody.asMap(defaultResponse.body));
+      } else {
+        unawaited(parser.getAppSettings());
+      }
 
       if (settingsJson == null) {
         debugPrint('Splash: settings missing from both language + default APIs');
-        if (defaultResponse.statusCode != 200 &&
+        if ((defaultResponse?.statusCode ?? 0) != 200 &&
             langResponse.statusCode != 200) {
           ApiChecker.checkApi(
-            defaultResponse.statusCode != 0
-                ? defaultResponse
+            (defaultResponse?.statusCode ?? 0) != 0
+                ? defaultResponse!
                 : langResponse,
           );
         }
@@ -146,12 +143,14 @@ class SplashController extends GetxController implements GetxService {
   Future<void> _loadTaxSettings() async {
     if (!Get.isRegistered<PricingParser>()) return;
     final parser = Get.find<PricingParser>();
-    await parser.fetchTaxAvailability(
-      country: Get.isRegistered<LanguagesController>()
-          ? Get.find<LanguagesController>().countryCode
-          : null,
-    );
-    await parser.fetchTaxSettings();
+    final country = Get.isRegistered<LanguagesController>()
+        ? Get.find<LanguagesController>().countryCode
+        : null;
+    await Future.wait([
+      parser.fetchTaxAvailability(country: country),
+      parser.fetchTaxSettings(),
+      parser.fetchHomeSections(country: country),
+    ]);
   }
 
   Future<void> initLocale() async {

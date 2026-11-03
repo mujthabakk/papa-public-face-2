@@ -276,6 +276,12 @@ class _ProductOrderDetailState extends State<ProductOrderDetail> {
             ),
             const SizedBox(height: 10),
             EliteGoldButton(
+              label: 'BOOK AGAIN'.tr,
+              icon: Icons.replay,
+              onTap: value.bookAgain,
+            ),
+            const SizedBox(height: 10),
+            EliteGoldButton(
               label: 'BACK TO HOME'.tr,
               outlined: true,
               icon: Icons.home_outlined,

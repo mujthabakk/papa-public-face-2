@@ -1065,6 +1065,12 @@ class _IndividualCheckoutScreenState extends State<IndividualCheckoutScreen> {
                   Get.find<ServiceCartController>().grandTotal),
               isTotal: true,
             ),
+            EliteCashbackHint(
+              percentage: value.cashbackPercent,
+              previewAmount: value.cashbackPreview,
+              currencySide: value.currencySide,
+              currencySymbol: value.currencySymbol,
+            ),
           ],
         ),
       ),

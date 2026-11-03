@@ -1,23 +1,31 @@
 {
-    "name": "salon_user",
-    "short_name": "salon_user",
+    "id": "/",
+    "name": "PapaBear",
+    "short_name": "PapaBear",
     "start_url": ".",
+    "scope": ".",
     "display": "standalone",
-    "background_color": "#0175C2",
-    "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
-    "orientation": "portrait-primary",
+    "display_override": ["standalone", "minimal-ui", "browser"],
+    "background_color": "#0D0D0D",
+    "theme_color": "#0D0D0D",
+    "description": "Book salons, specialists, and shop PapaBear products.",
+    "orientation": "any",
+    "lang": "en",
+    "dir": "ltr",
+    "categories": ["lifestyle", "shopping", "health"],
     "prefer_related_applications": false,
     "icons": [
         {
             "src": "icons/Icon-192.png",
             "sizes": "192x192",
-            "type": "image/png"
+            "type": "image/png",
+            "purpose": "any"
         },
         {
             "src": "icons/Icon-512.png",
             "sizes": "512x512",
-            "type": "image/png"
+            "type": "image/png",
+            "purpose": "any"
         },
         {
             "src": "icons/Icon-maskable-192.png",

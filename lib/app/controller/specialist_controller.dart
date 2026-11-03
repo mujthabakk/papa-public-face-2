@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:share_plus/share_plus.dart';
@@ -311,8 +312,6 @@ class SpecialistController extends GetxController
           !offerServiceIds.contains(service.serviceId));
 
       debugPrint('Service list' + _servicesList.length.toString());
-      await _mergePartnerOffers();
-      _applyOfferServiceSelection();
 
       salonPackages.forEach((data) {
         PackagesModel packages = PackagesModel.fromJson(data);
@@ -323,6 +322,10 @@ class SpecialistController extends GetxController
       debugPrint(packagesList.length.toString());
 
       update();
+      unawaited(_mergePartnerOffers().then((_) {
+        _applyOfferServiceSelection();
+        update();
+      }));
       loadSlotsForDate(DateTime.now());
     } else {
       ApiChecker.checkApi(response);
@@ -435,47 +438,39 @@ class SpecialistController extends GetxController
   void updateServiceStatusInCart(int index, bool status) {
     debugPrint('service id $index');
     debugPrint('service status $status');
-    if (Get.find<ServiceCartController>().savedInCart.services!.isEmpty &&
-        Get.find<ServiceCartController>().savedInCart.packages!.isEmpty) {
-      _servicesList[index].isChecked = status;
+    if (index < 0 || index >= _servicesList.length) return;
+    final cart = Get.find<ServiceCartController>();
+    final service = _servicesList[index];
+    final serviceId = service.id ?? 0;
+    if (cart.cartServices.isEmpty && cart.cartPackages.isEmpty) {
+      service.isChecked = status;
       if (status == true) {
-        Get.find<ServiceCartController>()
-            .addServiceToCart(_servicesList[index], 'individual');
+        cart.addServiceToCart(service, 'individual');
       } else {
-        Get.find<ServiceCartController>()
-            .removeServiceFromCart(_servicesList[index].id as int);
+        cart.removeServiceFromCart(serviceId);
       }
-    } else if (Get.find<ServiceCartController>()
-        .savedInCart
-        .packages!
-        .isNotEmpty) {
-      int freelancerPackagesId =
-          Get.find<ServiceCartController>().getPackageFreelancerId();
-      if (freelancerPackagesId == _servicesList[index].uid) {
-        _servicesList[index].isChecked = status;
+    } else if (cart.cartPackages.isNotEmpty) {
+      int freelancerPackagesId = cart.getPackageFreelancerId();
+      if (freelancerPackagesId == service.uid) {
+        service.isChecked = status;
         if (status == true) {
-          Get.find<ServiceCartController>()
-              .addServiceToCart(_servicesList[index], 'individual');
+          cart.addServiceToCart(service, 'individual');
         } else {
-          Get.find<ServiceCartController>()
-              .removeServiceFromCart(_servicesList[index].id as int);
+          cart.removeServiceFromCart(serviceId);
         }
       } else {
         showToast(
             'We already have service or package with other Shop/Freelancer'.tr);
       }
     } else {
-      int freelancerIdServices =
-          Get.find<ServiceCartController>().getServiceFreelancerId();
+      int freelancerIdServices = cart.getServiceFreelancerId();
 
-      if (freelancerIdServices == _servicesList[index].uid) {
-        _servicesList[index].isChecked = status;
+      if (freelancerIdServices == service.uid) {
+        service.isChecked = status;
         if (status == true) {
-          Get.find<ServiceCartController>()
-              .addServiceToCart(_servicesList[index], 'individual');
+          cart.addServiceToCart(service, 'individual');
         } else {
-          Get.find<ServiceCartController>()
-              .removeServiceFromCart(_servicesList[index].id as int);
+          cart.removeServiceFromCart(serviceId);
         }
       } else {
         showToast(
@@ -626,7 +621,7 @@ class SpecialistController extends GetxController
   Future<void> callIndividual() async {
     if (parser.isLogin() != true) {
       Get.delete<LoginController>(force: true);
-      Get.toNamed(AppRouter.getLoginRoute());
+      AppRouter.openLogin();
       return;
     }
     if (!individualDetails.contactLinks.canCall) {
@@ -666,7 +661,7 @@ class SpecialistController extends GetxController
     }
     if (parser.isLogin() != true) {
       Get.delete<LoginController>(force: true);
-      Get.toNamed(AppRouter.getLoginRoute());
+      AppRouter.openLogin();
       return;
     }
     final name =
@@ -685,7 +680,7 @@ class SpecialistController extends GetxController
     }
     if (parser.isLogin() != true) {
       Get.delete<LoginController>(force: true);
-      Get.toNamed(AppRouter.getLoginRoute());
+      AppRouter.openLogin();
       return;
     }
     Get.delete<IndividualCheckoutController>(force: true);

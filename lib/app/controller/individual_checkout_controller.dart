@@ -1,5 +1,6 @@
 import 'package:get/get.dart';
 import 'package:salon_user/app/backend/models/service_cart_model.dart';
+import 'package:salon_user/app/backend/parse/cashback_parse.dart';
 import 'package:salon_user/app/backend/parse/individual_checkout_parse.dart';
 import 'package:salon_user/app/controller/coupon_controller.dart';
 import 'package:salon_user/app/controller/individual_payment_controller.dart';
@@ -23,6 +24,16 @@ class IndividualCheckoutController extends GetxController
 
   String currencySide = AppConstants.defaultCurrencySide;
   String currencySymbol = AppConstants.defaultCurrencySymbol;
+
+  double cashbackPercent = 0;
+  double get cashbackPreview {
+    if (cashbackPercent <= 0 || !Get.isRegistered<ServiceCartController>()) {
+      return 0;
+    }
+    final grand = Get.find<ServiceCartController>().grandTotal;
+    return double.parse((grand * cashbackPercent / 100).toStringAsFixed(2));
+  }
+
   IndividualCheckoutController({required this.parser});
 
   @override
@@ -35,7 +46,19 @@ class IndividualCheckoutController extends GetxController
       currency: AppConstants.defaultCurrencySymbol,
       numItems: Get.find<ServiceCartController>().totalItemsInCart,
     );
+    loadCashback();
     super.onInit();
+  }
+
+  Future<void> loadCashback() async {
+    try {
+      if (!Get.isRegistered<CashbackParser>()) return;
+      cashbackPercent =
+          await Get.find<CashbackParser>().percentFor('freelancer');
+    } catch (e) {
+      cashbackPercent = 0;
+    }
+    update();
   }
 
   void onCoupon() {
@@ -46,7 +69,7 @@ class IndividualCheckoutController extends GetxController
   void onSlot() {
     if (parser.isLogin() != true) {
       Get.delete<LoginController>(force: true);
-      Get.toNamed(AppRouter.getLoginRoute());
+      AppRouter.openLogin();
       return;
     }
 

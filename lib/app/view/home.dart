@@ -7,6 +7,8 @@ import 'package:salon_user/app/controller/languages_controller.dart';
 import 'package:salon_user/app/controller/common_notification_controller.dart';
 import 'package:salon_user/app/controller/service_cart_controller.dart';
 import 'package:salon_user/app/env.dart';
+import 'package:salon_user/app/helper/desktop.dart';
+import 'package:salon_user/app/helper/home_sections.dart';
 import 'package:salon_user/app/helper/router.dart';
 import 'package:salon_user/app/util/theme.dart';
 import 'package:salon_user/app/view/sidemenu.dart';
@@ -83,8 +85,8 @@ class _HomeScreenState extends State<HomeScreen> {
                                       onFilter: value.onFilter,
                                     ),
                                     const SizedBox(height: 12),
-                                    value.partnerAds.isNotEmpty
-                                        ? _partnerAds(value)
+                                    value.bannerList.isNotEmpty
+                                        ? _banners(value)
                                         : const SizedBox.shrink(),
                                     EliteSectionHeader(
                                       title: 'Top Category'.tr,
@@ -110,39 +112,54 @@ class _HomeScreenState extends State<HomeScreen> {
                                                 'Check back soon for new deals.',
                                             icon: Icons.local_offer_outlined,
                                           ),
-                                    EliteSectionHeader(
-                                      title: 'Featured Centers'.tr,
-                                      action: 'VIEW ALL'.tr,
-                                      onAction: value.onAllOffers,
-                                    ),
-                                    value.salonList.isNotEmpty
-                                        ? _centers(value)
-                                        : const EliteApiUnavailable(
-                                            title: 'No centers nearby',
-                                            icon: Icons.storefront_outlined,
-                                          ),
-                                    EliteSectionHeader(
-                                      title: 'Top Freelancers'.tr,
-                                      onAction: value.onAllSpecialist,
-                                    ),
-                                    value.individualList.isNotEmpty
-                                        ? _freelancers(value)
-                                        : const EliteApiUnavailable(
-                                            title: 'No experts nearby',
-                                            icon: Icons.person_outline,
-                                          ),
-                                    EliteSectionHeader(
-                                      title: 'Top Products'.tr,
-                                      action: 'VIEW ALL'.tr,
-                                      onAction: value.onTopProducts,
-                                    ),
-                                    value.productsList.isNotEmpty
-                                        ? _products(value)
-                                        : const EliteApiUnavailable(
-                                            title: 'No products yet',
-                                            icon: Icons.shopping_bag_outlined,
-                                          ),
-                                    if (value.topPartners.isNotEmpty) ...[
+                                    if (HomeSections.showPartners) ...[
+                                      EliteSectionHeader(
+                                        title: 'Featured Centers'.tr,
+                                        action: 'VIEW ALL'.tr,
+                                        onAction: value.onAllOffers,
+                                      ),
+                                      value.salonList.isNotEmpty
+                                          ? _centers(value)
+                                          : const EliteApiUnavailable(
+                                              title: 'No centers nearby',
+                                              icon: Icons.storefront_outlined,
+                                            ),
+                                    ],
+                                    if (HomeSections.showFreelancers) ...[
+                                      EliteSectionHeader(
+                                        title: 'Top Freelancers'.tr,
+                                        onAction: value.onAllSpecialist,
+                                      ),
+                                      value.individualList.isNotEmpty
+                                          ? _freelancers(value)
+                                          : const EliteApiUnavailable(
+                                              title: 'No experts nearby',
+                                              icon: Icons.person_outline,
+                                            ),
+                                    ],
+                                    if (HomeSections.showProducts) ...[
+                                      EliteSectionHeader(
+                                        title: 'Top Products'.tr,
+                                        action: 'VIEW ALL'.tr,
+                                        onAction: value.onTopProducts,
+                                      ),
+                                      value.productsList.isNotEmpty
+                                          ? _products(value)
+                                          : const EliteApiUnavailable(
+                                              title: 'No products yet',
+                                              icon: Icons.shopping_bag_outlined,
+                                            ),
+                                      if (value.productSellers.isNotEmpty) ...[
+                                        EliteSectionHeader(
+                                          title: 'Stores'.tr,
+                                          action: 'VIEW ALL'.tr,
+                                          onAction: value.onProductStores,
+                                        ),
+                                        _productStores(value),
+                                      ],
+                                    ],
+                                    if (HomeSections.showPartners &&
+                                        value.topPartners.isNotEmpty) ...[
                                       EliteSectionHeader(
                                         title: 'Top Partners'.tr,
                                       ),
@@ -209,41 +226,6 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _partnerAds(HomeController value) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
-      child: CarouselSlider.builder(
-        itemCount: value.partnerAds.length,
-        itemBuilder: (context, index, realIndex) {
-          final item = value.partnerAds[index];
-          final cover = item.image ?? '';
-          final url = cover.startsWith('http://') || cover.startsWith('https://')
-              ? cover
-              : '${Environments.imageURL}$cover';
-          return GestureDetector(
-            onTap: () => value.onPartnerAd(item),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(14),
-              child: EliteNetworkImage(
-                url: url,
-                width: double.infinity,
-                height: 160,
-                fit: BoxFit.cover,
-              ),
-            ),
-          );
-        },
-        options: CarouselOptions(
-          height: 160,
-          viewportFraction: 1,
-          autoPlay: value.partnerAds.length > 1,
-          autoPlayInterval: const Duration(seconds: 4),
-          enlargeCenterPage: false,
-        ),
-      ),
-    );
-  }
-
   Widget _banners(HomeController value) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
@@ -256,10 +238,7 @@ class _HomeScreenState extends State<HomeScreen> {
               ? cover
               : '${Environments.imageURL}$cover';
           return GestureDetector(
-            onTap: () => value.onBanner(
-              item.value ?? '',
-              '${item.type ?? 0}',
-            ),
+            onTap: () => value.onBannerItem(item),
             child: ClipRRect(
               borderRadius: BorderRadius.circular(14),
               child: EliteNetworkImage(
@@ -411,7 +390,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _offers(HomeController value) {
     if (value.offersList.isEmpty) return const SizedBox.shrink();
     return SizedBox(
-      height: 210,
+      height: 150,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -436,67 +415,135 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ),
               clipBehavior: Clip.antiAlias,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+              child: Stack(
+                fit: StackFit.expand,
                 children: [
                   if (imageUrl.isNotEmpty)
-                    SizedBox(
+                    EliteNetworkImage(
+                      url: imageUrl,
                       width: 280,
-                      height: 88,
-                      child: EliteNetworkImage(
-                        url: imageUrl,
-                        width: 280,
-                        height: 88,
-                        radius: const BorderRadius.vertical(
-                          top: Radius.circular(14),
+                      height: 150,
+                      radius: BorderRadius.circular(14),
+                    ),
+                  if (imageUrl.isNotEmpty)
+                    const DecoratedBox(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [
+                            Color(0x99000000),
+                            Color(0xCC000000),
+                          ],
                         ),
                       ),
                     ),
-                  Expanded(
-                    child: Padding(
-                      padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
+                  Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          discountLabel,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: ThemeProvider.sans(
+                            size: 22,
+                            weight: FontWeight.w800,
+                            color: ThemeProvider.gold,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          offer.name ?? '',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: ThemeProvider.serif(size: 18),
+                        ),
+                        if ((offer.shortDescriptions ?? '').isNotEmpty)
                           Text(
-                            discountLabel,
+                            offer.shortDescriptions!,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: ThemeProvider.sans(
-                              size: 20,
-                              weight: FontWeight.w800,
-                              color: ThemeProvider.gold,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            offer.name ?? '',
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: ThemeProvider.serif(size: 16),
-                          ),
-                          if ((offer.shortDescriptions ?? '').isNotEmpty)
-                            Text(
-                              offer.shortDescriptions!,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: ThemeProvider.sans(
-                                size: 12,
-                                color: Colors.white70,
-                              ),
-                            ),
-                          const Spacer(),
-                          Text(
-                            'VIEW DETAILS  →'.tr,
                             style: ThemeProvider.sans(
                               size: 12,
-                              weight: FontWeight.w700,
-                              color: ThemeProvider.gold,
-                              letterSpacing: 0.8,
+                              color: Colors.white70,
                             ),
                           ),
-                        ],
-                      ),
+                        const Spacer(),
+                        Text(
+                          'VIEW DETAILS  →'.tr,
+                          style: ThemeProvider.sans(
+                            size: 12,
+                            weight: FontWeight.w700,
+                            color: ThemeProvider.gold,
+                            letterSpacing: 0.8,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _productStores(HomeController value) {
+    return SizedBox(
+      height: 112,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        itemCount: value.productSellers.length,
+        separatorBuilder: (_, __) => const SizedBox(width: 10),
+        itemBuilder: (_, i) {
+          final s = value.productSellers[i];
+          return GestureDetector(
+            onTap: () => value.onProductSeller(s),
+            child: Container(
+              width: 220,
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: ThemeProvider.surface,
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: Row(
+                children: [
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(10),
+                    child: EliteNetworkImage(
+                      url: Environments.mediaUrl(s.cover),
+                      width: 72,
+                      height: 72,
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          s.displayName,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: ThemeProvider.serif(size: 14),
+                        ),
+                        if ((s.address ?? '').isNotEmpty)
+                          Text(
+                            s.address!,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: ThemeProvider.sans(
+                              size: 11,
+                              color: ThemeProvider.greyColor,
+                            ),
+                          ),
+                      ],
                     ),
                   ),
                 ],
@@ -509,19 +556,12 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _products(HomeController value) {
-    return SizedBox(
-      height: 268,
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        itemCount: value.productsList.length,
-        separatorBuilder: (_, __) => const SizedBox(width: 12),
-        itemBuilder: (context, index) {
-          final p = value.productsList[index];
-          return GestureDetector(
+    Widget card(int index, {required double width}) {
+      final p = value.productsList[index];
+      return GestureDetector(
             onTap: () => value.onProduct(p.id as int),
             child: Container(
-              width: 168,
+              width: width,
               decoration: BoxDecoration(
                 color: ThemeProvider.surface,
                 borderRadius: BorderRadius.circular(14),
@@ -535,7 +575,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       EliteNetworkImage(
                         url: '${Environments.imageURL}${p.cover}',
                         height: 120,
-                        width: 168,
+                        width: width,
                       ),
                       if ((p.discount ?? 0) > 0)
                         Positioned(
@@ -637,7 +677,29 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
           );
-        },
+    }
+
+    if (Desktop.of(context)) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        child: GridView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          itemCount: value.productsList.length,
+          gridDelegate: Desktop.productGridDelegate(context),
+          itemBuilder: (_, i) => card(i, width: double.infinity),
+        ),
+      );
+    }
+
+    return SizedBox(
+      height: 268,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        itemCount: value.productsList.length,
+        separatorBuilder: (_, __) => const SizedBox(width: 12),
+        itemBuilder: (context, index) => card(index, width: 168),
       ),
     );
   }

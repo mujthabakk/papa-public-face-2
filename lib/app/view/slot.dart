@@ -5,6 +5,7 @@ import 'package:salon_user/app/controller/checkout_controller.dart';
 import 'package:salon_user/app/controller/service_cart_controller.dart';
 import 'package:salon_user/app/controller/slot_controller.dart';
 import 'package:salon_user/app/env.dart';
+import 'package:salon_user/app/helper/desktop.dart';
 import 'package:salon_user/app/helper/tax_availability.dart';
 import 'package:salon_user/app/helper/slot_time.dart';
 import 'package:salon_user/app/util/theme.dart';
@@ -146,8 +147,8 @@ class _SlotScreenState extends State<SlotScreen> {
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
           itemCount: value.specialistList.length,
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 2,
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: Desktop.of(context) ? 4 : 2,
             mainAxisSpacing: 10,
             crossAxisSpacing: 10,
             childAspectRatio: 0.95,
@@ -495,6 +496,12 @@ class _SlotScreenState extends State<SlotScreen> {
                         color: ThemeProvider.gold),
                   ),
                 ],
+              ),
+              EliteCashbackHint(
+                percentage: checkout.cashbackPercent,
+                previewAmount: checkout.cashbackPreview,
+                currencySide: checkout.currencySide,
+                currencySymbol: checkout.currencySymbol,
               ),
             ],
           ),

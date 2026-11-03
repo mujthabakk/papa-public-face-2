@@ -5,6 +5,7 @@ import 'package:salon_user/app/backend/api/handler.dart';
 import 'package:salon_user/app/backend/models/products_model.dart';
 import 'package:salon_user/app/backend/parse/categories_parse.dart';
 import 'package:salon_user/app/controller/cart_controller.dart';
+import 'package:salon_user/app/controller/product_seller_controller.dart';
 import 'package:salon_user/app/controller/products_controller.dart';
 import 'package:salon_user/app/helper/locale_helper.dart';
 import 'package:salon_user/app/helper/router.dart';
@@ -44,9 +45,16 @@ class CategoriesController extends GetxController
     var response = await parser.getAllCategories();
     apiCalled = true;
     if (ApiBody.isSuccess(response) ||
-        ApiBody.asList(response.body).isNotEmpty) {
+        ApiBody.asList(response.body,
+                keys: const ['categories', 'data', 'items', 'result', 'list'])
+            .isNotEmpty) {
       _productsList = [];
-      for (final data in ApiBody.asList(response.body)) {
+      // getPublicHome nests under categories; getHome/getActive under data.
+      final rows = ApiBody.asList(
+        response.body,
+        keys: const ['categories', 'data', 'items', 'result', 'list'],
+      );
+      for (final data in rows) {
         try {
           if (data is! Map) continue;
           _productsList
@@ -80,8 +88,39 @@ class CategoriesController extends GetxController
     Get.toNamed(AppRouter.getProductsRoutes(), arguments: [cateId, subCateId]);
   }
 
+  Future<void> ensureSubCategories(int cateId) async {
+    ProductsModel? category;
+    for (final c in _productsList) {
+      if ((c.id ?? 0) == cateId) {
+        category = c;
+        break;
+      }
+    }
+    if (category == null) return;
+    if ((category.subCates ?? []).isNotEmpty) return;
+
+    try {
+      final response = await parser.getSubCategoriesFromCateId(cateId);
+      final rows = ApiBody.asList(response.body);
+      if (rows.isEmpty) return;
+      final subs = <SubCates>[];
+      for (final raw in rows) {
+        if (raw is! Map) continue;
+        try {
+          subs.add(SubCates.fromJson(Map<String, dynamic>.from(raw)));
+        } catch (e) {
+          debugPrint('skip subcate: $e');
+        }
+      }
+      category.subCates = subs;
+      update();
+    } catch (e) {
+      debugPrint('ensureSubCategories: $e');
+    }
+  }
+
   void onSubcategories(int cateId) {
-    Get.delete<CategoriesController>(force: true);
+    ensureSubCategories(cateId);
     Get.toNamed(AppRouter.getProductsSubcategoriesRoutes(),
         arguments: [cateId]);
   }
@@ -89,6 +128,11 @@ class CategoriesController extends GetxController
   void onCart() {
     Get.delete<CartController>(force: true);
     Get.toNamed(AppRouter.getCartRoutes());
+  }
+
+  void onStores() {
+    Get.delete<ProductSellerController>(force: true);
+    Get.toNamed(AppRouter.getProductSellerRoutes());
   }
 
   void updateScreen() {

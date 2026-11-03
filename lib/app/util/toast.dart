@@ -7,7 +7,10 @@ void showToast(String message, {bool isError = true}) {
   HapticFeedback.lightImpact();
   Get.showSnackbar(GetSnackBar(
     backgroundColor: isError ? Colors.red : Colors.black,
-    message: message.tr,
+    messageText: Text(
+      message.tr,
+      style: ThemeProvider.sans(size: 13, color: Colors.white),
+    ),
     duration: const Duration(seconds: 3),
     snackStyle: SnackStyle.FLOATING,
     margin: const EdgeInsets.all(10),
@@ -21,7 +24,10 @@ void successToast(String message) {
   HapticFeedback.lightImpact();
   Get.showSnackbar(GetSnackBar(
     backgroundColor: Colors.green,
-    message: message.tr,
+    messageText: Text(
+      message.tr,
+      style: ThemeProvider.sans(size: 13, color: Colors.white),
+    ),
     duration: const Duration(seconds: 6),
     snackStyle: SnackStyle.FLOATING,
     margin: const EdgeInsets.all(10),

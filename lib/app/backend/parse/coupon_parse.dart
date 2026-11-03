@@ -224,6 +224,44 @@ class CouponParser {
     return null;
   }
 
+  Future<Response> getProductOffersActive() async {
+    // PDF: getActive → getPublic → getAll (aliases).
+    for (final path in [
+      AppConstants.getProductOffersActive,
+      AppConstants.getProductOffersPublic,
+      AppConstants.getProductOffersAll,
+    ]) {
+      final post = await apiService.postPublic(path, {});
+      if (post.statusCode == 200 && _hasOfferRows(post.body)) return post;
+      final get = await apiService.getPublic(path);
+      if (get.statusCode == 200 && _hasOfferRows(get.body)) return get;
+    }
+    return apiService.getPublic(AppConstants.getProductOffersPublic);
+  }
+
+  bool _hasOfferRows(dynamic body) {
+    if (body is List) return body.isNotEmpty;
+    if (body is! Map) return false;
+    for (final key in ['data', 'offers', 'coupons', 'items', 'result', 'list']) {
+      final v = body[key];
+      if (v is List && v.isNotEmpty) return true;
+    }
+    // getById-style single offer object
+    if (body['data'] is Map &&
+        ((body['data'] as Map)['code'] != null ||
+            (body['data'] as Map)['id'] != null)) {
+      return true;
+    }
+    return false;
+  }
+
+  Future<Response> getProductOfferById(int id) async {
+    final post = await apiService
+        .postPublic(AppConstants.getProductOffersById, {'id': id});
+    if (post.statusCode == 200) return post;
+    return apiService.getPublic('${AppConstants.getProductOffersById}?id=$id');
+  }
+
   Future<List<CouponsModel>> loadEligibleOffers() async {
     Response response = await getCouponCodes();
     var offers = parseOffers(response.body);
@@ -235,6 +273,19 @@ class CouponParser {
       response = await getPublicHomeOffers();
       offers = parseOffers(response.body);
     }
+    // Merge product catalog coupons (PDF product_offers/*).
+    try {
+      final productOffers = parseOffers((await getProductOffersActive()).body);
+      final seen = <String>{
+        for (final o in offers) (o.code ?? '').toUpperCase(),
+      };
+      for (final o in productOffers) {
+        final code = (o.code ?? '').toUpperCase();
+        if (code.isNotEmpty && seen.contains(code)) continue;
+        if (code.isNotEmpty) seen.add(code);
+        offers.add(o);
+      }
+    } catch (_) {}
     return offers;
   }
 

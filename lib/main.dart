@@ -5,6 +5,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:salon_user/app/controller/languages_controller.dart';
 import 'package:salon_user/app/controller/product_cart_controller.dart';
 import 'package:salon_user/app/controller/service_cart_controller.dart';
+import 'package:salon_user/app/helper/desktop.dart';
 import 'package:salon_user/app/helper/init.dart';
 import 'package:get/get.dart';
 import 'package:salon_user/app/helper/router.dart';
@@ -76,16 +77,23 @@ class MyApp extends StatelessWidget {
               navigatorKey: Get.key,
               initialRoute: AppRouter.splash,
               getPages: AppRouter.routes,
-              defaultTransition: Transition.native,
+              defaultTransition: Desktop.isDesktopPlatform
+                  ? Transition.fadeIn
+                  : Transition.native,
+              scrollBehavior: const DesktopScrollBehavior(),
               translations: LocaleString(),
               locale: localeCtrl.appLocale,
               fallbackLocale: const Locale('en', 'US'),
               builder: (context, child) {
                 // Keep English layout positions (menu left, actions right).
                 // Only locale/text changes with preferred_language.
+                final page = child ?? const SizedBox.shrink();
                 return Directionality(
                   textDirection: TextDirection.ltr,
-                  child: child ?? const SizedBox.shrink(),
+                  child: DefaultTextStyle(
+                    style: ThemeProvider.sans(size: 14),
+                    child: DesktopPageFrame(child: page),
+                  ),
                 );
               },
             );

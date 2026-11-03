@@ -1,9 +1,31 @@
 /*Papabear*/
 import 'dart:convert';
 
-import 'package:jiffy/jiffy.dart';
 import 'package:salon_user/app/backend/models/address_model.dart';
 import 'package:salon_user/app/backend/models/products_list_model.dart';
+
+int? _toInt(dynamic v) {
+  if (v == null || v == '' || v == 'NA') return null;
+  return int.tryParse(v.toString());
+}
+
+double? _toDouble(dynamic v) {
+  if (v == null || v == '' || v == 'NA') return null;
+  return double.tryParse(v.toString());
+}
+
+dynamic _maybeDecode(dynamic value) {
+  if (value == null || value == '' || value == 'NA') return null;
+  if (value is Map || value is List) return value;
+  if (value is String) {
+    try {
+      return jsonDecode(value);
+    } catch (_) {
+      return null;
+    }
+  }
+  return null;
+}
 
 class ProductSalonModel {
   int? id;
@@ -67,57 +89,62 @@ class ProductSalonModel {
       this.ownerInfo});
 
   ProductSalonModel.fromJson(Map<String, dynamic> json) {
-    id = int.parse(json['id'].toString());
-    uid = int.parse(json['uid'].toString());
-    freelancerId = int.parse(json['freelancer_id'].toString());
-    salonId = int.parse(json['salon_id'].toString());
-    dateTime = json['date_time'];
-    paidMethod = json['paid_method'];
-    orderTo = json['order_to'];
-    if (json.containsKey('orders') &&
-        json['orders'] != null &&
-        json['orders'] != 'NA' &&
-        json['orders'] != '') {
+    id = _toInt(json['id']);
+    uid = _toInt(json['uid']);
+    freelancerId = _toInt(json['freelancer_id']);
+    salonId = _toInt(json['salon_id']);
+    dateTime = json['date_time']?.toString();
+    paidMethod = json['paid_method']?.toString();
+    orderTo = json['order_to']?.toString();
+    final decodedOrders = _maybeDecode(json['orders']);
+    if (decodedOrders is List) {
       orders = <ProductsListModel>[];
-      var order = jsonDecode(json['orders']);
-      order.forEach((element) {
-        orders!.add(ProductsListModel.fromJson(element));
-      });
+      for (final element in decodedOrders) {
+        if (element is Map) {
+          try {
+            orders!.add(
+                ProductsListModel.fromJson(Map<String, dynamic>.from(element)));
+          } catch (_) {}
+        }
+      }
     }
-    notes = json['notes'];
-    address = json['address'] != null
-        ? AddressModel.fromJson(jsonDecode(json['address']))
-        : null;
-    total = double.parse(json['total'].toString());
-    tax = double.parse(json['tax'].toString());
-    grandTotal = double.parse(json['grand_total'].toString());
-    discount = double.parse(json['discount'].toString());
-    driverId = json['driver_id'];
-    deliveryCharge = double.parse(json['delivery_charge'].toString());
-    walletUsed = int.parse(json['wallet_used'].toString());
-    walletPrice = double.parse(json['wallet_price'].toString());
-    couponCode = json['coupon_code'];
-    extra = json['extra'];
-    payKey = json['pay_key'];
-    status = int.parse(json['status'].toString());
-    payStatus = int.parse(json['payStatus'].toString());
-    extraField = json['extra_field'];
-    createdAt = Jiffy.parse(json['created_at']).yMMMMd;
-    type = json['type'];
-    if (json.containsKey('salonInfo')) {
-      salonInfo = json['salonInfo'] != null
-          ? SalonInfo.fromJson(json['salonInfo'])
-          : null;
+    notes = json['notes']?.toString();
+    final decodedAddress = _maybeDecode(json['address']);
+    if (decodedAddress is Map) {
+      try {
+        address =
+            AddressModel.fromJson(Map<String, dynamic>.from(decodedAddress));
+      } catch (_) {
+        address = null;
+      }
     }
-    if (json.containsKey('freelancerInfo')) {
-      freelancerInfo = json['freelancerInfo'] != null
-          ? FreelancerInfo.fromJson(json['freelancerInfo'])
-          : null;
+    total = _toDouble(json['total']);
+    tax = _toDouble(json['tax']);
+    grandTotal = _toDouble(json['grand_total']);
+    discount = _toDouble(json['discount']);
+    driverId = json['driver_id']?.toString();
+    deliveryCharge = _toDouble(json['delivery_charge']);
+    walletUsed = _toInt(json['wallet_used']);
+    walletPrice = _toDouble(json['wallet_price']);
+    couponCode = json['coupon_code']?.toString();
+    extra = json['extra']?.toString();
+    payKey = json['pay_key']?.toString();
+    status = _toInt(json['status']);
+    payStatus = _toInt(json['payStatus'] ?? json['pay_status']);
+    extraField = json['extra_field']?.toString();
+    createdAt = json['created_at']?.toString();
+    type = json['type']?.toString();
+    if (json['salonInfo'] is Map) {
+      salonInfo =
+          SalonInfo.fromJson(Map<String, dynamic>.from(json['salonInfo']));
     }
-    if (json.containsKey('ownerInfo')) {
-      ownerInfo = json['ownerInfo'] != null
-          ? OwnerInfoModel.fromJson(json['ownerInfo'])
-          : null;
+    if (json['freelancerInfo'] is Map) {
+      freelancerInfo = FreelancerInfo.fromJson(
+          Map<String, dynamic>.from(json['freelancerInfo']));
+    }
+    if (json['ownerInfo'] is Map) {
+      ownerInfo = OwnerInfoModel.fromJson(
+          Map<String, dynamic>.from(json['ownerInfo']));
     }
   }
 
@@ -189,11 +216,11 @@ class FreelancerInfo {
       {this.id, this.firstName, this.lastName, this.cover, this.type});
 
   FreelancerInfo.fromJson(Map<String, dynamic> json) {
-    id = int.parse(json['id'].toString());
-    firstName = json['first_name'];
-    lastName = json['last_name'];
-    cover = json['cover'];
-    type = json['type'];
+    id = int.tryParse(json['id']?.toString() ?? '');
+    firstName = json['first_name']?.toString();
+    lastName = json['last_name']?.toString();
+    cover = json['cover']?.toString();
+    type = json['type']?.toString();
   }
 
   Map<String, dynamic> toJson() {

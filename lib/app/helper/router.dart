@@ -1,4 +1,5 @@
 import 'package:get/get.dart';
+import 'package:salon_user/app/helper/post_login_nav.dart';
 import 'package:salon_user/app/backend/binding/account_binding.dart';
 import 'package:salon_user/app/backend/binding/account_chat_binding.dart';
 import 'package:salon_user/app/backend/binding/add_review_binding.dart';
@@ -41,6 +42,7 @@ import 'package:salon_user/app/backend/binding/product_order_detail_binding.dart
 import 'package:salon_user/app/backend/binding/product_payment_binding.dart';
 import 'package:salon_user/app/backend/binding/products_binding.dart';
 import 'package:salon_user/app/backend/binding/products_details_binding.dart';
+import 'package:salon_user/app/backend/binding/product_seller_binding.dart';
 import 'package:salon_user/app/backend/binding/qr_binding.dart';
 import 'package:salon_user/app/backend/binding/refer_and_earn_binding.dart';
 import 'package:salon_user/app/backend/binding/register_binding.dart';
@@ -104,6 +106,7 @@ import 'package:salon_user/app/view/product_order_detail.dart';
 import 'package:salon_user/app/view/product_payment.dart';
 import 'package:salon_user/app/view/products.dart';
 import 'package:salon_user/app/view/products_details.dart';
+import 'package:salon_user/app/view/product_seller.dart';
 import 'package:salon_user/app/view/qr_screen.dart';
 import 'package:salon_user/app/view/refer_and_earn.dart';
 import 'package:salon_user/app/view/register.dart';
@@ -160,6 +163,7 @@ class AppRouter {
       '/productsSubcategoriesRoutes';
 
   static const String productsDetailsRoutes = '/products_details';
+  static const String productSellerRoutes = '/product_seller';
   static const String sortByRoutes = '/sortby';
   static const String cartRoutes = '/cart';
   static const String checkoutRoutes = '/checkout';
@@ -203,6 +207,11 @@ class AppRouter {
   static String getSplashRoute() => splash;
   static String getWelcomeRoute() => welcome;
   static String getLoginRoute() => login;
+
+  static Future<dynamic>? openLogin({dynamic arguments}) {
+    PostLoginNav.capture();
+    return Get.toNamed(login, arguments: arguments);
+  }
   static String getRegisterRoute() => register;
   static String getResetPasswordRoute() => resetPassword;
   static String getTabsBarRoute() => tabsBarRoutes;
@@ -231,6 +240,7 @@ class AppRouter {
   static String getProductsSubcategoriesRoutes() => productsSubcategoriesRoutes;
 
   static String getProductsDetailsRoutes() => productsDetailsRoutes;
+  static String getProductSellerRoutes() => productSellerRoutes;
   static String getSortByRoutes() => sortByRoutes;
   static String getCartRoutes() => cartRoutes;
   static String getCheckoutRoutes() => checkoutRoutes;
@@ -402,6 +412,10 @@ class AppRouter {
         name: productsDetailsRoutes,
         page: () => const ProductsDetailsScreen(),
         binding: ProductsDetailsBinding()),
+    GetPage(
+        name: productSellerRoutes,
+        page: () => const ProductSellerScreen(),
+        binding: ProductSellerBinding()),
     GetPage(
         name: sortByRoutes,
         page: () => SortByScreen(),

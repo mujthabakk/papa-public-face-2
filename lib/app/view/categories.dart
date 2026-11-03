@@ -6,6 +6,7 @@ import 'package:salon_user/app/controller/languages_controller.dart';
 import 'package:salon_user/app/controller/product_cart_controller.dart';
 import 'package:salon_user/app/controller/unified_search_controller.dart';
 import 'package:salon_user/app/env.dart';
+import 'package:salon_user/app/helper/desktop.dart';
 import 'package:salon_user/app/helper/router.dart';
 import 'package:salon_user/app/util/theme.dart';
 import 'package:salon_user/app/view/sidemenu.dart';
@@ -57,10 +58,28 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
                     ),
                     Padding(
                       padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
-                      child: Text(
-                        'Shop By Category'.tr,
-                        style: ThemeProvider.serif(
-                            size: 28, weight: FontWeight.w700),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              'Shop By Category'.tr,
+                              style: ThemeProvider.serif(
+                                  size: 28, weight: FontWeight.w700),
+                            ),
+                          ),
+                          TextButton(
+                            onPressed: controller.onStores,
+                            child: Text(
+                              'STORES'.tr,
+                              style: ThemeProvider.sans(
+                                size: 11,
+                                weight: FontWeight.w700,
+                                color: ThemeProvider.gold,
+                                letterSpacing: 0.8,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                     EliteSearchBar(
@@ -75,19 +94,24 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
                           title: 'No categories yet',
                           icon: Icons.grid_view_outlined,
                         )
-                          : ListView.builder(
-                              padding: const EdgeInsets.only(bottom: 100),
+                          : GridView.builder(
+                              padding: const EdgeInsets.fromLTRB(16, 0, 16, 100),
                               itemCount: controller.productsList.length,
+                              gridDelegate:
+                                  SliverGridDelegateWithFixedCrossAxisCount(
+                                crossAxisCount:
+                                    Desktop.categoryColumns(context),
+                                mainAxisSpacing: 12,
+                                crossAxisSpacing: 12,
+                                childAspectRatio:
+                                    Desktop.of(context) ? 1.6 : 2.2,
+                              ),
                               itemBuilder: (context, index) {
                                 final category = controller.productsList[index];
                                 return GestureDetector(
                                   onTap: () => controller
                                       .onSubcategories(category.id as int),
-                                  child: Container(
-                                    height: 160,
-                                    margin: const EdgeInsets.fromLTRB(
-                                        16, 0, 16, 12),
-                                    child: ClipRRect(
+                                  child: ClipRRect(
                                       borderRadius: BorderRadius.circular(12),
                                       child: Stack(
                                         fit: StackFit.expand,
@@ -133,7 +157,6 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
                                           ),
                                         ],
                                       ),
-                                    ),
                                   ),
                                 );
                               },

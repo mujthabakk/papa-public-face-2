@@ -132,7 +132,9 @@ class _NotificationScreenState extends State<NotificationScreen> {
             .where((n) =>
                 n.type.toLowerCase().contains('promo') ||
                 n.type.toLowerCase().contains('offer') ||
-                n.title.toLowerCase().contains('offer'))
+                n.type.toLowerCase().contains('cashback') ||
+                n.title.toLowerCase().contains('offer') ||
+                n.title.toLowerCase().contains('cashback'))
             .toList();
       case 'Alerts':
         return all
@@ -399,6 +401,9 @@ class _NotificationScreenState extends State<NotificationScreen> {
       return Icons.local_offer_outlined;
     }
     if (type.contains('payment')) return Icons.payments_outlined;
+    if (type.contains('cashback') || type.contains('wallet')) {
+      return Icons.account_balance_wallet_outlined;
+    }
     if (type.contains('security')) return Icons.settings_outlined;
     return Icons.notifications_none;
   }

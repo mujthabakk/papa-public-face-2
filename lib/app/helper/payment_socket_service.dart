@@ -7,6 +7,7 @@ import 'package:salon_user/app/util/constant.dart';
 
 typedef PaymentPopupCallback = void Function(Map<String, dynamic> payload);
 typedef PaymentCompletedCallback = void Function(Map<String, dynamic> payload);
+typedef PaymentCancelledCallback = void Function(Map<String, dynamic> payload);
 
 /// Public customer listener (never partner).
 /// Handshake: POST socketConfig `{ uid }` → `data.channel` is
@@ -21,9 +22,11 @@ class PaymentSocketService {
   final Set<String> _channels = {};
   String _payNowEvent = AppConstants.paymentPusherPayNowEvent;
   String _completedEvent = AppConstants.paymentPusherEvent;
+  String _cancelledEvent = AppConstants.paymentPusherCancelledEvent;
   int _uid = 0;
   PaymentPopupCallback? _onPayNowPopup;
   PaymentCompletedCallback? _onCompleted;
+  PaymentCancelledCallback? _onCancelled;
   bool _listening = false;
 
   bool get isListening => _listening;
@@ -32,6 +35,7 @@ class PaymentSocketService {
     PaymentSocketConfig? config,
     required PaymentPopupCallback onPayNowPopup,
     required PaymentCompletedCallback onCompleted,
+    PaymentCancelledCallback? onCancelled,
     required int uid,
     int bookId = 0,
   }) async {
@@ -43,6 +47,7 @@ class PaymentSocketService {
 
     _onPayNowPopup = onPayNowPopup;
     _onCompleted = onCompleted;
+    _onCancelled = onCancelled;
     _uid = uid;
     _payNowEvent = cfg.payNowEvent.isNotEmpty
         ? cfg.payNowEvent
@@ -115,7 +120,7 @@ class PaymentSocketService {
     debugPrint(
       'PaymentSocket: listening uid=$_uid cluster=${cfg.cluster} '
       'channels=${_channels.join(',')} '
-      'events=$_payNowEvent,$_completedEvent',
+      'events=$_payNowEvent,$_completedEvent,$_cancelledEvent',
     );
   }
 
@@ -147,10 +152,12 @@ class PaymentSocketService {
     final name = _strip(rawName);
     final isPayNow = name == _strip(_payNowEvent);
     final isCompleted = name == _strip(_completedEvent);
+    final isCancelled = name == _strip(_cancelledEvent) ||
+        name == 'payment-cancelled';
 
     debugPrint('PaymentSocket event: $rawName data=${event.data}');
 
-    if (!isPayNow && !isCompleted) return;
+    if (!isPayNow && !isCompleted && !isCancelled) return;
     if (event.data == null) return;
 
     try {
@@ -163,6 +170,12 @@ class PaymentSocketService {
         return;
       }
 
+      if (isCancelled) {
+        debugPrint('PaymentSocket: payment-cancelled uid=$eventUid');
+        _onCancelled?.call(data);
+        return;
+      }
+
       if (isPayNow) {
         debugPrint('PaymentSocket: pay-now-popup accepted uid=$eventUid');
         _onPayNowPopup?.call(data);
@@ -171,7 +184,9 @@ class PaymentSocketService {
 
       final paid = data['is_paid'] == true ||
           data['is_paid']?.toString() == '1' ||
-          data['is_paid']?.toString().toLowerCase() == 'true';
+          data['is_paid']?.toString().toLowerCase() == 'true' ||
+          data['is_payment_completed'] == true ||
+          data['is_payment_completed']?.toString() == '1';
       debugPrint(
           'PaymentSocket: payment-completed uid=$eventUid is_paid=$paid');
       if (!paid) return;
@@ -253,5 +268,6 @@ class PaymentSocketService {
     _listening = false;
     _onCompleted = null;
     _onPayNowPopup = null;
+    _onCancelled = null;
   }
 }

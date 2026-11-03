@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import 'package:salon_user/app/backend/models/products_model.dart';
 import 'package:salon_user/app/controller/categories_controller.dart';
 import 'package:salon_user/app/env.dart';
+import 'package:salon_user/app/helper/desktop.dart';
 import 'package:salon_user/app/util/theme.dart';
 import 'package:salon_user/app/view/widgets/elite_ui.dart';
 
@@ -14,6 +15,17 @@ class SubcategoriesScreen extends StatefulWidget {
 }
 
 class _SubcategoriesScreenState extends State<SubcategoriesScreen> {
+  @override
+  void initState() {
+    super.initState();
+    final cateId = (Get.arguments is List && Get.arguments.isNotEmpty)
+        ? int.tryParse('${Get.arguments[0]}') ?? 0
+        : 0;
+    if (cateId > 0 && Get.isRegistered<CategoriesController>()) {
+      Get.find<CategoriesController>().ensureSubCategories(cateId);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final cateId = (Get.arguments is List && Get.arguments.isNotEmpty)
@@ -45,9 +57,16 @@ class _SubcategoriesScreenState extends State<SubcategoriesScreen> {
                       title: 'No subcategories yet',
                       icon: Icons.category_outlined,
                     )
-                  : ListView.builder(
+                  : GridView.builder(
                       padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
                       itemCount: subs.length,
+                      gridDelegate:
+                          SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: Desktop.categoryColumns(context),
+                        mainAxisSpacing: 10,
+                        crossAxisSpacing: 10,
+                        childAspectRatio: Desktop.of(context) ? 3.6 : 4.2,
+                      ),
                       itemBuilder: (context, index) {
                         final sub = subs[index];
                         return EliteCard(

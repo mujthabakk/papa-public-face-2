@@ -26,14 +26,32 @@ class SearchParser {
   }
 
   Future<Response> searchProducts(String query) async {
+    final q = query.trim();
+    final search = await apiService.postPublic(AppConstants.getProductsSearch, {
+      'q': q,
+      'search': q,
+      'keyword': q,
+    });
+    if (search.statusCode == 200) return search;
+    final searchGet = await apiService.getPublic(
+        '${AppConstants.getProductsSearch}?q=${Uri.encodeQueryComponent(q)}');
+    if (searchGet.statusCode == 200) return searchGet;
+    // Fallback: catalog getAll with q, then legacy topProducts.
+    final all = await apiService.postPublic(AppConstants.getProductsAll, {
+      'q': q,
+      'limit': 40,
+      'lat': getLat(),
+      'lng': getLng(),
+    });
+    if (all.statusCode == 200) return all;
     return apiService.postPublic(AppConstants.getTopProducts, {
       'lat': getLat(),
       'lng': getLng(),
-      'param': query,
-      'q': query,
-      'keyword': query,
-      'name': query,
-      'search': query,
+      'param': q,
+      'q': q,
+      'keyword': q,
+      'name': q,
+      'search': q,
     });
   }
 

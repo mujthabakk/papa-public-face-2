@@ -77,7 +77,7 @@ class CartController extends GetxController implements GetxService {
       Get.toNamed(AppRouter.getProductPayment());
     } else {
       Get.delete<LoginController>(force: true);
-      Get.toNamed(AppRouter.getLoginRoute());
+      AppRouter.openLogin();
     }
   }
 

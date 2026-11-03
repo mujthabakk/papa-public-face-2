@@ -7,6 +7,8 @@ import 'package:salon_user/app/controller/add_review_controller.dart';
 import 'package:salon_user/app/controller/chat_controller.dart';
 import 'package:salon_user/app/controller/complaints_controller.dart';
 import 'package:salon_user/app/controller/product_order_controller.dart';
+import 'package:salon_user/app/controller/services_controller.dart';
+import 'package:salon_user/app/controller/specialist_controller.dart';
 import 'package:salon_user/app/helper/router.dart';
 import 'package:salon_user/app/util/constant.dart';
 import 'package:salon_user/app/util/theme.dart';
@@ -479,6 +481,21 @@ class ProductOrderDetailController extends GetxController
   void onBack() {
     var context = Get.context as BuildContext;
     Navigator.of(context).pop(true);
+  }
+
+  void bookAgain() {
+    final salonId = salonOrderInfo.salonId ?? 0;
+    final freelancerId = salonOrderInfo.freelancerId ?? 0;
+    if (salonId != 0) {
+      Get.delete<ServicesController>(force: true);
+      Get.toNamed(AppRouter.getServicesRoutes(), arguments: [salonId]);
+      return;
+    }
+    if (freelancerId != 0) {
+      Get.delete<SpecialistController>(force: true);
+      Get.toNamed(AppRouter.getSpecialistRoutes(), arguments: [freelancerId]);
+      return;
+    }
   }
 
   void onAddReview(int id) {

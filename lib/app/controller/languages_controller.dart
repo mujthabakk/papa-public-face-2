@@ -500,8 +500,11 @@ class LanguagesController extends GetxController implements GetxService {
     try {
       if (Get.isRegistered<PricingParser>()) {
         final pricing = Get.find<PricingParser>();
-        await pricing.fetchTaxAvailability(country: countryCode);
-        await pricing.fetchTaxSettings();
+        await Future.wait([
+          pricing.fetchTaxAvailability(country: countryCode),
+          pricing.fetchTaxSettings(),
+          pricing.fetchHomeSections(country: countryCode),
+        ]);
       }
     } catch (e) {
       debugPrint('refresh tax after country failed: $e');
@@ -627,7 +630,7 @@ class LanguagesController extends GetxController implements GetxService {
       Get.back();
     }
     Get.delete<LoginController>(force: true);
-    Get.toNamed(AppRouter.getLoginRoute());
+    AppRouter.openLogin();
     return false;
   }
 

@@ -74,6 +74,22 @@ class HomeParser {
         AppConstants.getTopProducts, listingPayload(body));
   }
 
+  Future<Response> getProductsPublicHome([Map? extra]) async {
+    final payload = listingPayload(extra);
+    final post = await apiService.postPublic(
+        AppConstants.getProductsPublicHome, payload);
+    if (post.statusCode == 200) return post;
+    return apiService.getPublic(AppConstants.getProductsPublicHome);
+  }
+
+  Future<Response> getProductsAll([Map? extra]) async {
+    final payload = listingPayload(extra);
+    final post =
+        await apiService.postPublic(AppConstants.getProductsAll, payload);
+    if (post.statusCode == 200) return post;
+    return apiService.getPublic(AppConstants.getProductsAll);
+  }
+
   Future<Response> getTopPartners(var body) async {
     final payload = listingPayload(body);
     final post = await apiService.postPublic(AppConstants.getTopPartners, payload);

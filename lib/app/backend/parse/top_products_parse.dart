@@ -11,9 +11,18 @@ class TopProductsParser {
       {required this.sharedPreferencesManager, required this.apiService});
 
   Future<Response> getTopProducts() async {
-    var response = await apiService.postPublic(
-        AppConstants.getTopProducts, {"lat": getLat(), "lng": getLng()});
-    return response;
+    final latLng = {"lat": getLat(), "lng": getLng()};
+    // PDF: prefer getPublicHome; backend may still 500 — fall through.
+    try {
+      final home = await apiService.postPublic(
+          AppConstants.getProductsPublicHome, latLng);
+      if (home.statusCode == 200) return home;
+    } catch (_) {}
+    final top = await apiService.postPublic(
+        AppConstants.getTopProducts, latLng);
+    if (top.statusCode == 200) return top;
+    return apiService.postPublic(
+        AppConstants.getProductsAll, {...latLng, 'limit': 40});
   }
 
   double getLat() {

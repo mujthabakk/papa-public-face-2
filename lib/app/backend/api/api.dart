@@ -1,15 +1,15 @@
 import 'dart:convert';
-import 'dart:io';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/widgets.dart';
 import 'package:get/get.dart';
 import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
 import 'package:flutter/foundation.dart';
-import 'package:pretty_http_logger/pretty_http_logger.dart';
 import 'package:salon_user/app/backend/api/api_response.dart';
 import 'package:salon_user/app/controller/languages_controller.dart';
+import 'package:salon_user/app/helper/home_sections.dart';
 import 'package:salon_user/app/helper/locale_helper.dart';
+import 'package:salon_user/app/helper/tax_availability.dart';
 import 'package:salon_user/app/helper/shared_pref.dart';
 import 'package:salon_user/app/util/constant.dart';
 
@@ -17,11 +17,8 @@ class ApiService extends GetxService {
   final String appBaseUrl;
   final SharedPreferencesManager sharedPreferencesManager;
   static const String connectionIssue = 'Connection failed!';
-  final int timeoutInSeconds = 30;
-  static const int _maxLogChars = 8000;
-  HttpWithMiddleware httpp = HttpWithMiddleware.build(middlewares: [
-    HttpLogger(logLevel: LogLevel.NONE),
-  ]);
+  final int timeoutInSeconds = 15;
+  final http.Client httpp = http.Client();
 
   ApiService({
     required this.appBaseUrl,
@@ -192,12 +189,14 @@ class ApiService extends GetxService {
           http.MultipartRequest('POST', Uri.parse(url));
       request.headers.addAll(_localeHeaders);
       for (MultipartBody multipart in multipartBody) {
-        File file = File(multipart.file.path);
-        request.files.add(http.MultipartFile(
+        final bytes = await multipart.file.readAsBytes();
+        final name = multipart.file.name.trim().isEmpty
+            ? 'file'
+            : multipart.file.name;
+        request.files.add(http.MultipartFile.fromBytes(
           multipart.key,
-          file.readAsBytes().asStream(),
-          file.lengthSync(),
-          filename: file.path.split('/').last,
+          bytes,
+          filename: name,
         ));
       }
       http.Response response =
@@ -344,6 +343,17 @@ class ApiService extends GetxService {
     }
 
     absorb(body);
+    HomeSections.applyFromJson(body);
+    if (body.containsKey('tax_available') ||
+        body.containsKey('taxAvailable')) {
+      final raw = body['tax_available'] ?? body['taxAvailable'];
+      TaxAvailability.apply(
+        available: raw == true ||
+            raw == 1 ||
+            raw?.toString() == '1' ||
+            raw?.toString().toLowerCase() == 'true',
+      );
+    }
     final prefCountry =
         (body['preferred_country'] ?? body['preferredCountry'])
             ?.toString()
@@ -427,13 +437,12 @@ class ApiService extends GetxService {
 
   void _logResponse(String url, Response response) {
     if (_quietApi(url)) return;
-    final model = response.body;
     final buffer = StringBuffer()
       ..writeln('')
       ..writeln('┌────────────── API RESPONSE ─────────────')
       ..writeln('│ URL      : $url')
       ..writeln('│ Status   : ${response.statusCode} ${response.statusText ?? ''}')
-      ..writeln('│ Model    : ${_pretty(model)}')
+      ..writeln('│ Body     : ${_pretty(response.body)}')
       ..writeln('└─────────────────────────────────────────');
     _print(buffer.toString());
   }
@@ -451,7 +460,8 @@ class ApiService extends GetxService {
   }
 
   bool _quietApi(String pathOrUrl) {
-    return pathOrUrl.contains(AppConstants.paymentsGetCompleteServiceNotification);
+    return pathOrUrl
+        .contains(AppConstants.paymentsGetCompleteServiceNotification);
   }
 
   void _print(String message) {
@@ -474,13 +484,9 @@ class ApiService extends GetxService {
 
   String _pretty(dynamic value) {
     try {
-      final encoded = const JsonEncoder.withIndent('  ').convert(value);
-      if (encoded.length <= _maxLogChars) return encoded;
-      return '${encoded.substring(0, _maxLogChars)}\n... truncated (${encoded.length} chars)';
+      return const JsonEncoder.withIndent('  ').convert(value);
     } catch (_) {
-      final raw = value.toString();
-      if (raw.length <= _maxLogChars) return raw;
-      return '${raw.substring(0, _maxLogChars)}\n... truncated (${raw.length} chars)';
+      return value.toString();
     }
   }
 }

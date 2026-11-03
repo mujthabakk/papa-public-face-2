@@ -11,6 +11,8 @@ class BannerModel {
   String? to;
   String? extraField;
   int? status;
+  String? clickAction;
+  String? link;
 
   BannerModel(
       {this.id,
@@ -22,7 +24,9 @@ class BannerModel {
       this.from,
       this.to,
       this.extraField,
-      this.status});
+      this.status,
+      this.clickAction,
+      this.link});
 
   BannerModel.fromJson(Map<String, dynamic> json) {
     id = ApiBody.asInt(json['id']);
@@ -35,6 +39,11 @@ class BannerModel {
     to = ApiBody.text(json['to']);
     extraField = ApiBody.text(json['extra_field']);
     status = ApiBody.asInt(json['status'], fallback: 1);
+    clickAction = ApiBody.text(json['click_action']);
+    link = ApiBody.text(json['link'] ?? json['url']);
+    if ((value ?? '').isEmpty && (link ?? '').isNotEmpty) {
+      value = link;
+    }
   }
 
   Map<String, dynamic> toJson() {
@@ -49,6 +58,8 @@ class BannerModel {
     data['to'] = to;
     data['extra_field'] = extraField;
     data['status'] = status;
+    data['click_action'] = clickAction;
+    data['link'] = link;
     return data;
   }
 }

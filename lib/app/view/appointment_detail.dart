@@ -43,17 +43,16 @@ class _AppointmentDetailScreenState extends State<AppointmentDetailScreen> {
                     _providerCard(value),
                   ],
                 ),
-          bottomNavigationBar: value.apiCalled == false
-              ? const SizedBox()
-              : _bottomBar(value),
+          bottomNavigationBar:
+              value.apiCalled == false ? const SizedBox() : _bottomBar(value),
         );
       },
     );
   }
 
   Widget _successHeader(AppointmentDetailController value) {
-    final cancelled = value.appointmentInfo.status == 5 ||
-        value.appointmentInfo.status == 6;
+    final cancelled =
+        value.appointmentInfo.status == 5 || value.appointmentInfo.status == 6;
     final paid = value.isPaid;
     final title = cancelled
         ? value.orderStatus.toUpperCase()
@@ -138,7 +137,8 @@ class _AppointmentDetailScreenState extends State<AppointmentDetailScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('TRANSACTION DETAILS'.tr,
+          Text(
+            'TRANSACTION DETAILS'.tr,
             style: ThemeProvider.sans(
               size: 11,
               weight: FontWeight.w700,
@@ -165,7 +165,8 @@ class _AppointmentDetailScreenState extends State<AppointmentDetailScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('ITEMIZED RECEIPT'.tr,
+          Text(
+            'ITEMIZED RECEIPT'.tr,
             style: ThemeProvider.sans(
               size: 11,
               weight: FontWeight.w700,
@@ -236,8 +237,7 @@ class _AppointmentDetailScreenState extends State<AppointmentDetailScreen> {
           Row(
             children: [
               Text('Total Paid'.tr,
-                  style: ThemeProvider.sans(
-                      size: 16, weight: FontWeight.w600)),
+                  style: ThemeProvider.sans(size: 16, weight: FontWeight.w600)),
               const Spacer(),
               Text(
                 _money(value.grandTotal, value),
@@ -351,6 +351,12 @@ class _AppointmentDetailScreenState extends State<AppointmentDetailScreen> {
             ),
             const SizedBox(height: 10),
             EliteGoldButton(
+              label: 'BOOK AGAIN'.tr,
+              icon: Icons.replay,
+              onTap: value.bookAgain,
+            ),
+            const SizedBox(height: 10),
+            EliteGoldButton(
               label: 'BACK TO HOME'.tr,
               outlined: true,
               icon: Icons.home_outlined,
@@ -368,7 +374,8 @@ class _AppointmentDetailScreenState extends State<AppointmentDetailScreen> {
               const SizedBox(height: 10),
               TextButton(
                 onPressed: () => value.onUpdateAppointmentStatus(5),
-                child: Text('Cancel Appointment'.tr,
+                child: Text(
+                  'Cancel Appointment'.tr,
                   style: ThemeProvider.sans(
                     size: 12,
                     weight: FontWeight.w700,
@@ -383,7 +390,8 @@ class _AppointmentDetailScreenState extends State<AppointmentDetailScreen> {
               TextButton(
                 onPressed: () => value
                     .onAddReview(value.appointmentInfo.freelancerId as int),
-                child: Text('ADD REVIEW'.tr,
+                child: Text(
+                  'ADD REVIEW'.tr,
                   style: ThemeProvider.sans(
                     size: 12,
                     weight: FontWeight.w700,
@@ -406,8 +414,8 @@ class _AppointmentDetailScreenState extends State<AppointmentDetailScreen> {
       child: Row(
         children: [
           Text(label,
-              style: ThemeProvider.sans(
-                  size: 13, color: ThemeProvider.greyColor)),
+              style:
+                  ThemeProvider.sans(size: 13, color: ThemeProvider.greyColor)),
           const Spacer(),
           Flexible(
             child: Text(
@@ -441,8 +449,7 @@ class _AppointmentDetailScreenState extends State<AppointmentDetailScreen> {
                   style: muted
                       ? ThemeProvider.sans(
                           size: 13, color: ThemeProvider.greyColor)
-                      : ThemeProvider.sans(
-                          size: 14, weight: FontWeight.w600),
+                      : ThemeProvider.sans(size: 14, weight: FontWeight.w600),
                 ),
                 if (subtitle.isNotEmpty) ...[
                   const SizedBox(height: 2),

@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import 'package:salon_user/app/controller/product_cart_controller.dart';
 import 'package:salon_user/app/controller/products_controller.dart';
 import 'package:salon_user/app/env.dart';
+import 'package:salon_user/app/helper/desktop.dart';
 import 'package:salon_user/app/util/theme.dart';
 import 'package:salon_user/app/view/widgets/elite_ui.dart';
 
@@ -82,12 +83,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
                         padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
                         sliver: SliverGrid(
                           gridDelegate:
-                              const SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount: 2,
-                            mainAxisSpacing: 12,
-                            crossAxisSpacing: 12,
-                            childAspectRatio: 0.68,
-                          ),
+                              Desktop.productGrid(context),
                           delegate: SliverChildBuilderDelegate(
                             (context, i) => _card(value, list[i]),
                             childCount: list.length,

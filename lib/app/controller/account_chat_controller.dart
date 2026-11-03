@@ -56,6 +56,6 @@ class AccountChatController extends GetxController implements GetxService {
   }
 
   void onLoginRoutes() {
-    Get.toNamed(AppRouter.getLoginRoute(), arguments: ['account']);
+    AppRouter.openLogin(arguments: ['account']);
   }
 }

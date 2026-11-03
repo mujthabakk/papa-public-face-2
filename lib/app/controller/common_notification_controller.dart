@@ -5,10 +5,12 @@ import 'package:get/get.dart';
 import 'package:salon_user/app/backend/api/handler.dart';
 import 'package:salon_user/app/backend/models/common_notification_model.dart';
 import 'package:salon_user/app/backend/parse/common_notification_parse..dart';
+import 'package:salon_user/app/backend/parse/wallet_parse.dart';
 import 'package:salon_user/app/controller/appointment_detail_controller.dart';
 import 'package:salon_user/app/controller/payment_socket_controller.dart';
 import 'package:salon_user/app/controller/product_order_detail_controller.dart';
 import 'package:salon_user/app/controller/reschedule_slot_controller.dart';
+import 'package:salon_user/app/controller/wallet_controller.dart';
 import 'package:salon_user/app/helper/router.dart';
 import 'package:salon_user/app/util/theme.dart';
 
@@ -68,6 +70,7 @@ class CommonNotificationController extends GetxController
     openNotification(notification);
     final hasAppointment = (notification.data.appointmentId ?? 0) > 0;
     final hasOrder = (notification.data.orderId ?? 0) > 0;
+    final isCashback = notification.isCashback;
     final business = notification.data.businessName.trim();
     final date = notification.data.date.trim();
     final price = notification.data.price;
@@ -137,13 +140,15 @@ class CommonNotificationController extends GetxController
                     value: price.toString(),
                   ),
                 const SizedBox(height: 20),
-                if (hasAppointment || hasOrder)
+                if (hasAppointment || hasOrder || isCashback)
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton(
                       onPressed: () {
                         Get.back();
-                        if (hasAppointment) {
+                        if (isCashback) {
+                          onWallet();
+                        } else if (hasAppointment) {
                           onAppointment(notification.data.appointmentId!);
                         } else {
                           onProductDetail(notification.data.orderId!);
@@ -159,9 +164,11 @@ class CommonNotificationController extends GetxController
                         ),
                       ),
                       child: Text(
-                        hasAppointment
-                            ? 'View Appointment'.tr
-                            : 'View Order'.tr,
+                        isCashback
+                            ? 'View Wallet'.tr
+                            : hasAppointment
+                                ? 'View Appointment'.tr
+                                : 'View Order'.tr,
                         style: ThemeProvider.sans(
                           size: 13,
                           weight: FontWeight.w700,
@@ -243,6 +250,9 @@ class CommonNotificationController extends GetxController
     if (notification.isUnread) {
       readNotifications(notification.id);
     }
+    if (notification.isCashback) {
+      refreshWalletAfterCashback();
+    }
     final bookId = notification.data.payBookId;
     if (bookId <= 0) return;
     if (!Get.isRegistered<PaymentSocketController>()) return;
@@ -251,6 +261,24 @@ class CommonNotificationController extends GetxController
     pay.fetchCompleteServiceNotification(
       fallback: notification.data.extra,
     );
+  }
+
+  Future<void> refreshWalletAfterCashback() async {
+    try {
+      if (Get.isRegistered<WalletController>()) {
+        await Get.find<WalletController>().getWallet();
+        return;
+      }
+      if (!Get.isRegistered<WalletParser>()) return;
+      await Get.find<WalletParser>().getMyWalletBalance();
+    } catch (e) {
+      debugPrint('refreshWalletAfterCashback: $e');
+    }
+  }
+
+  void onWallet() {
+    Get.delete<WalletController>(force: true);
+    Get.toNamed(AppRouter.getWalletRoutes());
   }
 
   void onProductDetail(int id) {

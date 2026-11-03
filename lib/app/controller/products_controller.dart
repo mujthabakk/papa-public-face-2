@@ -48,24 +48,43 @@ class ProductsController extends GetxController implements GetxService {
   }
 
   Future<void> getDataFromCategories() async {
+    final cateId = int.tryParse(selectedCateId) ?? 0;
+    final subCateId = int.tryParse(selectedSubCateId) ?? 0;
     var param = {
       "cate_id": selectedCateId,
       "sub_cate_id": selectedSubCateId,
     };
+    // PDF: getProducts by cate/sub; fall back to getAll with same filters.
     Response response = await parser.getproductsByIdAndCateId(param);
+    if (response.statusCode != 200) {
+      response = await parser.getAllProducts(
+        cateId: cateId > 0 ? cateId : null,
+        subCateId: subCateId > 0 ? subCateId : null,
+      );
+    }
     apiCalled = true;
 
     if (response.statusCode == 200) {
-      Map<String, dynamic> myMap = Map<String, dynamic>.from(response.body);
-      var body = myMap['data'];
-
       _productsList = [];
-      if (body is List) {
-        for (final data in body) {
+      final map = response.body is Map
+          ? Map<String, dynamic>.from(response.body as Map)
+          : <String, dynamic>{};
+      final body = map['data'] ?? map['products'] ?? response.body;
+      final list = body is List
+          ? body
+          : (body is Map
+              ? (body['products'] ?? body['data'] ?? body['items'])
+              : null);
+      if (list is List) {
+        for (final data in list) {
           if (data is! Map) continue;
-          _productsList.add(
-            ProductsListModel.fromJson(Map<String, dynamic>.from(data)),
-          );
+          try {
+            _productsList.add(
+              ProductsListModel.fromJson(Map<String, dynamic>.from(data)),
+            );
+          } catch (e) {
+            debugPrint('skip product: $e');
+          }
         }
       }
       _productsList.removeWhere((product) => product.status == 0);

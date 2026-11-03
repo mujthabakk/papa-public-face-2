@@ -10,6 +10,7 @@ import 'package:salon_user/app/backend/parse/near_parse.dart';
 import 'package:salon_user/app/controller/services_controller.dart';
 import 'package:salon_user/app/controller/specialist_controller.dart';
 import 'package:salon_user/app/controller/unified_search_controller.dart';
+import 'package:salon_user/app/helper/home_sections.dart';
 import 'package:salon_user/app/helper/locale_helper.dart';
 import 'package:salon_user/app/helper/router.dart';
 import 'package:salon_user/app/util/open_hours.dart';
@@ -63,6 +64,7 @@ class NearController extends GetxController
       Response response = await parser.getHomeData(param);
       final map = ApiBody.asMap(response.body);
       if (map != null) {
+        HomeSections.applyFromJson(map);
         _parseSalons(map['salon'] ?? map['salons']);
         _parseIndividuals(map['individual'] ?? map['individuals']);
         if (_salonList.isEmpty && map['data'] is Map) {
@@ -71,6 +73,8 @@ class NearController extends GetxController
           _parseIndividuals(nested['individual'] ?? nested['individuals']);
         }
       }
+      if (!HomeSections.showPartners) _salonList = [];
+      if (!HomeSections.showFreelancers) _individualList = [];
 
       haveData = salonList.isNotEmpty || individualList.isNotEmpty;
       _buildMarkers();
@@ -79,7 +83,7 @@ class NearController extends GetxController
       _loadOpenHours();
 
       final extras = <Future<void>>[];
-      if (_salonList.isEmpty) {
+      if (HomeSections.showPartners && _salonList.isEmpty) {
         extras.add(() async {
           try {
             final top = await parser.getTopSalon(param);
@@ -89,7 +93,7 @@ class NearController extends GetxController
           }
         }());
       }
-      if (_individualList.isEmpty) {
+      if (HomeSections.showFreelancers && _individualList.isEmpty) {
         extras.add(() async {
           try {
             final top = await parser.getTopFreelancer(param);
@@ -101,6 +105,8 @@ class NearController extends GetxController
       }
       if (extras.isNotEmpty) {
         await Future.wait(extras);
+        if (!HomeSections.showPartners) _salonList = [];
+        if (!HomeSections.showFreelancers) _individualList = [];
         haveData = salonList.isNotEmpty || individualList.isNotEmpty;
         _buildMarkers();
         update();

@@ -6,6 +6,7 @@ import 'package:salon_user/app/controller/login_controller.dart';
 import 'package:salon_user/app/controller/service_cart_controller.dart';
 import 'package:salon_user/app/controller/specialist_controller.dart';
 import 'package:salon_user/app/env.dart';
+import 'package:salon_user/app/helper/desktop.dart';
 import 'package:salon_user/app/helper/router.dart';
 import 'package:salon_user/app/util/theme.dart';
 import 'package:salon_user/app/util/toast.dart';
@@ -50,7 +51,7 @@ class _SpecialistScreenState extends State<SpecialistScreen> {
                       isAuthenticated: value.parser.isLogin(),
                       onLoginRequired: () {
                         Get.delete<LoginController>(force: true);
-                        Get.toNamed(AppRouter.getLoginRoute());
+                        AppRouter.openLogin();
                       },
                       onCall: value.callIndividual,
                       onChat: value.onChat,
@@ -729,8 +730,8 @@ class _SpecialistScreenState extends State<SpecialistScreen> {
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
       itemCount: slots.length,
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 3,
+      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: Desktop.of(context) ? 6 : 3,
         mainAxisSpacing: 8,
         crossAxisSpacing: 8,
         childAspectRatio: 1.15,

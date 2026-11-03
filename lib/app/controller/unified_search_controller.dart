@@ -1113,33 +1113,27 @@ class UnifiedSearchController extends GetxController implements GetxService {
     onBack();
     debugPrint(value);
     debugPrint(type);
+    final id = int.tryParse(value) ?? 0;
     if (type == '0') {
-      debugPrint('category');
       Get.delete<UnifiedSearchController>(force: true);
       Get.toNamed(AppRouter.getCategoriesListRoutes(),
           arguments: [value, 'Offers']);
     } else if (type == '1') {
-      debugPrint('individual');
+      if (id <= 0) return;
       Get.delete<SpecialistController>(force: true);
-      Get.toNamed(AppRouter.getSpecialistRoutes(),
-          arguments: [int.parse(value.toString())]);
+      Get.toNamed(AppRouter.getSpecialistRoutes(), arguments: [id]);
     } else if (type == '2') {
-      debugPrint('salon');
+      if (id <= 0) return;
       Get.delete<ServicesController>(force: true);
-      Get.toNamed(AppRouter.getServicesRoutes(),
-          arguments: [int.parse(value.toString())]);
+      Get.toNamed(AppRouter.getServicesRoutes(), arguments: [id]);
     } else if (type == '3') {
-      debugPrint('product category');
-
       Get.find<CategoriesController>().onCategoryExpand(value);
       Get.find<TabsController>().updateTabId(3);
     } else if (type == '4') {
-      debugPrint('products');
       Get.delete<ProductsDetailsController>(force: true);
       Get.toNamed(AppRouter.getProductsDetailsRoutes(), arguments: [value]);
     } else if (type == '5') {
-      debugPrint('external links');
-      launchInBrowser(value);
+      if (value.isNotEmpty) launchInBrowser(value);
     }
   }
 

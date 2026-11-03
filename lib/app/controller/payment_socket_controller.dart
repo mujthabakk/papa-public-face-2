@@ -6,6 +6,7 @@ import 'package:get/get.dart';
 import 'package:salon_user/app/backend/parse/payment_parse.dart';
 import 'package:salon_user/app/controller/appointment_detail_controller.dart';
 import 'package:salon_user/app/controller/booking_controller.dart';
+import 'package:salon_user/app/controller/common_notification_controller.dart';
 import 'package:salon_user/app/helper/payment_socket_service.dart';
 import 'package:salon_user/app/helper/router.dart';
 import 'package:salon_user/app/util/theme.dart';
@@ -82,6 +83,7 @@ class PaymentSocketController extends GetxController
         uid: uid,
         onPayNowPopup: onPayNowPopup,
         onCompleted: onPaymentCompleted,
+        onCancelled: onPaymentCancelled,
       );
       startCompleteServicePoll();
     } finally {
@@ -383,7 +385,9 @@ class PaymentSocketController extends GetxController
 
     final isPaid = payload['is_paid'] == true ||
         payload['is_paid']?.toString() == '1' ||
-        payload['is_paid']?.toString().toLowerCase() == 'true';
+        payload['is_paid']?.toString().toLowerCase() == 'true' ||
+        payload['is_payment_completed'] == true ||
+        payload['is_payment_completed']?.toString() == '1';
     if (!isPaid) return;
 
     final bookId = _readInt(payload, const [
@@ -413,6 +417,21 @@ class PaymentSocketController extends GetxController
     }
 
     showToast('Payment successful'.tr, isError: false);
+  }
+
+  void onPaymentCancelled(Map<String, dynamic> payload) {
+    if (!_isForMe(payload)) return;
+    final bookId = _readInt(payload, const [
+      'book_id',
+      'appointment_id',
+      'appointmentId',
+      'id',
+      'booking_id',
+    ]);
+    _removePending(bookId);
+    if (Get.isRegistered<CommonNotificationController>()) {
+      Get.find<CommonNotificationController>().refreshNotifications();
+    }
   }
 
   void _showPayPopup(Map<String, dynamic> payload, int bookId) {

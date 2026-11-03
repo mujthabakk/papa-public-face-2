@@ -20,11 +20,16 @@ class ProductsModel {
     cover = json['cover'];
     extraField = json['extra_field'];
     status = int.parse(json['status'].toString());
-    if (json['subCates'] != null) {
+    final rawSubs = json['subCates'] ?? json['sub_cates'];
+    if (rawSubs is List) {
       subCates = <SubCates>[];
-      json['subCates'].forEach((v) {
-        subCates?.add(SubCates.fromJson(v));
-      });
+      for (final v in rawSubs) {
+        if (v is Map) {
+          try {
+            subCates?.add(SubCates.fromJson(Map<String, dynamic>.from(v)));
+          } catch (_) {}
+        }
+      }
     }
   }
 
@@ -59,12 +64,12 @@ class SubCates {
       this.status});
 
   SubCates.fromJson(Map<String, dynamic> json) {
-    id = int.parse(json['id'].toString());
-    name = json['name'];
-    cover = json['cover'];
-    cateId = int.parse(json['cate_id'].toString());
-    extraField = json['extra_field'];
-    status = int.parse(json['status'].toString());
+    id = int.tryParse(json['id']?.toString() ?? '');
+    name = json['name']?.toString();
+    cover = json['cover']?.toString();
+    cateId = int.tryParse(json['cate_id']?.toString() ?? '');
+    extraField = json['extra_field']?.toString();
+    status = int.tryParse(json['status']?.toString() ?? '') ?? 1;
   }
 
   Map<String, dynamic> toJson() {

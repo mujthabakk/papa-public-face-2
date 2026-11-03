@@ -936,6 +936,15 @@ class _IndividualPaymentScreenState extends State<IndividualPaymentScreen> {
             false,
             isTotal: true,
           ),
+          subtitle: value.cashbackPercent > 0
+              ? EliteCashbackHint(
+                  percentage: value.cashbackPercent,
+                  previewAmount: value.cashbackPreview,
+                  currencySide: value.currencySide,
+                  currencySymbol: value.currencySymbol,
+                  padding: const EdgeInsets.only(top: 8, bottom: 4),
+                )
+              : null,
           children: [
             Container(
               height: 1,

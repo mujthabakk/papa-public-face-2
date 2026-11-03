@@ -462,7 +462,7 @@ class AccountController extends GetxController
 
   void onLogin() {
     Get.delete<LoginController>(force: true);
-    Get.toNamed(AppRouter.getLoginRoute());
+    AppRouter.openLogin();
   }
 
   void onEdit() {

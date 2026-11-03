@@ -5,7 +5,11 @@ class ServiceCartModel {
   List<ServicesModel>? services;
   List<PackagesDetailsModel>? packages;
 
-  ServiceCartModel({this.services, this.packages});
+  ServiceCartModel({
+    List<ServicesModel>? services,
+    List<PackagesDetailsModel>? packages,
+  })  : services = services ?? <ServicesModel>[],
+        packages = packages ?? <PackagesDetailsModel>[];
 
   ServiceCartModel.fromJson(Map<String, dynamic> json) {
     if (json['services'] != null) {

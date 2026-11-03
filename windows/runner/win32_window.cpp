@@ -187,6 +187,15 @@ Win32Window::MessageHandler(HWND hwnd,
       }
       return 0;
 
+    case WM_GETMINMAXINFO: {
+      auto minmax = reinterpret_cast<MINMAXINFO*>(lparam);
+      UINT dpi = hwnd ? GetDpiForWindow(hwnd) : 96;
+      double scale_factor = dpi / 96.0;
+      minmax->ptMinTrackSize.x = Scale(1100, scale_factor);
+      minmax->ptMinTrackSize.y = Scale(720, scale_factor);
+      return 0;
+    }
+
     case WM_DPICHANGED: {
       auto newRectSize = reinterpret_cast<RECT*>(lparam);
       LONG newWidth = newRectSize->right - newRectSize->left;

@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:salon_user/app/backend/parse/payment_parse.dart';
 import 'package:salon_user/app/backend/parse/upgrade_parse.dart';
+import 'package:salon_user/app/controller/common_notification_controller.dart';
 import 'package:salon_user/app/helper/payment_webview_handler.dart';
 import 'package:salon_user/app/util/theme.dart';
 import 'package:salon_user/app/util/toast.dart';
@@ -42,6 +43,8 @@ class _UpgradePaymentScreenState extends State<UpgradePaymentScreen>
   String? _error;
   bool _openedExternalApp = false;
   Timer? _resumeVerifyTimer;
+  bool _checkoutPaid = false;
+  bool _checkoutCancelled = false;
 
   @override
   void initState() {
@@ -54,6 +57,9 @@ class _UpgradePaymentScreenState extends State<UpgradePaymentScreen>
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     _resumeVerifyTimer?.cancel();
+    if (widget.appointmentId > 0 && !_checkoutPaid && !_checkoutCancelled) {
+      _cancelCheckoutPayment();
+    }
     super.dispose();
   }
 
@@ -202,6 +208,7 @@ class _UpgradePaymentScreenState extends State<UpgradePaymentScreen>
       paid = result.data!.isPaid;
       message = result.message;
       if (paid) {
+        _checkoutPaid = true;
         widget.onPaid?.call();
         Get.back(result: result.data);
         return;
@@ -230,6 +237,7 @@ class _UpgradePaymentScreenState extends State<UpgradePaymentScreen>
       paid = result.data!.isPaid;
       message = result.message;
       if (paid) {
+        _checkoutPaid = true;
         widget.onPaid?.call();
         Get.back(result: result.data);
         return;
@@ -266,7 +274,29 @@ class _UpgradePaymentScreenState extends State<UpgradePaymentScreen>
         ],
       ),
     );
+    if (leave == true && widget.appointmentId > 0) {
+      await _cancelCheckoutPayment();
+    }
     return leave ?? false;
+  }
+
+  Future<void> _cancelCheckoutPayment() async {
+    if (_checkoutPaid || _checkoutCancelled || widget.appointmentId <= 0) {
+      return;
+    }
+    _checkoutCancelled = true;
+    try {
+      if (Get.isRegistered<PaymentParser>()) {
+        await Get.find<PaymentParser>().cancelCheckoutPayment(
+          appointmentId: widget.appointmentId,
+        );
+      }
+      if (Get.isRegistered<CommonNotificationController>()) {
+        await Get.find<CommonNotificationController>().refreshNotifications();
+      }
+    } catch (e) {
+      debugPrint('cancel checkout from webview: $e');
+    }
   }
 
   @override

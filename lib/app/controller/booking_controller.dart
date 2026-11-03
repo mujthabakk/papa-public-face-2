@@ -1,5 +1,3 @@
-import 'dart:convert';
-
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:salon_user/app/backend/api/handler.dart';
@@ -7,6 +5,8 @@ import 'package:salon_user/app/backend/models/appointment_model.dart';
 import 'package:salon_user/app/backend/parse/booking_parse.dart';
 import 'package:salon_user/app/controller/appointment_detail_controller.dart';
 import 'package:salon_user/app/controller/login_controller.dart';
+import 'package:salon_user/app/controller/services_controller.dart';
+import 'package:salon_user/app/controller/specialist_controller.dart';
 import 'package:salon_user/app/helper/locale_helper.dart';
 import 'package:salon_user/app/helper/router.dart';
 import 'package:salon_user/app/util/constant.dart';
@@ -66,27 +66,40 @@ class BookingController extends GetxController
   }
 
   Future<void> getAppointmentById() async {
-    Response response = await parser.getAppointmentById();
-
-    apiCalled = true;
-    if (response.statusCode == 200) {
-      Map<String, dynamic> myMap = Map<String, dynamic>.from(response.body);
-      var body = myMap['data'];
-      _appointmentList = [];
-      _appointmentListOld = [];
-      body.forEach((data) {
-        AppointmentModel appointment = AppointmentModel.fromJson(data);
-        if (appointment.status == 0) {
-          _appointmentList.add(appointment);
-        } else {
-          _appointmentListOld.add(appointment);
+    try {
+      final response = await parser.getAppointmentById().timeout(
+        const Duration(seconds: 12),
+        onTimeout: () => const Response(statusCode: 1, statusText: 'timeout'),
+      );
+      if (response.statusCode == 200 && response.body is Map) {
+        final myMap = Map<String, dynamic>.from(response.body);
+        final body = myMap['data'];
+        _appointmentList = [];
+        _appointmentListOld = [];
+        final rows = body is List ? body : const [];
+        for (final data in rows) {
+          if (data is! Map) continue;
+          try {
+            final appointment = AppointmentModel.fromJson(
+                Map<String, dynamic>.from(data));
+            if (appointment.status == 0) {
+              _appointmentList.add(appointment);
+            } else {
+              _appointmentListOld.add(appointment);
+            }
+          } catch (e) {
+            debugPrint('appointment skip: $e');
+          }
         }
-      });
-      debugPrint(jsonEncode(_appointmentList));
-    } else {
-      ApiChecker.checkApi(response);
+      } else if (response.statusCode != 200 && response.statusCode != 1) {
+        ApiChecker.checkApi(response);
+      }
+    } catch (e) {
+      debugPrint('getAppointmentById: $e');
+    } finally {
+      apiCalled = true;
+      update();
     }
-    update();
   }
 
   void onAppointment(int id) {
@@ -94,8 +107,22 @@ class BookingController extends GetxController
     Get.toNamed(AppRouter.getAppointmentDetailRoutes(), arguments: [id]);
   }
 
+  void bookAgain(AppointmentModel a) {
+    final salonId = a.salonId ?? 0;
+    final freelancerId = a.freelancerId ?? 0;
+    if (salonId != 0) {
+      Get.delete<ServicesController>(force: true);
+      Get.toNamed(AppRouter.getServicesRoutes(), arguments: [salonId]);
+      return;
+    }
+    if (freelancerId != 0) {
+      Get.delete<SpecialistController>(force: true);
+      Get.toNamed(AppRouter.getSpecialistRoutes(), arguments: [freelancerId]);
+    }
+  }
+
   void onLoginRoutes() {
     Get.delete<LoginController>(force: true);
-    Get.toNamed(AppRouter.getLoginRoute());
+    AppRouter.openLogin();
   }
 }

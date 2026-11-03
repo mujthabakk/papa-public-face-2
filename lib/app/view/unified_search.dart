@@ -401,7 +401,17 @@ class _UnifiedSearchScreenState extends State<UnifiedSearchScreen> {
         itemBuilder: (context, index, realIndex) {
           final item = banners[index];
           return GestureDetector(
-            onTap: () => onBanner(item.value ?? '', '${item.type ?? 0}'),
+            onTap: () {
+              final action = '${item.clickAction ?? ''}'.toLowerCase();
+              final type = '${item.type ?? 0}';
+              final value = '${item.value ?? ''}';
+              final link = '${item.link ?? ''}';
+              if (action == 'link' || type == '5') {
+                onBanner(link.isNotEmpty ? link : value, '5');
+                return;
+              }
+              onBanner(value, type);
+            },
             child: ClipRRect(
               borderRadius: BorderRadius.circular(12),
               child: EliteNetworkImage(

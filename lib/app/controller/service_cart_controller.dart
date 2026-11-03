@@ -123,17 +123,27 @@ class ServiceCartController extends GetxController implements GetxService {
     update();
   }
 
+  List<ServicesModel> get cartServices {
+    _savedInCart.services ??= <ServicesModel>[];
+    return _savedInCart.services!;
+  }
+
+  List<PackagesDetailsModel> get cartPackages {
+    _savedInCart.packages ??= <PackagesDetailsModel>[];
+    return _savedInCart.packages!;
+  }
+
   void addServiceToCart(ServicesModel service, String from) {
     servicesFrom = from;
     parser.saveServiceFrom(from);
-    _savedInCart.services!.add(service);
-    salonId = service.uid!;
+    cartServices.add(service);
+    salonId = service.uid ?? salonId;
     parser.saveSalonId(salonId);
-    parser.saveService(_savedInCart.services as List<ServicesModel>);
+    parser.saveService(cartServices);
     FacebookService.logAddToCart(
       id: service.id.toString(),
       type: 'service',
-      price: service.discount! > 0 ? service.off!.toDouble() : service.price!.toDouble(),
+      price: service.displayPrice,
       currency: AppConstants.defaultCurrencySymbol,
     );
     calcuate();
@@ -143,14 +153,17 @@ class ServiceCartController extends GetxController implements GetxService {
   void addPackageToCart(PackagesDetailsModel package, String from) {
     servicesFrom = from;
     parser.saveServiceFrom(from);
-    _savedInCart.packages!.add(package);
-    salonId = package.uid!;
+    cartPackages.add(package);
+    salonId = package.uid ?? salonId;
     parser.saveSalonId(salonId);
-    parser.savePackages(_savedInCart.packages as List<PackagesDetailsModel>);
+    parser.savePackages(cartPackages);
+    final packagePrice = (package.discount ?? 0) > 0
+        ? (package.off ?? package.price ?? 0)
+        : (package.price ?? 0);
     FacebookService.logAddToCart(
       id: package.id.toString(),
       type: 'package',
-      price: package.discount! > 0 ? package.off!.toDouble() : package.price!.toDouble(),
+      price: packagePrice.toDouble(),
       currency: AppConstants.defaultCurrencySymbol,
     );
     calcuate();
@@ -158,58 +171,50 @@ class ServiceCartController extends GetxController implements GetxService {
   }
 
   bool checkServiceInCart(int id) {
-    debugPrint(savedInCart.services!.length.toString());
-    return savedInCart.services!
-        .where((element) => element.id == id)
-        .isNotEmpty;
+    return cartServices.where((element) => element.id == id).isNotEmpty;
   }
 
   bool checkPackageInCart(int id) {
-    return savedInCart.packages!
-        .where((element) => element.id == id)
-        .isNotEmpty;
+    return cartPackages.where((element) => element.id == id).isNotEmpty;
   }
 
   int getServiceFreelancerId() {
-    return savedInCart.services![0].uid as int;
+    if (cartServices.isEmpty) return 0;
+    return cartServices.first.uid ?? 0;
   }
 
   int getPackageFreelancerId() {
-    return savedInCart.packages![0].uid as int;
+    if (cartPackages.isEmpty) return 0;
+    return cartPackages.first.uid ?? 0;
   }
 
   void removeServiceFromCart(int id) {
-    _savedInCart.services!.removeWhere((element) => element.id == id);
-    parser.saveService(_savedInCart.services as List<ServicesModel>);
+    cartServices.removeWhere((element) => element.id == id);
+    parser.saveService(cartServices);
     update();
     calcuate();
   }
 
   void removePackageFromCart(int id) {
-    _savedInCart.packages!.removeWhere((element) => element.id == id);
-    parser.savePackages(_savedInCart.packages as List<PackagesDetailsModel>);
+    cartPackages.removeWhere((element) => element.id == id);
+    parser.savePackages(cartPackages);
     update();
     calcuate();
   }
 
   void calcuate() {
     double total = 0.0;
-    for (var element in _savedInCart.services!) {
-      if (element.discount! > 0) {
-        total = total + element.off!;
+    for (var element in cartServices) {
+      total += element.displayPrice;
+    }
+    for (var element in cartPackages) {
+      if ((element.discount ?? 0) > 0) {
+        total += element.off ?? element.price ?? 0;
       } else {
-        total = total + element.price!;
+        total += element.price ?? 0;
       }
     }
-    for (var element in _savedInCart.packages!) {
-      if (element.discount! > 0) {
-        total = total + element.off!;
-      } else {
-        total = total + element.price!;
-      }
-    }
-    _totalItemsInCart =
-        _savedInCart.services!.length + _savedInCart.packages!.length;
+    _totalItemsInCart = cartServices.length + cartPackages.length;
     _totalPrice = total;
     calculateAllCharge();
     update();

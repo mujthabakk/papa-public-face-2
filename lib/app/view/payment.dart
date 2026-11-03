@@ -479,6 +479,12 @@ class _PaymentScreenState extends State<PaymentScreen> {
               const Spacer(),
             ],
           ),
+          EliteCashbackHint(
+            percentage: value.cashbackPercent,
+            previewAmount: value.cashbackPreview,
+            currencySide: value.currencySide,
+            currencySymbol: value.currencySymbol,
+          ),
           const SizedBox(height: 14),
           SizedBox(
             width: double.infinity,

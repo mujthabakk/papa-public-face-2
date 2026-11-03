@@ -88,6 +88,12 @@ class NotificationItem {
         _blob.contains('refund');
   }
 
+  bool get isCashback {
+    final t = type.toLowerCase();
+    return t.contains('cashback') ||
+        title.toLowerCase().contains('cashback credited');
+  }
+
   bool get isCompleted =>
       !isCancelled &&
       (data.appointmentStatus == 4 || _blob.contains('complet'));

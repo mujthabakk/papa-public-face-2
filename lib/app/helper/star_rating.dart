@@ -8,39 +8,42 @@ class StarRating extends StatelessWidget {
   final double rating;
   final RatingChangeCallback onRatingChanged;
   final Color color;
+  final Color emptyColor;
+  final double size;
 
-  // ignore: use_key_in_widget_constructors
-  const StarRating(
-      {this.starCount = 5,
-      this.rating = .0,
-      required this.onRatingChanged,
-      required this.color});
+  const StarRating({
+    Key? key,
+    this.starCount = 5,
+    this.rating = .0,
+    required this.onRatingChanged,
+    required this.color,
+    this.emptyColor = const Color(0x66F2D338),
+    this.size = 40,
+  }) : super(key: key);
 
   Widget buildStar(BuildContext context, int index) {
     Icon icon;
     if (index >= rating) {
-      icon = const Icon(
+      icon = Icon(
         Icons.star_border,
-        size: 50,
-        color: Colors.black26,
+        size: size,
+        color: emptyColor,
       );
     } else if (index > rating - 1 && index < rating) {
       icon = Icon(
         Icons.star_half,
-        size: 50,
+        size: size,
         color: color,
       );
     } else {
       icon = Icon(
         Icons.star,
-        size: 50,
+        size: size,
         color: color,
       );
     }
     return InkResponse(
-      onTap:
-          // ignore: unnecessary_null_comparison
-          onRatingChanged == null ? null : () => onRatingChanged(index + 1.0),
+      onTap: () => onRatingChanged(index + 1.0),
       child: icon,
     );
   }
@@ -48,7 +51,9 @@ class StarRating extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Row(
-        children:
-            List.generate(starCount, (index) => buildStar(context, index)));
+      mainAxisAlignment: MainAxisAlignment.center,
+      children:
+          List.generate(starCount, (index) => buildStar(context, index)),
+    );
   }
 }

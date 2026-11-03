@@ -38,6 +38,8 @@ class AppConstants {
   static const String pricingGetTaxSettings = 'api/v1/pricing/getTaxSettings';
   static const String pricingGetTaxAvailability =
       'api/v1/pricing/getTaxAvailability';
+  static const String pricingGetHomeSections =
+      'api/v1/pricing/getHomeSections';
   static const String pricingCalculateAppointment =
       'api/v1/pricing/calculateAppointment';
   static const String pricingCalculateProductOrder =
@@ -112,8 +114,34 @@ class AppConstants {
   static const String getAddressById = 'api/v1/address/getById';
   static const String individualDetails = 'api/v1/individual/individualDetails';
   static const String getProducts = 'api/v1/product_categories/getHome';
+  static const String getProductCategoriesActive =
+      'api/v1/product_categories/getActive';
+  static const String getProductSubCategoriesFromCateId =
+      'api/v1/product_sub_categories/getFromCateId';
   static const String getProductsByIdAndCateId = 'api/v1/products/getProducts';
   static const String getProductsInfo = 'api/v1/products/getProductInfo';
+  /// Public product catalog (PDF Oct 2026) — no distance filter.
+  static const String getProductsPublicHome = 'api/v1/products/getPublicHome';
+  static const String getProductsAll = 'api/v1/products/getAll';
+  static const String getProductsSearch = 'api/v1/products/search';
+  static const String getProductsById = 'api/v1/products/getById';
+  static const String getProductsVariants = 'api/v1/products/getVariants';
+  static const String getProductsGallery = 'api/v1/products/getGallery';
+  static const String getProductsBySeller = 'api/v1/products/getBySeller';
+  static const String getProductsFreelancerProducts =
+      'api/v1/products/getFreelancerProducts';
+  /// PDF alias of getBySeller.
+  static const String getProductsSellerProducts =
+      'api/v1/products/getSellerProducts';
+  static const String getProductsSellers = 'api/v1/products/getSellers';
+  /// PDF aliases of getSellers.
+  static const String getProductsStores = 'api/v1/products/getStores';
+  static const String getProductsProductSellers =
+      'api/v1/products/getProductSellers';
+  static const String getProductOffersActive = 'api/v1/product_offers/getActive';
+  static const String getProductOffersPublic = 'api/v1/product_offers/getPublic';
+  static const String getProductOffersAll = 'api/v1/product_offers/getAll';
+  static const String getProductOffersById = 'api/v1/product_offers/getById';
   static const String productCreate = 'api/v1/product_order/save';
   static const String getOwnerInfo = 'api/v1/profile/getOwnerInfo';
   static const String getAppoimentById = 'api/v1/appoinments/getMyList';
@@ -143,6 +171,8 @@ class AppConstants {
   static const String sendMessage = 'api/v1/chats/sendMessage';
   static const String sendNotification = 'api/v1/notification/sendNotification';
   static const String getMyWalletBalance = 'api/v1/profile/getMyWalletBalance';
+  static const String cashbackGetByUserType = 'api/v1/cashback/getByUserType';
+  static const String cashbackGetAll = 'api/v1/cashback/getAll';
   static const String checkCod = 'api/v1/salon/check-cod';
 
   static const String checkPremium = 'api/v1/premium/check';
@@ -153,6 +183,9 @@ class AppConstants {
   static const String paymentsVerifyPayment = 'api/v1/payments/verifyPayment';
   static const String paymentsVerifyCheckoutPayment =
       'api/v1/payments/verifyCheckoutPayment';
+  static const String paymentsCancelCheckoutPayment =
+      'api/v1/payments/cancelCheckoutPayment';
+  static const String paymentsCancelPayNow = 'api/v1/payments/cancelPayNow';
   static const String paymentsGetPaymentOptions =
       'api/v1/payments/getPaymentOptions';
   static const String paymentsGetStatus = 'api/v1/payments/getStatus';
@@ -177,6 +210,7 @@ class AppConstants {
   static const String paymentPusherPayNowEvent = 'pay-now-popup';
   // Customer actually paid → mark paid only when payload.is_paid == true.
   static const String paymentPusherEvent = 'payment-completed';
+  static const String paymentPusherCancelledEvent = 'payment-cancelled';
 
   static const String upgradeGeneratePaymentUrl =
       'api/v1/upgrade/generatePaymentUrl';

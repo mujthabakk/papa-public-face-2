@@ -7,15 +7,9 @@ import 'package:salon_user/app/backend/api/handler.dart';
 import 'package:salon_user/app/backend/models/google_places_model.dart';
 import 'package:salon_user/app/backend/parse/find_location_parse.dart';
 import 'package:salon_user/app/backend/parse/languages_parse.dart';
-import 'package:salon_user/app/controller/account_controller.dart';
-import 'package:salon_user/app/controller/booking_controller.dart';
-import 'package:salon_user/app/controller/categories_controller.dart';
-import 'package:salon_user/app/controller/home_controller.dart';
 import 'package:salon_user/app/controller/languages_controller.dart';
-import 'package:salon_user/app/controller/near_controller.dart';
-import 'package:salon_user/app/controller/tabs_controller.dart';
 import 'package:salon_user/app/env.dart';
-import 'package:salon_user/app/helper/router.dart';
+import 'package:salon_user/app/helper/post_login_nav.dart';
 import 'package:salon_user/app/helper/uuid_generator.dart';
 import 'package:salon_user/app/util/theme.dart';
 import 'package:salon_user/app/util/toast.dart';
@@ -273,13 +267,7 @@ class FindLocationController extends GetxController implements GetxService {
         placeMark.isoCountryCode,
       );
 
-      Get.delete<TabsController>(force: true);
-      Get.delete<HomeController>(force: true);
-      Get.delete<NearController>(force: true);
-      Get.delete<CategoriesController>(force: true);
-      Get.delete<BookingController>(force: true);
-      Get.delete<AccountController>(force: true);
-      Get.offAndToNamed(AppRouter.getTabsBarRoute());
+      await PostLoginNav.finishAfterLocation();
     }).catchError((error) async {
       Get.back();
       showToast(error.toString());
@@ -510,13 +498,7 @@ class FindLocationController extends GetxController implements GetxService {
         reloadHome: false,
       );
     }
-    Get.delete<TabsController>(force: true);
-    Get.delete<HomeController>(force: true);
-    Get.delete<NearController>(force: true);
-    Get.delete<CategoriesController>(force: true);
-    Get.delete<BookingController>(force: true);
-    Get.delete<AccountController>(force: true);
-    Get.offAndToNamed(AppRouter.getTabsBarRoute());
+    await PostLoginNav.finishAfterLocation();
   }
 
   void resetSearch() {

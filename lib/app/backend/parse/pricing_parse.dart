@@ -3,6 +3,7 @@ import 'package:salon_user/app/backend/api/api_response.dart';
 import 'package:salon_user/app/backend/models/pricing_model.dart';
 import 'package:salon_user/app/helper/locale_helper.dart';
 import 'package:salon_user/app/helper/shared_pref.dart';
+import 'package:salon_user/app/helper/home_sections.dart';
 import 'package:salon_user/app/helper/tax_availability.dart';
 import 'package:salon_user/app/util/constant.dart';
 
@@ -71,6 +72,73 @@ class PricingParser {
       );
     }
     return parsed;
+  }
+
+  /// GET|POST /api/v1/pricing/getHomeSections — hide home blocks per country.
+  Future<({bool success, String message, HomeSectionsData? data})>
+      fetchHomeSections({int? uid, String? country}) async {
+    final iso = _appCountry(country);
+    final body = <String, dynamic>{
+      'country': iso,
+      'country_code': iso,
+    };
+    final name =
+        sharedPreferencesManager.getString(LocaleHelper.prefCountryName) ?? '';
+    if (name.isNotEmpty) body['country_name'] = name;
+    final rawUid = uid?.toString() ??
+        sharedPreferencesManager.getString('uid') ??
+        '';
+    if (rawUid.isNotEmpty && rawUid != '0') {
+      body['uid'] = int.tryParse(rawUid) ?? rawUid;
+    }
+    var response = await apiService.postPublic(
+      AppConstants.pricingGetHomeSections,
+      body,
+    );
+    var parsed = _parseHomeSections(response.body);
+    if (!parsed.success) {
+      final qs =
+          '${AppConstants.pricingGetHomeSections}?country=$iso&country_code=$iso'
+          '${body.containsKey('uid') ? '&uid=${body['uid']}' : ''}';
+      response = await apiService.getPublic(qs);
+      parsed = _parseHomeSections(response.body);
+    }
+    if (parsed.success && parsed.data != null) {
+      HomeSections.apply(
+        showPartners: parsed.data!.showPartners,
+        showFreelancers: parsed.data!.showFreelancers,
+        showProducts: parsed.data!.showProducts,
+      );
+    } else {
+      HomeSections.applyFromJson(ApiBody.asMap(response.body) ?? {});
+    }
+    return parsed;
+  }
+
+  ({bool success, String message, HomeSectionsData? data}) _parseHomeSections(
+      dynamic body) {
+    final map = ApiBody.asMap(body);
+    if (map == null) {
+      return (
+        success: false,
+        message: ApiService.connectionIssue,
+        data: null,
+      );
+    }
+    HomeSections.applyFromJson(map);
+    final message = map['message']?.toString() ?? '';
+    final data = map['data'];
+    final source = data is Map
+        ? Map<String, dynamic>.from(data)
+        : map;
+    if (map['success'] != true && data is! Map) {
+      return (success: false, message: message, data: null);
+    }
+    return (
+      success: true,
+      message: message,
+      data: HomeSectionsData.fromJson(source),
+    );
   }
 
   ({bool success, String message, TaxAvailabilityData? data})

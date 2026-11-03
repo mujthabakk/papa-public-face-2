@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:photo_view/photo_view.dart';
 import 'package:photo_view/photo_view_gallery.dart';
 import 'package:salon_user/app/env.dart';
+import 'package:salon_user/app/helper/desktop.dart';
 
 class ImageGalleryScreen extends StatelessWidget {
   final List<String> gallery;
@@ -43,7 +44,7 @@ class GridGallery extends StatelessWidget {
   Widget build(BuildContext context) {
     return GridView.count(
       primary: false,
-      crossAxisCount: 2,
+      crossAxisCount: Desktop.productColumns(context),
       mainAxisSpacing: 10,
       crossAxisSpacing: 10,
       shrinkWrap: true,

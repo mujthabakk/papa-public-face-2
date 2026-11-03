@@ -4,25 +4,30 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:razorpay_flutter/razorpay_flutter.dart';
 import 'package:salon_user/app/backend/api/handler.dart';
+import 'package:salon_user/app/backend/api/api_response.dart';
 import 'package:salon_user/app/backend/models/address_model.dart';
+import 'package:salon_user/app/backend/models/checkout_payment_model.dart';
 import 'package:salon_user/app/backend/models/coupons_model.dart';
 import 'package:salon_user/app/backend/models/individual_info_model.dart';
 import 'package:salon_user/app/backend/models/payment_models.dart';
 import 'package:salon_user/app/backend/models/pricing_model.dart';
+import 'package:salon_user/app/backend/parse/cashback_parse.dart';
 import 'package:salon_user/app/backend/parse/individual_payment_parse.dart';
+import 'package:salon_user/app/backend/parse/payment_parse.dart';
 import 'package:salon_user/app/backend/parse/pricing_parse.dart';
 import 'package:salon_user/app/controller/address_list_controller.dart';
+import 'package:salon_user/app/controller/common_notification_controller.dart';
 import 'package:salon_user/app/controller/coupon_controller.dart';
 import 'package:salon_user/app/controller/individual_slot_controller.dart';
 import 'package:salon_user/app/controller/service_cart_controller.dart';
 import 'package:salon_user/app/controller/tabs_controller.dart';
-import 'package:salon_user/app/env.dart';
 import 'package:salon_user/app/helper/country_payment.dart';
 import 'package:salon_user/app/helper/discount_rules.dart';
 import 'package:salon_user/app/helper/router.dart';
 import 'package:salon_user/app/util/constant.dart';
 import 'package:salon_user/app/util/theme.dart';
 import 'package:salon_user/app/util/toast.dart';
+import 'package:salon_user/app/view/upgrade_payment.dart';
 import 'package:geolocator/geolocator.dart';
 
 class IndividualPaymentController extends GetxController
@@ -69,6 +74,11 @@ class IndividualPaymentController extends GetxController
 
   bool haveAddress = false;
 
+  double cashbackPercent = 0;
+  double get cashbackPreview => cashbackPercent <= 0
+      ? 0
+      : double.parse((_grandTotal * cashbackPercent / 100).toStringAsFixed(2));
+
   late CouponsModel _selectedCoupon = CouponsModel();
   CouponsModel get selectedCoupon => _selectedCoupon;
 
@@ -94,6 +104,7 @@ class IndividualPaymentController extends GetxController
   double get deliveryPrice => _deliveryPrice;
 
   late Razorpay _razorpay;
+  int _pendingBookId = 0;
 
   IndividualPaymentController({required this.parser});
 
@@ -104,6 +115,7 @@ class IndividualPaymentController extends GetxController
     currencySymbol = parser.getCurrencySymbol();
     getSalonDetails();
     getMyWalletAmount();
+    loadCashback();
     debugPrint('*****************${Get.find<ServiceCartController>().salonId}');
     final cartCoupon = Get.find<ServiceCartController>().selectedCoupon;
     if ((cartCoupon.code ?? '').isNotEmpty || (cartCoupon.id ?? 0) > 0) {
@@ -114,6 +126,17 @@ class IndividualPaymentController extends GetxController
     _razorpay.on(Razorpay.EVENT_PAYMENT_SUCCESS, _handlePaymentSuccess);
     _razorpay.on(Razorpay.EVENT_PAYMENT_ERROR, _handlePaymentError);
     _razorpay.on(Razorpay.EVENT_EXTERNAL_WALLET, _handleExternalWallet);
+  }
+
+  Future<void> loadCashback() async {
+    try {
+      if (!Get.isRegistered<CashbackParser>()) return;
+      cashbackPercent =
+          await Get.find<CashbackParser>().percentFor('freelancer');
+    } catch (e) {
+      cashbackPercent = 0;
+    }
+    update();
   }
 
   @override
@@ -142,6 +165,7 @@ class IndividualPaymentController extends GetxController
     final cancelled = (response.message ?? '')
         .toLowerCase()
         .contains('cancelled');
+    _cancelPendingCheckout();
     showToast(cancelled
         ? 'Payment cancelled'.tr
         : 'Payment failed. Please try again.'.tr);
@@ -680,55 +704,203 @@ class IndividualPaymentController extends GetxController
       showToast('Online payment is not available.'.tr);
       return;
     }
-    // razorpay - native SDK
-      final int amountInPaise =
-          double.parse((grandTotal * 100).toStringAsFixed(0)).toInt();
-      final options = {
-        'key': Environments.razorpayKey,
-        'amount': amountInPaise,
-        'name': 'PapaBear',
-        'description': 'Appointment Booking',
-        'image':
-            'https://papa-bear.blr1.cdn.digitaloceanspaces.com/papalogo.png',
-        'prefill': {
-          'contact': parser.getPhone(),
-          'email': parser.getEmail(),
-          'name': parser.getName(),
-        },
-        'theme': {'color': '#000000'},
-        'retry': {'enabled': false},
-        'send_sms_hash': true,
-        'remember_customer': false,
-      };
+    _startCheckoutPayment();
+  }
 
+  PaymentParser? get _payParser =>
+      Get.isRegistered<PaymentParser>() ? Get.find<PaymentParser>() : null;
+
+  Future<void> _startCheckoutPayment() async {
+    final pay = _payParser;
+    if (pay == null) {
+      showToast('Payment service unavailable.');
+      return;
+    }
+    try {
+      await refreshPricingFromApi();
       Get.dialog(
-          SimpleDialog(
-            children: [
-              Row(
-                children: [
-                  const SizedBox(width: 30),
-                  const CircularProgressIndicator(
-                      color: ThemeProvider.appColor),
-                  const SizedBox(width: 30),
-                  SizedBox(
-                      child: Text('Opening Payment...'.tr,
-                          style: const TextStyle(fontFamily: 'bold'))),
-                ],
-              )
-            ],
-          ),
-          barrierDismissible: false);
+        SimpleDialog(
+          children: [
+            Row(
+              children: [
+                const SizedBox(width: 30),
+                const CircularProgressIndicator(color: ThemeProvider.appColor),
+                const SizedBox(width: 30),
+                Text('Please wait'.tr,
+                    style: const TextStyle(fontFamily: 'bold')),
+              ],
+            )
+          ],
+        ),
+        barrierDismissible: false,
+      );
+      final created = await _createPendingAppointment();
+      _closePaymentDialog();
+      if (created == null) return;
+      _pendingBookId = created.id;
+      if (created.bookingConfirmed && !created.paymentPending) {
+        _showBookedDialog();
+        return;
+      }
+      Get.dialog(
+        SimpleDialog(
+          children: [
+            Row(
+              children: [
+                const SizedBox(width: 30),
+                const CircularProgressIndicator(color: ThemeProvider.appColor),
+                const SizedBox(width: 30),
+                Text('Opening Payment...'.tr,
+                    style: const TextStyle(fontFamily: 'bold')),
+              ],
+            )
+          ],
+        ),
+        barrierDismissible: false,
+      );
+      final result = await pay.generatePaymentUrl(appointmentId: created.id);
+      _closePaymentDialog();
+      if (!result.success || result.data == null) {
+        await _cancelPendingCheckout();
+        showToast(result.message.isNotEmpty
+            ? result.message
+            : 'Unable to start payment.');
+        return;
+      }
+      final paymentData = result.data!;
+      if (paymentData.paymentUrl.isEmpty) {
+        await _cancelPendingCheckout();
+        showToast('Payment URL not available.');
+        return;
+      }
+      final verifyResult = await openUpgradePaymentWebView(
+        paymentUrl: paymentData.paymentUrl,
+        appointmentId: paymentData.appointmentId > 0
+            ? paymentData.appointmentId
+            : created.id,
+        paymentLinkId: paymentData.paymentLinkId,
+      );
+      if (verifyResult is! CheckoutVerifyData || !verifyResult.isPaid) {
+        await _cancelPendingCheckout();
+        showToast('Payment cancelled'.tr);
+        return;
+      }
+      _pendingBookId = 0;
+      _showBookedDialog();
+    } catch (e) {
+      debugPrint('Checkout payment error: $e');
+      _closePaymentDialog();
+      await _cancelPendingCheckout();
+      showToast('Payment not completed.');
+    }
+  }
 
-      Future.delayed(const Duration(milliseconds: 400), () {
-        _closePaymentDialog();
-        try {
-          _razorpay.open(options);
-        } catch (e) {
-          debugPrint('Razorpay open error: $e');
-          _closePaymentDialog();
-          showToast('Could not open payment screen.');
-        }
-      });
+  Future<({int id, bool paymentPending, bool bookingConfirmed})?>
+      _createPendingAppointment() async {
+    await refreshPricingFromApi();
+    final cart = Get.find<ServiceCartController>();
+    final orderTotal = bookingFields?.total ?? cart.totalPrice;
+    final orderTax = bookingFields?.serviceTax ?? taxAmount;
+    final orderGrandTotal = bookingFields?.grandTotal ?? grandTotal;
+    final param = {
+      "uid": parser.getUID(),
+      "freelancer_id": cart.salonId,
+      "salon_id": 0,
+      "specialist_id": 0,
+      "appointments_to": 1,
+      "address": jsonEncode(addressInfo),
+      "items": jsonEncode(cart.savedInCart),
+      "coupon_id": selectedCoupon.code != null ? selectedCoupon.id : 0,
+      "coupon": selectedCoupon.code != null ? jsonEncode(selectedCoupon) : 'NA',
+      "discount": discount,
+      "distance_cost": deliveryPrice,
+      "total": orderTotal,
+      "serviceTax": orderTax,
+      "grand_total": orderGrandTotal,
+      "pay_method": paymentId,
+      "paid": "PENDING",
+      "save_date": Get.find<IndividualSlotController>().savedDate,
+      "slot": Get.find<IndividualSlotController>().selectedSlotIndex,
+      'wallet_used': isWalletChecked == true && walletDiscount > 0 ? 1 : 0,
+      'wallet_price':
+          isWalletChecked == true && walletDiscount > 0 ? walletDiscount : 0,
+      "notes": notesEditor.text.isNotEmpty ? notesEditor.text : 'NA',
+      "status": 8,
+    };
+    final response = await parser.createAppoinments(param);
+    if (response.statusCode != 200) {
+      ApiChecker.checkApi(response);
+      showToast('Unable to create booking. Please try again.');
+      return null;
+    }
+    final map = ApiBody.asMap(response.body);
+    if (map == null || map['success'] != true) {
+      showToast('Unable to create booking.');
+      return null;
+    }
+    final data = ApiBody.asObject(map['data']);
+    final appointmentId = ApiBody.asInt(
+      data?['appointment_id'] ?? data?['id'] ?? data?['book_id'],
+    );
+    if (appointmentId <= 0) {
+      showToast('Appointment id missing from server.');
+      return null;
+    }
+    return (
+      id: appointmentId,
+      paymentPending: map['payment_pending'] == true,
+      bookingConfirmed: map['booking_confirmed'] == true,
+    );
+  }
+
+  Future<void> _cancelPendingCheckout() async {
+    final bookId = _pendingBookId;
+    if (bookId <= 0) return;
+    _pendingBookId = 0;
+    final pay = _payParser;
+    if (pay != null) {
+      await pay.cancelCheckoutPayment(appointmentId: bookId);
+    }
+    if (Get.isRegistered<CommonNotificationController>()) {
+      await Get.find<CommonNotificationController>().refreshNotifications();
+    }
+  }
+
+  void _showBookedDialog() {
+    Get.defaultDialog(
+      title: '',
+      contentPadding: const EdgeInsets.all(20),
+      content: SingleChildScrollView(
+        child: Column(
+          children: [
+            ClipRRect(
+              borderRadius: BorderRadius.circular(100),
+              child: Image.asset(
+                'assets/images/sure.gif',
+                height: 60,
+                width: 60,
+                fit: BoxFit.cover,
+              ),
+            ),
+            const SizedBox(height: 30),
+            Text('Thank You!'.tr,
+                style: const TextStyle(fontFamily: 'bold', fontSize: 18)),
+            const SizedBox(height: 10),
+            Text('For Your Appoinment'.tr,
+                style: const TextStyle(fontFamily: 'semi-bold', fontSize: 16)),
+            const SizedBox(height: 20),
+            ElevatedButton(
+              onPressed: backOrders,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: ThemeProvider.appColor,
+                foregroundColor: ThemeProvider.whiteColor,
+              ),
+              child: Text('Track'.tr),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   Future<void> createOrder({String? transactionId}) async {
@@ -794,6 +966,11 @@ class IndividualPaymentController extends GetxController
 
     if (response.statusCode == 200) {
       debugPrint('Order Create Success: ${response.bodyString}');
+      final map = ApiBody.asMap(response.body);
+      if (map?['payment_pending'] == true) {
+        showToast('Payment is still pending.');
+        return;
+      }
       Get.defaultDialog(
         title: '',
         contentPadding: const EdgeInsets.all(20),

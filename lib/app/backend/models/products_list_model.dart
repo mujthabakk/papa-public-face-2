@@ -1,5 +1,28 @@
 import 'dart:convert';
 
+List<String> _parseMediaList(dynamic raw) {
+  if (raw == null || raw == '' || raw == 'NA') return [];
+  try {
+    dynamic decoded = raw;
+    if (raw is String) {
+      decoded = jsonDecode(raw);
+    }
+    if (decoded is List) {
+      return decoded
+          .map((e) {
+            if (e is Map) {
+              return (e['url'] ?? e['image'] ?? e['cover'] ?? e['path'] ?? '')
+                  .toString();
+            }
+            return e?.toString() ?? '';
+          })
+          .where((e) => e.trim().isNotEmpty)
+          .toList();
+    }
+  } catch (_) {}
+  return [];
+}
+
 class ProductsListModel {
   int? id;
   int? freelacerId;
@@ -41,6 +64,18 @@ class ProductsListModel {
   double? taxRate;
   String taxType = '';
   bool taxInclusive = false;
+  bool hasVariants = false;
+  List<Map<String, dynamic>> variants = [];
+  int? variantId;
+  String? color;
+  String? measurement;
+  String? measurementType;
+  String? measurementValue;
+  /// PDF shared product object extras.
+  List<Map<String, dynamic>> paymentMethods = [];
+  int? returnable;
+  int? returnDays;
+  List<String> paymentMethodCodes = [];
 
   ProductsListModel({
     this.id,
@@ -83,6 +118,11 @@ class ProductsListModel {
     this.taxRate,
     this.taxType = '',
     this.taxInclusive = false,
+    this.variantId,
+    this.color,
+    this.measurement,
+    this.measurementType,
+    this.measurementValue,
   });
 
   ProductsListModel.fromJson(Map<String, dynamic> json) {
@@ -91,19 +131,36 @@ class ProductsListModel {
     cover = json['cover'];
     name = json['name'];
 
-    // 🔄 Convert stringified list to List<String>
-    try {
-      List<dynamic> decodedImages = jsonDecode(json['images'] ?? '[]');
-      images = decodedImages
-          .whereType<String>()
-          .where((e) => e.trim().isNotEmpty)
-          .toList();
-    } catch (e) {
-      images = [];
+    images = _parseMediaList(json['images']);
+    final imagesList = _parseMediaList(json['images_list']);
+    final gallery = _parseMediaList(json['gallery']);
+    images = <String>{
+      ...?images,
+      ...imagesList,
+      ...gallery,
+    }.where((e) => e.trim().isNotEmpty).toList();
+    hasVariants = json['has_variants'] == true ||
+        json['has_variants']?.toString() == '1';
+    variants = [];
+    final rawVariants = json['variants'];
+    if (rawVariants is List) {
+      for (final v in rawVariants) {
+        if (v is Map) {
+          variants.add(Map<String, dynamic>.from(v));
+        }
+      }
+      if (variants.isNotEmpty) hasVariants = true;
     }
+    variantId = int.tryParse(json['variant_id']?.toString() ?? '');
+    color = json['color']?.toString();
+    measurement = json['measurement']?.toString();
+    measurementType = json['measurement_type']?.toString();
+    measurementValue = json['measurement_value']?.toString();
 
     originalPrice = double.tryParse(json['original_price'].toString());
-    sellPrice = double.tryParse(json['sell_price'].toString());
+    sellPrice = double.tryParse(json['sell_price']?.toString() ?? '') ??
+        double.tryParse(json['amount']?.toString() ?? '') ??
+        double.tryParse(json['shop_price']?.toString() ?? '');
     discount = double.tryParse(json['discount'].toString());
     cateId = int.tryParse(json['cate_id'].toString());
     subCateId = int.tryParse(json['sub_cate_id'].toString());
@@ -124,12 +181,44 @@ class ProductsListModel {
     disclaimer = json['disclaimer'];
     expDate = json['exp_date'];
     inOffer = int.tryParse(json['in_offer'].toString());
-    inStock = int.tryParse(json['in_stock'].toString());
+    // PDF: stock / stock_qty / in_stock / stock_available
+    inStock = int.tryParse(json['in_stock']?.toString() ?? '') ??
+        int.tryParse(json['stock']?.toString() ?? '') ??
+        int.tryParse(json['stock_qty']?.toString() ?? '') ??
+        int.tryParse(json['stock_available']?.toString() ?? '');
     rating = double.tryParse(json['rating'].toString());
     totalRating = int.tryParse(json['total_rating'].toString());
     status = int.tryParse(json['status'].toString());
     extraField = json['extra_field'];
     shopPrice = double.tryParse(json['shop_price']?.toString() ?? '') ?? 0;
+    returnable = int.tryParse(json['returnable']?.toString() ?? '') ??
+        int.tryParse(json['return_option']?.toString() ?? '');
+    returnDays = int.tryParse(json['return_days']?.toString() ?? '');
+    paymentMethods = [];
+    paymentMethodCodes = [];
+    final rawPay = json['payment_methods'];
+    if (rawPay is List) {
+      for (final item in rawPay) {
+        if (item is Map) {
+          paymentMethods.add(Map<String, dynamic>.from(item));
+          final code = (item['code'] ?? item['type'] ?? item['label'] ?? '')
+              .toString()
+              .trim();
+          if (code.isNotEmpty) paymentMethodCodes.add(code);
+        } else if (item != null) {
+          paymentMethodCodes.add(item.toString());
+        }
+      }
+    }
+    final rawCodes = json['payment_method_codes'];
+    if (rawCodes is List) {
+      for (final c in rawCodes) {
+        final s = c?.toString().trim() ?? '';
+        if (s.isNotEmpty && !paymentMethodCodes.contains(s)) {
+          paymentMethodCodes.add(s);
+        }
+      }
+    }
     taxableValue =
         double.tryParse(json['taxable_value']?.toString() ?? '') ?? 0;
     taxableAmount = double.tryParse(
@@ -165,6 +254,13 @@ class ProductsListModel {
     data['cover'] = cover;
     data['name'] = name;
     data['images'] = jsonEncode(images ?? []); // 🔄 Store back as JSON string
+    data['variant_id'] = variantId;
+    data['color'] = color;
+    data['measurement'] = measurement;
+    data['measurement_type'] = measurementType;
+    data['measurement_value'] = measurementValue;
+    data['has_variants'] = hasVariants;
+    data['variants'] = variants;
     data['original_price'] = originalPrice;
     data['sell_price'] = sellPrice;
     data['discount'] = discount;

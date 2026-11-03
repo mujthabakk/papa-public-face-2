@@ -284,6 +284,12 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                         ),
                       ],
                     ),
+                    EliteCashbackHint(
+                      percentage: value.cashbackPercent,
+                      previewAmount: value.cashbackPreview,
+                      currencySide: value.currencySide,
+                      currencySymbol: value.currencySymbol,
+                    ),
                   ],
                 ),
               ),

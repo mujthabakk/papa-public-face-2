@@ -22,6 +22,8 @@ class CouponController extends GetxController implements GetxService {
   bool apiCalled = false;
   String action = 'service';
   int? focusOfferId;
+  bool singleOffer = false;
+  CouponsModel? seedOffer;
 
   List<CouponsModel> _couponList = <CouponsModel>[];
   List<CouponsModel> get couponList => _couponList;
@@ -37,6 +39,10 @@ class CouponController extends GetxController implements GetxService {
     if (args is Map) {
       action = 'browse';
       focusOfferId = int.tryParse('${args['offerId'] ?? ''}');
+      singleOffer = args['single'] == true;
+      if (args['seed'] is CouponsModel) {
+        seedOffer = args['seed'] as CouponsModel;
+      }
     } else if (args is List && args.isNotEmpty) {
       if (args[0] == 'product') {
         action = 'product';
@@ -58,9 +64,13 @@ class CouponController extends GetxController implements GetxService {
   }
 
   Future<void> getCoupons() async {
-    Response response = action == 'browse'
-        ? await parser.getAllOffers(includeUid: false)
-        : await parser.getCouponCodes();
+    final publicCall = action == 'browse'
+        ? parser.getAllOffers(includeUid: false)
+        : parser.getCouponCodes();
+    final uidCall = (action == 'browse' && parser.hasUid)
+        ? parser.getAllOffers(includeUid: true)
+        : null;
+    final response = await publicCall;
     apiCalled = true;
     _couponList = [];
 
@@ -73,9 +83,8 @@ class CouponController extends GetxController implements GetxService {
       'list',
     ];
     final uidOffers = <CouponsModel>[];
-    if (action == 'browse' && parser.hasUid) {
-      uidOffers.addAll(parser.parseOffers(
-          (await parser.getAllOffers(includeUid: true)).body));
+    if (uidCall != null) {
+      uidOffers.addAll(parser.parseOffers((await uidCall).body));
     }
 
     final body = ApiBody.asList(response.body, keys: offerKeys);
@@ -121,20 +130,48 @@ class CouponController extends GetxController implements GetxService {
       });
 
       if (focusOfferId != null && focusOfferId! > 0) {
-        final idx =
-            _couponList.indexWhere((c) => (c.id ?? 0) == focusOfferId);
-        if (idx > 0) {
-          final focused = _couponList.removeAt(idx);
-          _couponList.insert(0, focused);
-        }
-        if (idx >= 0) {
-          selectedCouponCode = focusOfferId.toString();
+        if (singleOffer) {
+          _couponList = _couponList
+              .where((c) => _isSameShopOffer(c, focusOfferId, seedOffer))
+              .toList();
+          if (_couponList.isEmpty && seedOffer != null) {
+            _couponList = [seedOffer!];
+          }
+          if (_couponList.isNotEmpty) {
+            selectedCouponCode = (_couponList.first.id ?? focusOfferId).toString();
+          }
+        } else {
+          final idx =
+              _couponList.indexWhere((c) => (c.id ?? 0) == focusOfferId);
+          if (idx > 0) {
+            final focused = _couponList.removeAt(idx);
+            _couponList.insert(0, focused);
+          }
+          if (idx >= 0) {
+            selectedCouponCode = focusOfferId.toString();
+          }
         }
       }
     } else {
       ApiChecker.checkApi(response);
     }
     update();
+  }
+
+  bool _isSameShopOffer(
+    CouponsModel coupon,
+    int? offerId,
+    CouponsModel? seed,
+  ) {
+    if (offerId != null && offerId > 0 && (coupon.id ?? 0) == offerId) {
+      return true;
+    }
+    if (seed == null) return false;
+    if ((seed.code ?? '').isNotEmpty &&
+        CouponsModel.matchesCode(coupon, seed.code!)) {
+      return true;
+    }
+    return false;
   }
 
   void _overlayUidEligibility(

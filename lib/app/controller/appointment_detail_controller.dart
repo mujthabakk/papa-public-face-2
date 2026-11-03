@@ -12,6 +12,8 @@ import 'package:salon_user/app/controller/chat_controller.dart';
 import 'package:salon_user/app/controller/complaints_controller.dart';
 import 'package:salon_user/app/controller/payment_socket_controller.dart';
 import 'package:salon_user/app/controller/reschedule_slot_controller.dart';
+import 'package:salon_user/app/controller/services_controller.dart';
+import 'package:salon_user/app/controller/specialist_controller.dart';
 import 'package:salon_user/app/helper/router.dart';
 import 'package:salon_user/app/util/constant.dart';
 import 'package:salon_user/app/util/theme.dart';
@@ -92,6 +94,22 @@ class AppointmentDetailController extends GetxController
     Get.delete<RescheduleSlotController>(force: true);
     Get.toNamed(AppRouter.getRescheduleSlotRoutes(),
         arguments: [appointmentId, uid, type]);
+  }
+
+  void bookAgain() {
+    final salonId = appointmentInfo.salonId ?? 0;
+    final freelancerId = appointmentInfo.freelancerId ?? 0;
+    if (salonId != 0) {
+      Get.delete<ServicesController>(force: true);
+      Get.toNamed(AppRouter.getServicesRoutes(), arguments: [salonId]);
+      return;
+    }
+    if (freelancerId != 0) {
+      Get.delete<SpecialistController>(force: true);
+      Get.toNamed(AppRouter.getSpecialistRoutes(), arguments: [freelancerId]);
+      return;
+    }
+    showToast('Salon not available'.tr);
   }
 
   bool get showPayNow {

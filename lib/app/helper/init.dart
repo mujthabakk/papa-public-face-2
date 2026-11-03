@@ -9,6 +9,7 @@ import 'package:salon_user/app/backend/parse/app_pages_parse.dart';
 import 'package:salon_user/app/backend/parse/appointment_detail_parse.dart';
 import 'package:salon_user/app/backend/parse/booking_parse.dart';
 import 'package:salon_user/app/backend/parse/cart_parse.dart';
+import 'package:salon_user/app/backend/parse/cashback_parse.dart';
 import 'package:salon_user/app/backend/parse/categories_list_parse.dart';
 import 'package:salon_user/app/backend/parse/categories_parse.dart';
 import 'package:salon_user/app/backend/parse/chat_parse.dart';
@@ -85,6 +86,7 @@ import 'package:salon_user/app/controller/tabs_controller.dart';
 import 'package:salon_user/app/controller/top_products_controller.dart';
 import 'package:salon_user/app/env.dart';
 import 'package:salon_user/app/helper/shared_pref.dart';
+import 'package:salon_user/app/helper/home_sections.dart';
 import 'package:salon_user/app/helper/tax_availability.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:get/get.dart';
@@ -100,6 +102,7 @@ class MainBinding extends Bindings {
       );
     }
     TaxAvailability.loadFromPrefs(Get.find<SharedPreferencesManager>());
+    HomeSections.loadFromPrefs(Get.find<SharedPreferencesManager>());
 
     if (!Get.isRegistered<ApiService>()) {
       Get.put<ApiService>(
@@ -311,6 +314,12 @@ class MainBinding extends Bindings {
     Get.lazyPut(
         () => CheckoutParser(
             apiService: Get.find<ApiService>(), sharedPreferencesManager: Get.find<SharedPreferencesManager>()),
+        fenix: true);
+
+    Get.lazyPut(
+        () => CashbackParser(
+            apiService: Get.find<ApiService>(),
+            sharedPreferencesManager: Get.find<SharedPreferencesManager>()),
         fenix: true);
 
     Get.lazyPut(

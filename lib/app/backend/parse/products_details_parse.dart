@@ -10,10 +10,53 @@ class ProductsDetailsParser {
   ProductsDetailsParser(
       {required this.apiService, required this.sharedPreferencesManager});
 
+  /// Prefer public getById (PDF); fall back to legacy getProductInfo.
   Future<Response> getProductsInfo(var body) async {
-    var response = await apiService.postPrivate(AppConstants.getProductsInfo,
-        body, sharedPreferencesManager.getString('token') ?? '');
-    return response;
+    final payload = body is Map
+        ? Map<String, dynamic>.from(body)
+        : <String, dynamic>{'id': body};
+    // PDF: id REQUIRED (alias product_id).
+    final id = payload['id'] ?? payload['product_id'];
+    if (id != null) {
+      payload['id'] = id;
+      payload['product_id'] = id;
+    }
+    final byId = await apiService.postPublic(
+        AppConstants.getProductsById, payload);
+    if (byId.statusCode == 200) return byId;
+
+    final get = await apiService.getPublic(
+        '${AppConstants.getProductsById}?id=${payload['id']}');
+    if (get.statusCode == 200) return get;
+
+    // Alias getProductInfo
+    final info = await apiService.postPublic(
+        AppConstants.getProductsInfo, payload);
+    if (info.statusCode == 200) return info;
+
+    return apiService.postPrivate(
+      AppConstants.getProductsInfo,
+      payload,
+      sharedPreferencesManager.getString('token') ?? '',
+    );
+  }
+
+  Future<Response> getVariants(int productId) async {
+    final body = {'id': productId};
+    final post =
+        await apiService.postPublic(AppConstants.getProductsVariants, body);
+    if (post.statusCode == 200) return post;
+    return apiService.getPublic(
+        '${AppConstants.getProductsVariants}?id=$productId');
+  }
+
+  Future<Response> getGallery(int productId) async {
+    final body = {'id': productId};
+    final post =
+        await apiService.postPublic(AppConstants.getProductsGallery, body);
+    if (post.statusCode == 200) return post;
+    return apiService.getPublic(
+        '${AppConstants.getProductsGallery}?id=$productId');
   }
 
   String getCurrencyCode() {

@@ -7,6 +7,7 @@ import 'package:salon_user/app/controller/login_controller.dart';
 import 'package:salon_user/app/controller/service_cart_controller.dart';
 import 'package:salon_user/app/controller/services_controller.dart';
 import 'package:salon_user/app/env.dart';
+import 'package:salon_user/app/helper/desktop.dart';
 import 'package:salon_user/app/helper/map_style.dart';
 import 'package:salon_user/app/helper/router.dart';
 import 'package:salon_user/app/util/open_hours.dart';
@@ -96,7 +97,7 @@ class _ServicesScreenState extends State<ServicesScreen> {
     final hoursLabel = OpenHours.label(value.salonDetails.timing);
     final isOpen = OpenHours.isOpen(value.salonDetails.timing);
     return SliverAppBar(
-      expandedHeight: 320,
+      expandedHeight: Desktop.of(context) ? 420 : 320,
       pinned: true,
       backgroundColor: ThemeProvider.backgroundColor,
       automaticallyImplyLeading: false,
@@ -240,7 +241,7 @@ class _ServicesScreenState extends State<ServicesScreen> {
     final loggedIn = value.parser.isLogin();
     void goLogin() {
       Get.delete<LoginController>(force: true);
-      Get.toNamed(AppRouter.getLoginRoute());
+      AppRouter.openLogin();
     }
 
     return Padding(
@@ -682,6 +683,12 @@ class _ServicesScreenState extends State<ServicesScreen> {
       ServicesController value, ServicesModel service, int index) {
     final selected = service.isChecked == true;
     final hasOffer = service.hasSalePrice || service.offerBadge.isNotEmpty;
+    final offerPercent = service.discount ?? 0;
+    final offerLabel = service.offerBadge.isNotEmpty
+        ? service.offerBadge
+        : offerPercent > 0
+            ? '${offerPercent.toStringAsFixed(0)}% OFF'
+            : 'OFFER';
     final offerPrice = service.displayPrice;
     final serviceRating = (service.rating ?? 0) > 0
         ? service.rating!
@@ -720,9 +727,7 @@ class _ServicesScreenState extends State<ServicesScreen> {
                       borderRadius: BorderRadius.circular(6),
                     ),
                     child: Text(
-                      service.offerBadge.isNotEmpty
-                          ? service.offerBadge
-                          : '${service.discount!.toStringAsFixed(0)}% OFF',
+                      offerLabel,
                       style: ThemeProvider.sans(
                         size: 11,
                         weight: FontWeight.w700,

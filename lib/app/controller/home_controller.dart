@@ -9,14 +9,15 @@ import 'package:salon_user/app/backend/models/banner_model.dart';
 import 'package:salon_user/app/backend/models/categories_model.dart';
 import 'package:salon_user/app/backend/models/coupons_model.dart';
 import 'package:salon_user/app/backend/models/individual_model.dart';
-import 'package:salon_user/app/backend/models/partner_ad_model.dart';
 import 'package:salon_user/app/backend/models/products_list_model.dart';
 import 'package:salon_user/app/backend/models/salon_model.dart';
+import 'package:salon_user/app/backend/models/sold_by_model.dart';
 import 'package:salon_user/app/backend/models/timed_offer_model.dart';
 import 'package:salon_user/app/backend/models/top_partner_model.dart';
 import 'package:salon_user/app/controller/coupon_controller.dart';
 import 'package:salon_user/app/backend/parse/coupon_parse.dart';
 import 'package:salon_user/app/backend/parse/home_parse.dart';
+import 'package:salon_user/app/helper/home_sections.dart';
 import 'package:salon_user/app/controller/all_categories_controller.dart';
 import 'package:salon_user/app/controller/categories_controller.dart';
 import 'package:salon_user/app/controller/categories_list_controller.dart';
@@ -24,6 +25,7 @@ import 'package:salon_user/app/controller/category_search_controller.dart';
 import 'package:salon_user/app/controller/checkout_controller.dart';
 import 'package:salon_user/app/controller/individual_checkout_controller.dart';
 import 'package:salon_user/app/controller/product_cart_controller.dart';
+import 'package:salon_user/app/controller/product_seller_controller.dart';
 import 'package:salon_user/app/controller/products_details_controller.dart';
 import 'package:salon_user/app/controller/search_controller.dart';
 import 'package:salon_user/app/controller/service_cart_controller.dart';
@@ -62,6 +64,10 @@ class HomeController extends GetxController
   List<ProductsListModel> _productsList = <ProductsListModel>[];
   List<ProductsListModel> get productsList => _productsList;
 
+  /// PDF: salon/getHomeData + products/getPublicHome → product_sellers / sellers.
+  List<SoldByModel> _productSellers = <SoldByModel>[];
+  List<SoldByModel> get productSellers => _productSellers;
+
   List<CouponsModel> _offersList = <CouponsModel>[];
   List<CouponsModel> get offersList => _offersList;
 
@@ -71,8 +77,6 @@ class HomeController extends GetxController
   List<TopPartnerModel> _topPartners = <TopPartnerModel>[];
   List<TopPartnerModel> get topPartners => _topPartners;
 
-  List<PartnerAdModel> _partnerAds = <PartnerAdModel>[];
-  List<PartnerAdModel> get partnerAds => _partnerAds;
 
   bool apiCalled = false;
   int _homeFetchId = 0;
@@ -96,8 +100,14 @@ class HomeController extends GetxController
 
   Future<void> getHomeData() async {
     final fetchId = ++_homeFetchId;
-    apiCalled = false;
-    update();
+    final keepUi = apiCalled &&
+        (_salonList.isNotEmpty ||
+            _categoriesList.isNotEmpty ||
+            _offersList.isNotEmpty);
+    if (!keepUi) {
+      apiCalled = false;
+      update();
+    }
 
     var param = {
       "lat": parser.getLat(),
@@ -115,13 +125,14 @@ class HomeController extends GetxController
     _individualList = [];
     _bannerList = [];
     _productsList = [];
+    _productSellers = [];
     _offersList = [];
     _timedOffers = [];
     _topPartners = [];
-    _partnerAds = [];
 
     final map = ApiBody.asMap(response.body);
     if (map != null) {
+      HomeSections.applyFromJson(map);
       final nested = map['data'];
       if (nested is Map) {
         _applyHomeMap(Map<String, dynamic>.from(nested));
@@ -132,8 +143,11 @@ class HomeController extends GetxController
         _applyHomeMap(map);
       } else {
         _parseTopPartners(map['top_partners'] ?? map['topPartners']);
-        _parsePartnerAds(map['partner_ads'] ?? map['partnerAds']);
       }
+      if (_bannerList.isEmpty) {
+        _parseBanners(map['banners']);
+      }
+      _enforceHomeSectionFlags();
     } else if (!ApiBody.isSuccess(response)) {
       debugPrint('getHomeData status ${response.statusCode}');
     }
@@ -146,13 +160,16 @@ class HomeController extends GetxController
   }
 
   Future<void> _finishHomeExtras(Future<Response> timedFuture, int fetchId) async {
-    try {
-      await _loadTimedOffersFrom(await timedFuture);
-    } catch (e) {
-      debugPrint('timedOffers extra: $e');
-    }
-    if (fetchId != _homeFetchId) return;
-    await _fillMissingHomeSections();
+    await Future.wait([
+      () async {
+        try {
+          await _loadTimedOffersFrom(await timedFuture);
+        } catch (e) {
+          debugPrint('timedOffers extra: $e');
+        }
+      }(),
+      _fillMissingHomeSections(),
+    ]);
     if (fetchId != _homeFetchId) return;
     checkCartData();
     haveData = _salonList.isNotEmpty || _individualList.isNotEmpty;
@@ -160,15 +177,58 @@ class HomeController extends GetxController
   }
 
   void _applyHomeMap(Map<String, dynamic> myMap) {
+    HomeSections.applyFromJson(myMap);
     _parseSalons(myMap['salon'] ?? myMap['salons']);
     _parseCategories(myMap['categories']);
     _parseIndividuals(myMap['individual'] ?? myMap['individuals']);
     _parseBanners(myMap['banners']);
     _parseProducts(myMap['products']);
+    _parseProductSellers(
+        myMap['product_sellers'] ?? myMap['sellers'] ?? myMap['productSellers']);
     _setOffers(myMap['offers'] ?? myMap['coupons'] ?? myMap);
     _parseTimedOffers(myMap['timed_offers'] ?? myMap['timedOffers']);
     _parseTopPartners(myMap['top_partners'] ?? myMap['topPartners']);
-    _parsePartnerAds(myMap['partner_ads'] ?? myMap['partnerAds']);
+    _enforceHomeSectionFlags();
+  }
+
+  void _parseProductSellers(dynamic raw) {
+    if (raw == null) return;
+    final items = ApiBody.asItemList(raw, keys: const [
+      'product_sellers',
+      'sellers',
+      'data',
+      'items',
+      'result',
+      'list',
+    ]);
+    if (items.isEmpty) return;
+    final seen = <int>{for (final s in _productSellers) s.sellerUid};
+    for (final data in items) {
+      try {
+        if (data is! Map) continue;
+        final seller =
+            SoldByModel.fromJson(Map<String, dynamic>.from(data));
+        final uid = seller.sellerUid;
+        if (uid <= 0 || seen.contains(uid)) continue;
+        seen.add(uid);
+        _productSellers.add(seller);
+      } catch (e) {
+        debugPrint('Skip product seller: $e');
+      }
+    }
+  }
+
+  void _enforceHomeSectionFlags() {
+    if (!HomeSections.showPartners) {
+      _salonList = [];
+      _topPartners = [];
+    }
+    if (!HomeSections.showFreelancers) {
+      _individualList = [];
+    }
+    if (!HomeSections.showProducts) {
+      _productsList = [];
+    }
   }
 
   void _parseTopPartners(dynamic raw) {
@@ -192,46 +252,6 @@ class HomeController extends GetxController
         debugPrint('Skip top partner: $e');
       }
     }
-  }
-
-  void _parsePartnerAds(dynamic raw) {
-    if (_partnerAds.isNotEmpty) return;
-    final items = ApiBody.asItemList(raw, keys: const [
-      'partner_ads',
-      'partnerAds',
-      'data',
-      'items',
-      'result',
-      'list',
-    ]);
-    final now = DateTime.now();
-    for (final data in items) {
-      try {
-        final map = ApiBody.asObject(data);
-        if (map == null) continue;
-        final ad = PartnerAdModel.fromJson(map);
-        if ((ad.status ?? 1) == 0) continue;
-        if ((ad.image ?? '').isEmpty) continue;
-        if (!_isAdLive(ad.fromDate, ad.toDate, now)) continue;
-        _partnerAds.add(ad);
-      } catch (e) {
-        debugPrint('Skip partner ad: $e');
-      }
-    }
-    _partnerAds.sort((a, b) => (a.sortOrder ?? 0).compareTo(b.sortOrder ?? 0));
-  }
-
-  bool _isAdLive(String? fromRaw, String? toRaw, DateTime now) {
-    final from = DateTime.tryParse(fromRaw ?? '');
-    final to = DateTime.tryParse(toRaw ?? '');
-    if (from != null && now.isBefore(DateTime(from.year, from.month, from.day))) {
-      return false;
-    }
-    if (to != null) {
-      final end = DateTime(to.year, to.month, to.day, 23, 59, 59);
-      if (now.isAfter(end)) return false;
-    }
-    return true;
   }
 
   void _parseSalons(dynamic raw) {
@@ -273,6 +293,7 @@ class HomeController extends GetxController
   }
 
   void _parseBanners(dynamic raw) {
+    if (_bannerList.isNotEmpty) return;
     final items = ApiBody.asItemList(raw, keys: const [
       'banners',
       'data',
@@ -285,9 +306,6 @@ class HomeController extends GetxController
       try {
         final map = ApiBody.asObject(data);
         if (map == null) continue;
-        if (map['link'] != null && map['type'] == null && map['value'] == null) {
-          continue;
-        }
         final banner = BannerModel.fromJson(map);
         if ((banner.status ?? 1) == 0) continue;
         if ((banner.cover ?? '').isEmpty) continue;
@@ -331,13 +349,21 @@ class HomeController extends GetxController
     final jobs = <Future<void>>[];
     if (_categoriesList.isEmpty) jobs.add(_loadCategories());
     if (_offersList.isEmpty) jobs.add(loadPublicOffers());
-    if (_salonList.isEmpty) jobs.add(_loadTopSalons(latLng));
-    if (_individualList.isEmpty) jobs.add(_loadTopFreelancers(latLng));
-    if (_productsList.isEmpty) jobs.add(_loadTopProducts(latLng));
+    if (HomeSections.showPartners && _salonList.isEmpty) {
+      jobs.add(_loadTopSalons(latLng));
+    }
+    if (HomeSections.showFreelancers && _individualList.isEmpty) {
+      jobs.add(_loadTopFreelancers(latLng));
+    }
+    if (HomeSections.showProducts && _productsList.isEmpty) {
+      jobs.add(_loadTopProducts(latLng));
+    }
     if (_bannerList.isEmpty) jobs.add(_loadBanners(latLng));
-    if (_topPartners.isEmpty) jobs.add(_loadTopPartners(latLng));
-    if (_partnerAds.isEmpty) jobs.add(_loadPartnerAds(latLng));
+    if (HomeSections.showPartners && _topPartners.isEmpty) {
+      jobs.add(_loadTopPartners(latLng));
+    }
     if (jobs.isNotEmpty) await Future.wait(jobs);
+    _enforceHomeSectionFlags();
   }
 
   Future<void> _loadTopPartners(Map<String, dynamic> param) async {
@@ -347,16 +373,6 @@ class HomeController extends GetxController
       _parseTopPartners(map?['data'] ?? map?['top_partners'] ?? response.body);
     } catch (e) {
       debugPrint('loadTopPartners: $e');
-    }
-  }
-
-  Future<void> _loadPartnerAds(Map<String, dynamic> param) async {
-    try {
-      final response = await parser.getPartnerAds(param);
-      final map = ApiBody.asMap(response.body);
-      _parsePartnerAds(map?['data'] ?? map?['partner_ads'] ?? response.body);
-    } catch (e) {
-      debugPrint('loadPartnerAds: $e');
     }
   }
 
@@ -390,9 +406,8 @@ class HomeController extends GetxController
   Future<void> _loadBanners(Map<String, dynamic> param) async {
     try {
       final response = await parser.getBannerData(param);
-      _parseBanners(response.body);
       final map = ApiBody.asMap(response.body);
-      _parsePartnerAds(map?['partner_ads'] ?? map?['partnerAds']);
+      _parseBanners(map?['banners'] ?? response.body);
     } catch (e) {
       debugPrint('loadBanners: $e');
     }
@@ -400,12 +415,34 @@ class HomeController extends GetxController
 
   Future<void> _loadTopProducts(Map<String, dynamic> param) async {
     try {
-      final response = await parser.getTopProducts(param);
-      _parseProducts(ApiBody.asList(response.body, keys: const [
-        'products',
-        'data',
-        'items',
-      ]));
+      // PDF: getPublicHome first (may 500 on backend) → topProducts → getAll.
+      // No distance filter — products show in every location.
+      Response? response;
+      try {
+        response = await parser.getProductsPublicHome({});
+        if (response.statusCode != 200) response = null;
+      } catch (_) {
+        response = null;
+      }
+      response ??= await parser.getTopProducts(param);
+      if (response.statusCode != 200) {
+        response = await parser.getProductsAll({...param, 'limit': 40});
+      }
+      final map = ApiBody.asMap(response.body);
+      final list = ApiBody.asList(
+        map?['products'] ??
+            map?['top_products'] ??
+            map?['data'] ??
+            response.body,
+        keys: const ['products', 'top_products', 'data', 'items', 'result'],
+      );
+      _parseProducts(list);
+      _parseProductSellers(
+          map?['sellers'] ?? map?['product_sellers'] ?? map?['productSellers']);
+      // Product offers from getPublicHome (when available).
+      if (_offersList.isEmpty && map != null) {
+        _setOffers(map['offers'] ?? map['coupons']);
+      }
     } catch (e) {
       debugPrint('loadTopProducts: $e');
     }
@@ -481,17 +518,6 @@ class HomeController extends GetxController
     onServices(uid);
   }
 
-  void onPartnerAd(PartnerAdModel ad) {
-    final link = (ad.link ?? '').trim();
-    if (link.isEmpty) return;
-    if (link.startsWith('http://') || link.startsWith('https://')) {
-      launchInBrowser(link);
-      return;
-    }
-    final uid = int.tryParse(link) ?? 0;
-    if (uid > 0) onServices(uid);
-  }
-
   void onSpecialist(int uid) {
     Get.delete<SpecialistController>(force: true);
     Get.toNamed(AppRouter.getSpecialistRoutes(), arguments: [uid]);
@@ -537,18 +563,37 @@ class HomeController extends GetxController
     Get.toNamed(AppRouter.getTopProductsRoutes());
   }
 
+  void onProductStores() {
+    Get.delete<ProductSellerController>(force: true);
+    Get.toNamed(AppRouter.getProductSellerRoutes());
+  }
+
+  void onProductSeller(SoldByModel seller) {
+    Get.delete<ProductSellerController>(force: true);
+    Get.toNamed(AppRouter.getProductSellerRoutes(), arguments: [
+      seller.sellerUid,
+      seller.displayName,
+      seller.cover ?? '',
+      seller.address ?? '',
+    ]);
+  }
+
   void onAllOffersList() {
     Get.delete<CouponController>(force: true);
     Get.toNamed(AppRouter.getCouponRoutes());
   }
 
-  /// Open Exclusive Offers (VIEW ALL) and focus this offer's full details.
+  /// VIEW DETAILS: this shop/offer only. VIEW ALL uses [onAllOffersList].
   void openExclusiveOffer(CouponsModel offer) {
     if (CouponParser.presentOffer(offer)) return;
     Get.delete<CouponController>(force: true);
     Get.toNamed(
       AppRouter.getCouponRoutes(),
-      arguments: {'offerId': offer.id},
+      arguments: {
+        'offerId': offer.id,
+        'single': true,
+        'seed': offer,
+      },
     );
   }
 
@@ -776,35 +821,43 @@ class HomeController extends GetxController
     update();
   }
 
+  void onBannerItem(BannerModel item) {
+    final action = (item.clickAction ?? '').trim().toLowerCase();
+    final type = '${item.type ?? 0}';
+    final value = (item.value ?? '').trim();
+    final link = (item.link ?? '').trim();
+    if (action == 'link' || type == '5') {
+      final url = link.isNotEmpty ? link : value;
+      if (url.isNotEmpty) launchInBrowser(url);
+      return;
+    }
+    onBanner(value, type);
+  }
+
   void onBanner(String value, String type) {
     debugPrint(value);
     debugPrint(type);
+    final id = int.tryParse(value) ?? 0;
     if (type == '0') {
-      debugPrint('category');
       Get.delete<UnifiedSearchController>(force: true);
       Get.toNamed(AppRouter.getCategoriesListRoutes(),
           arguments: [value, 'Offers']);
     } else if (type == '1') {
-      debugPrint('individual');
+      if (id <= 0) return;
       Get.delete<SpecialistController>(force: true);
-      Get.toNamed(AppRouter.getSpecialistRoutes(),
-          arguments: [int.parse(value.toString())]);
+      Get.toNamed(AppRouter.getSpecialistRoutes(), arguments: [id]);
     } else if (type == '2') {
-      debugPrint('salon');
+      if (id <= 0) return;
       Get.delete<ServicesController>(force: true);
-      Get.toNamed(AppRouter.getServicesRoutes(),
-          arguments: [int.parse(value.toString())]);
+      Get.toNamed(AppRouter.getServicesRoutes(), arguments: [id]);
     } else if (type == '3') {
-      debugPrint('product category');
       Get.find<CategoriesController>().onCategoryExpand(value);
       Get.find<TabsController>().updateTabId(3);
     } else if (type == '4') {
-      debugPrint('products');
       Get.delete<ProductsDetailsController>(force: true);
       Get.toNamed(AppRouter.getProductsDetailsRoutes(), arguments: [value]);
     } else if (type == '5') {
-      debugPrint('external links');
-      launchInBrowser(value);
+      if (value.isNotEmpty) launchInBrowser(value);
     }
   }
 

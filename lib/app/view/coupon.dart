@@ -36,7 +36,13 @@ class _CouponScreenState extends State<CouponScreen> {
           appBar: EliteAppBar(
             showBack: true,
             title: value.action == 'browse'
-                ? 'Exclusive Offers'
+                ? (value.singleOffer
+                    ? (value.seedOffer?.name ??
+                        (value.couponList.isNotEmpty
+                            ? value.couponList.first.name
+                            : null) ??
+                        'Offer Details')
+                    : 'Exclusive Offers')
                 : 'Redeem Rewards',
             onMore: () {},
           ),

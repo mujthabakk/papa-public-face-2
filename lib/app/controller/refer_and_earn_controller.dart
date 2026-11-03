@@ -1,5 +1,4 @@
-import 'dart:io';
-
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:salon_user/app/backend/api/handler.dart';
@@ -64,14 +63,16 @@ class ReferAndEarnController extends GetxController implements GetxService {
         'https://play.google.com/store/apps/details?id=com.papabear.userapp';
     String appStoreLink = 'https://apps.apple.com/app/idYOUR_APP_ID';
 
-    // Add appropriate store link based on platform
     String linkUrl = '';
-    if (Platform.isAndroid) {
-      message += '📱 Play Store: ';
-      linkUrl = playStoreLink;
-    } else if (Platform.isIOS) {
-      message += '📱 App Store: ';
+    if (kIsWeb) {
+      message += 'Open PapaBear: ';
+      linkUrl = Uri.base.origin;
+    } else if (defaultTargetPlatform == TargetPlatform.iOS) {
+      message += 'App Store: ';
       linkUrl = appStoreLink;
+    } else {
+      message += 'Play Store: ';
+      linkUrl = playStoreLink;
     }
 
     await Share.share(

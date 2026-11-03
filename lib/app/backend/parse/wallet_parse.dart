@@ -19,6 +19,13 @@ class WalletParser {
     return response;
   }
 
+  Future<Response> getMyWalletBalance() async {
+    return await apiService.postPrivate(
+        AppConstants.getMyWalletBalance,
+        {'id': sharedPreferencesManager.getString('uid')},
+        sharedPreferencesManager.getString('token') ?? '');
+  }
+
   String getCurrencySide() {
     return sharedPreferencesManager.getString('currencySide') ??
         AppConstants.defaultCurrencySide;

@@ -21,7 +21,7 @@ Future<void> openSpinWinOrLogin() async {
   if (!Get.isRegistered<SpinnerParser>()) return;
   final parser = Get.find<SpinnerParser>();
   if (!parser.isLoggedIn()) {
-    Get.toNamed(AppRouter.getLoginRoute());
+    AppRouter.openLogin();
     return;
   }
   showSpinWinDialog();
@@ -102,7 +102,7 @@ class _SpinWinDialogState extends State<SpinWinDialog>
   Future<void> _loadStatus() async {
     if (!_parser.isLoggedIn()) {
       if (Get.isDialogOpen ?? false) Get.back();
-      Get.toNamed(AppRouter.getLoginRoute());
+      AppRouter.openLogin();
       return;
     }
     setState(() => _loading = true);

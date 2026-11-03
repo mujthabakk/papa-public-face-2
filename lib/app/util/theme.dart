@@ -27,9 +27,25 @@ class ThemeProvider {
   static const double radius = 14;
   static const double radiusSm = 10;
 
-  static const titleStyle = TextStyle(
-      fontFamily: 'bold', fontSize: 14, color: ThemeProvider.whiteColor);
+  static const String fontRegular = 'regular';
+  static const String fontMedium = 'medium';
+  static const String fontSemiBold = 'semibold';
+  static const String fontBold = 'bold';
 
+  static String sansFamily(FontWeight weight) {
+    if (weight.value >= 700) return fontBold;
+    if (weight.value >= 600) return fontSemiBold;
+    if (weight.value >= 500) return fontMedium;
+    return fontRegular;
+  }
+
+  static TextStyle get titleStyle => sans(
+        size: 16,
+        weight: FontWeight.w600,
+        color: gold,
+      );
+
+  /// Screen / section titles — same Montserrat family as the rest of the app.
   static TextStyle serif({
     double size = 22,
     FontWeight weight = FontWeight.w600,
@@ -37,12 +53,12 @@ class ThemeProvider {
     double? letterSpacing,
     FontStyle style = FontStyle.normal,
   }) {
-    return GoogleFonts.playfairDisplay(
-      fontSize: size,
-      fontWeight: weight,
+    return sans(
+      size: size,
+      weight: weight,
       color: color,
       letterSpacing: letterSpacing,
-      fontStyle: style,
+      style: style,
     );
   }
 
@@ -53,7 +69,8 @@ class ThemeProvider {
     double? letterSpacing,
     FontStyle style = FontStyle.normal,
   }) {
-    return GoogleFonts.montserrat(
+    return TextStyle(
+      fontFamily: sansFamily(weight),
       fontSize: size,
       fontWeight: weight,
       color: color,
@@ -79,20 +96,57 @@ class ThemeProvider {
 }
 
 TextTheme txtTheme = Typography.whiteMountainView.copyWith(
-  bodyLarge: typeTheme.bodyLarge?.copyWith(fontSize: 16),
-  bodyMedium: typeTheme.bodyLarge?.copyWith(fontSize: 14),
-  displayLarge: typeTheme.bodyLarge?.copyWith(fontSize: 32),
-  displayMedium: typeTheme.bodyLarge?.copyWith(fontSize: 28),
-  displaySmall: typeTheme.bodyLarge?.copyWith(fontSize: 24),
-  headlineMedium: typeTheme.bodyLarge?.copyWith(fontSize: 21),
-  headlineSmall: typeTheme.bodyLarge?.copyWith(fontSize: 18),
-  titleLarge: typeTheme.bodyLarge?.copyWith(fontSize: 16),
-  titleMedium: typeTheme.bodyLarge?.copyWith(fontSize: 24),
-  titleSmall: typeTheme.bodyLarge?.copyWith(fontSize: 21),
+  bodyLarge: const TextStyle(
+      fontFamily: ThemeProvider.fontRegular, fontSize: 16, color: Colors.white),
+  bodyMedium: const TextStyle(
+      fontFamily: ThemeProvider.fontRegular, fontSize: 14, color: Colors.white),
+  bodySmall: const TextStyle(
+      fontFamily: ThemeProvider.fontRegular,
+      fontSize: 12,
+      color: ThemeProvider.greyColor),
+  displayLarge: const TextStyle(
+      fontFamily: ThemeProvider.fontSemiBold,
+      fontSize: 32,
+      color: Colors.white),
+  displayMedium: const TextStyle(
+      fontFamily: ThemeProvider.fontSemiBold,
+      fontSize: 28,
+      color: Colors.white),
+  displaySmall: const TextStyle(
+      fontFamily: ThemeProvider.fontSemiBold,
+      fontSize: 24,
+      color: Colors.white),
+  headlineMedium: const TextStyle(
+      fontFamily: ThemeProvider.fontSemiBold,
+      fontSize: 21,
+      color: Colors.white),
+  headlineSmall: const TextStyle(
+      fontFamily: ThemeProvider.fontSemiBold,
+      fontSize: 18,
+      color: Colors.white),
+  titleLarge: const TextStyle(
+      fontFamily: ThemeProvider.fontSemiBold,
+      fontSize: 16,
+      color: Colors.white),
+  titleMedium: const TextStyle(
+      fontFamily: ThemeProvider.fontMedium, fontSize: 16, color: Colors.white),
+  titleSmall: const TextStyle(
+      fontFamily: ThemeProvider.fontMedium, fontSize: 14, color: Colors.white),
+  labelLarge: const TextStyle(
+      fontFamily: ThemeProvider.fontSemiBold,
+      fontSize: 14,
+      color: Colors.white),
+  labelMedium: const TextStyle(
+      fontFamily: ThemeProvider.fontMedium, fontSize: 12, color: Colors.white),
+  labelSmall: const TextStyle(
+      fontFamily: ThemeProvider.fontMedium,
+      fontSize: 11,
+      color: ThemeProvider.greyColor),
 );
 
-ThemeData light = ThemeData(
-    fontFamily: 'regular',
+ThemeData _eliteTheme() {
+  return ThemeData(
+    fontFamily: ThemeProvider.fontRegular,
     scaffoldBackgroundColor: ThemeProvider.backgroundColor,
     primaryColor: ThemeProvider.gold,
     secondaryHeaderColor: ThemeProvider.gold,
@@ -100,33 +154,51 @@ ThemeData light = ThemeData(
     brightness: Brightness.dark,
     hintColor: ThemeProvider.greyColor,
     cardColor: ThemeProvider.surface,
-    appBarTheme: const AppBarTheme(
+    appBarTheme: AppBarTheme(
       backgroundColor: ThemeProvider.appColor,
       foregroundColor: ThemeProvider.gold,
       elevation: 0,
-      iconTheme: IconThemeData(color: ThemeProvider.gold),
+      iconTheme: const IconThemeData(color: ThemeProvider.gold),
+      titleTextStyle: ThemeProvider.sans(
+        size: 16,
+        weight: FontWeight.w600,
+        color: ThemeProvider.gold,
+      ),
     ),
     textButtonTheme: TextButtonThemeData(
-        style: TextButton.styleFrom(foregroundColor: ThemeProvider.gold)),
+      style: TextButton.styleFrom(
+        foregroundColor: ThemeProvider.gold,
+        textStyle: ThemeProvider.sans(size: 14, weight: FontWeight.w600),
+      ),
+    ),
+    elevatedButtonTheme: ElevatedButtonThemeData(
+      style: ElevatedButton.styleFrom(
+        textStyle: ThemeProvider.sans(size: 14, weight: FontWeight.w700),
+      ),
+    ),
+    inputDecorationTheme: InputDecorationTheme(
+      hintStyle: ThemeProvider.sans(size: 13, color: ThemeProvider.greyColor),
+      labelStyle: ThemeProvider.sans(size: 13, color: ThemeProvider.greyColor),
+    ),
+    dialogTheme: DialogThemeData(
+      titleTextStyle: ThemeProvider.sans(
+        size: 16,
+        weight: FontWeight.w600,
+        color: ThemeProvider.whiteColor,
+      ),
+      contentTextStyle: ThemeProvider.sans(
+        size: 14,
+        color: ThemeProvider.whiteColor,
+      ),
+    ),
     textTheme: txtTheme,
     colorScheme: const ColorScheme.dark(
             primary: ThemeProvider.gold,
             secondary: ThemeProvider.gold,
             surface: ThemeProvider.surface)
-        .copyWith(error: const Color(0xFFE84D4F)));
+        .copyWith(error: const Color(0xFFE84D4F)),
+  );
+}
 
-ThemeData dark = ThemeData(
-    fontFamily: 'regular',
-    scaffoldBackgroundColor: ThemeProvider.backgroundColor,
-    primaryColor: ThemeProvider.gold,
-    secondaryHeaderColor: ThemeProvider.gold,
-    disabledColor: const Color(0xffa2a7ad),
-    brightness: Brightness.dark,
-    hintColor: ThemeProvider.greyColor,
-    cardColor: ThemeProvider.surface,
-    textButtonTheme: TextButtonThemeData(
-        style: TextButton.styleFrom(foregroundColor: ThemeProvider.gold)),
-    textTheme: txtTheme,
-    colorScheme: const ColorScheme.dark(
-            primary: ThemeProvider.gold, secondary: ThemeProvider.gold)
-        .copyWith(error: const Color(0xFFdd3135)));
+ThemeData light = _eliteTheme();
+ThemeData dark = _eliteTheme();

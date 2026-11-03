@@ -309,10 +309,15 @@ class EliteNetworkImage extends StatelessWidget {
             height: h,
           );
         } else {
+          final dpr = MediaQuery.maybeOf(context)?.devicePixelRatio ?? 2;
+          final cacheW = w == null
+              ? null
+              : (w * dpr).round().clamp(64, 1080);
           child = CachedNetworkImage(
             imageUrl: Environments.mediaUrl(url),
             width: w,
             height: h,
+            memCacheWidth: cacheW,
             fit: fit,
             placeholder: (context, url) => Container(
               width: w,
@@ -611,6 +616,78 @@ String elitePrice(String side, String symbol, num? amount, {int digits = 2}) {
     AppCurrency.apply(symbol: symbol, side: side);
   }
   return AppCurrency.format(amount, digits: digits);
+}
+
+class EliteCashbackHint extends StatelessWidget {
+  final double percentage;
+  final double previewAmount;
+  final String currencySide;
+  final String currencySymbol;
+  final EdgeInsetsGeometry padding;
+
+  const EliteCashbackHint({
+    Key? key,
+    required this.percentage,
+    this.previewAmount = 0,
+    this.currencySide = '',
+    this.currencySymbol = '',
+    this.padding = const EdgeInsets.only(top: 10),
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    if (percentage <= 0) return const SizedBox.shrink();
+    final pct = percentage % 1 == 0
+        ? percentage.toStringAsFixed(0)
+        : percentage.toStringAsFixed(2);
+    return Padding(
+      padding: padding,
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        decoration: BoxDecoration(
+          color: ThemeProvider.gold.withValues(alpha: 0.12),
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(
+            color: ThemeProvider.gold.withValues(alpha: 0.35),
+          ),
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Icon(Icons.account_balance_wallet_outlined,
+                color: ThemeProvider.gold, size: 18),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Get $pct% cashback after service is completed',
+                    style: ThemeProvider.sans(
+                      size: 12,
+                      weight: FontWeight.w600,
+                      color: ThemeProvider.gold,
+                    ),
+                  ),
+                  if (previewAmount > 0) ...[
+                    const SizedBox(height: 4),
+                    Text(
+                      elitePrice(currencySide, currencySymbol, previewAmount),
+                      style: ThemeProvider.sans(
+                        size: 11,
+                        color: Colors.white70,
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }
 
 class EliteCard extends StatelessWidget {
@@ -912,7 +989,7 @@ class EliteLoginPromptCard extends StatelessWidget {
                 onTap!();
                 return;
               }
-              Get.toNamed(AppRouter.getLoginRoute());
+              AppRouter.openLogin();
             },
           ),
         ],

@@ -22,6 +22,40 @@ class TaxSettingsData {
   }
 }
 
+class HomeSectionsData {
+  final bool showPartners;
+  final bool showFreelancers;
+  final bool showProducts;
+
+  HomeSectionsData({
+    required this.showPartners,
+    required this.showFreelancers,
+    required this.showProducts,
+  });
+
+  factory HomeSectionsData.fromJson(Map<String, dynamic> json) {
+    bool flag(List<String> keys, {bool fallback = true}) {
+      for (final key in keys) {
+        if (!json.containsKey(key)) continue;
+        final raw = json[key];
+        if (raw == true || raw == 1) return true;
+        if (raw == false || raw == 0) return false;
+        final text = raw?.toString().trim().toLowerCase() ?? '';
+        if (text == 'true' || text == '1' || text == 'yes') return true;
+        if (text == 'false' || text == '0' || text == 'no') return false;
+      }
+      return fallback;
+    }
+
+    return HomeSectionsData(
+      showPartners: flag(const ['show_partners', 'home_partners_enabled']),
+      showFreelancers:
+          flag(const ['show_freelancers', 'home_freelancers_enabled']),
+      showProducts: flag(const ['show_products', 'home_products_enabled']),
+    );
+  }
+}
+
 class TaxAvailabilityData {
   final String taxType;
   final bool taxAvailable;

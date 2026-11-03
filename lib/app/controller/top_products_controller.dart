@@ -37,18 +37,35 @@ class TopProductsControllrer extends GetxController implements GetxService {
     Response response = await parser.getTopProducts();
     apiCalled = true;
 
-    if (ApiBody.isSuccess(response) ||
-        ApiBody.asList(response.body, keys: const ['products', 'data', 'items'])
-            .isNotEmpty) {
+    final items = ApiBody.asList(
+      response.body,
+      keys: const ['products', 'top_products', 'data', 'items', 'result', 'list'],
+    );
+    if (ApiBody.isSuccess(response) || items.isNotEmpty) {
       _productsList = [];
-      for (final data in ApiBody.asList(response.body,
-          keys: const ['products', 'data', 'items'])) {
+      for (final data in items) {
         try {
           if (data is! Map) continue;
           _productsList
               .add(ProductsListModel.fromJson(Map<String, dynamic>.from(data)));
         } catch (e) {
           debugPrint('Skip product: $e');
+        }
+      }
+      // getPublicHome nests products under data.products
+      if (_productsList.isEmpty) {
+        final map = ApiBody.asMap(response.body);
+        final nested = map?['data'];
+        if (nested is Map) {
+          for (final data in ApiBody.asList(
+            nested['products'] ?? nested['top_products'],
+          )) {
+            if (data is! Map) continue;
+            try {
+              _productsList.add(
+                  ProductsListModel.fromJson(Map<String, dynamic>.from(data)));
+            } catch (_) {}
+          }
         }
       }
       _productsList.removeWhere((product) => product.status == 0);

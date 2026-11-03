@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:salon_user/app/backend/models/service_cart_model.dart';
 import 'package:salon_user/app/backend/models/coupons_model.dart';
+import 'package:salon_user/app/backend/parse/cashback_parse.dart';
 import 'package:salon_user/app/backend/parse/checkout_parse.dart';
 import 'package:salon_user/app/backend/parse/coupon_parse.dart';
 import 'package:salon_user/app/backend/parse/pricing_parse.dart';
@@ -70,6 +71,11 @@ class CheckoutController extends GetxController implements GetxService {
     return (cart.grandTotal - couponDiscount).clamp(0, double.infinity);
   }
 
+  double cashbackPercent = 0;
+  double get cashbackPreview => cashbackPercent <= 0
+      ? 0
+      : double.parse((payAmount * cashbackPercent / 100).toStringAsFixed(2));
+
   CheckoutController({required this.parser});
 
   @override
@@ -82,7 +88,20 @@ class CheckoutController extends GetxController implements GetxService {
     );
     refreshPricingFromApi();
     _dropIneligibleFirstUserCoupon();
+    loadCashback();
     super.onInit();
+  }
+
+  Future<void> loadCashback() async {
+    try {
+      if (!Get.isRegistered<CashbackParser>()) return;
+      cashbackPercent =
+          await Get.find<CashbackParser>().percentFor('partner');
+    } catch (e) {
+      cashbackPercent = 0;
+      debugPrint('loadCashback: $e');
+    }
+    update();
   }
 
   Future<void> _dropIneligibleFirstUserCoupon() async {
@@ -215,7 +234,7 @@ class CheckoutController extends GetxController implements GetxService {
       Get.toNamed(AppRouter.getSlotRoutes());
     } else {
       Get.delete<LoginController>(force: true);
-      Get.toNamed(AppRouter.getLoginRoute());
+      AppRouter.openLogin();
     }
     currencySide = parser.getCurrencySide();
     currencySymbol = parser.getCurrencySymbol();

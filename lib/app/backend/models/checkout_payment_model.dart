@@ -61,17 +61,17 @@ class CheckoutVerifyData {
     this.paidFlag = false,
   });
 
-  bool get isPaid {
-    if (paidFlag) return true;
-    final s = paymentStatus.toLowerCase();
-    return s == 'paid' || s == 'success' || s == 'completed';
-  }
+  bool get isPaid => paidFlag;
 
   factory CheckoutVerifyData.fromJson(Map<String, dynamic> json) {
     final id = int.tryParse(json['appointment_id']?.toString() ?? '') ??
         int.tryParse(json['book_id']?.toString() ?? '') ??
         int.tryParse(json['id']?.toString() ?? '') ??
         0;
+    final paid = json['is_paid'] == true ||
+        json['is_paid']?.toString() == '1' ||
+        json['is_payment_completed'] == true ||
+        json['is_payment_completed']?.toString() == '1';
     return CheckoutVerifyData(
       appointmentId: id,
       bookId: int.tryParse(json['book_id']?.toString() ?? '') ?? id,
@@ -79,7 +79,7 @@ class CheckoutVerifyData {
           json['status']?.toString() ??
           'pending',
       amount: double.tryParse(json['amount']?.toString() ?? '') ?? 0,
-      paidFlag: json['is_paid'] == true || json['is_paid']?.toString() == '1',
+      paidFlag: paid,
     );
   }
 }

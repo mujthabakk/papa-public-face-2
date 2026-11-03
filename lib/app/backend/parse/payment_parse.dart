@@ -290,6 +290,58 @@ class PaymentParser {
     return _parsePayUrl(response);
   }
 
+  /// Checkout online pay: POST generatePaymentUrl { uid, book_id }.
+  /// `is_paid=false` is expected and is not payment success.
+  Future<({bool success, String message, CheckoutPaymentUrlData? data})>
+      generatePaymentUrl({required int appointmentId}) async {
+    final uid = getUidInt();
+    if (uid == null) {
+      return (
+        success: false,
+        message: 'Please log in to continue.',
+        data: null,
+      );
+    }
+    final payload = <String, dynamic>{
+      'uid': uid,
+      'book_id': appointmentId,
+      'appointment_id': appointmentId,
+    };
+    final response = await apiService.postPrivate(
+      AppConstants.paymentsGeneratePaymentUrl,
+      payload,
+      getToken(),
+    );
+    return _parsePayUrl(response);
+  }
+
+  Future<void> cancelCheckoutPayment({required int appointmentId}) async {
+    if (appointmentId <= 0) return;
+    final uid = getUidInt();
+    if (uid == null) return;
+    final payload = <String, dynamic>{
+      'uid': uid,
+      'appointment_id': appointmentId,
+      'book_id': appointmentId,
+    };
+    try {
+      final response = await apiService.postPrivate(
+        AppConstants.paymentsCancelCheckoutPayment,
+        payload,
+        getToken(),
+      );
+      final map = ApiBody.asMap(response.body);
+      if (map != null && map['success'] == true) return;
+      await apiService.postPrivate(
+        AppConstants.paymentsCancelPayNow,
+        payload,
+        getToken(),
+      );
+    } catch (e) {
+      debugPrint('cancelCheckoutPayment: $e');
+    }
+  }
+
   ({bool success, String message, CheckoutPaymentUrlData? data}) _parsePayUrl(
       Response response) {
     final map = ApiBody.asMap(response.body);
@@ -376,10 +428,18 @@ class PaymentParser {
     if (data is! Map) {
       return (success: false, message: message, data: null);
     }
+    final dataMap = Map<String, dynamic>.from(data);
+    if (!dataMap.containsKey('is_paid') && map.containsKey('is_paid')) {
+      dataMap['is_paid'] = map['is_paid'];
+    }
+    if (!dataMap.containsKey('is_payment_completed') &&
+        map.containsKey('is_payment_completed')) {
+      dataMap['is_payment_completed'] = map['is_payment_completed'];
+    }
     return (
       success: true,
       message: message,
-      data: CheckoutVerifyData.fromJson(Map<String, dynamic>.from(data)),
+      data: CheckoutVerifyData.fromJson(dataMap),
     );
   }
 }

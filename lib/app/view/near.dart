@@ -7,6 +7,8 @@ import 'package:salon_user/app/controller/near_controller.dart';
 import 'package:salon_user/app/controller/top_specialist_controller.dart';
 import 'package:salon_user/app/controller/unified_search_controller.dart';
 import 'package:salon_user/app/env.dart';
+import 'package:salon_user/app/helper/desktop.dart';
+import 'package:salon_user/app/helper/home_sections.dart';
 import 'package:salon_user/app/helper/map_style.dart';
 import 'package:salon_user/app/helper/router.dart';
 import 'package:salon_user/app/util/open_hours.dart';
@@ -120,7 +122,8 @@ class _NearScreenState extends State<NearScreen> {
                     zoomControlsEnabled: false,
                   ),
                 ),
-              if (value.individualList.isNotEmpty) ...[
+              if (HomeSections.showFreelancers &&
+                  value.individualList.isNotEmpty) ...[
                 EliteSectionHeader(
                   title: 'TOP FREELANCERS'.tr,
                   action: 'VIEW ALL >'.tr,
@@ -185,7 +188,23 @@ class _NearScreenState extends State<NearScreen> {
                   title: 'NEARBY CENTERS'.tr,
                   goldTitle: true,
                 ),
-                ...salons.map((item) => _centerCard(value, item)),
+                if (Desktop.of(context) && Desktop.salonColumns(context) > 1)
+                  GridView.builder(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
+                    itemCount: salons.length,
+                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: Desktop.salonColumns(context),
+                      mainAxisSpacing: 12,
+                      crossAxisSpacing: 12,
+                      childAspectRatio: 1.55,
+                    ),
+                    itemBuilder: (_, i) =>
+                        _centerCard(value, salons[i], tight: true),
+                  )
+                else
+                  ...salons.map((item) => _centerCard(value, item)),
               ] else if (_chip == 1)
                 const EliteApiUnavailable(
                   title: 'No shops open now',
@@ -224,9 +243,11 @@ class _NearScreenState extends State<NearScreen> {
     );
   }
 
-  Widget _centerCard(NearController value, dynamic item) {
+  Widget _centerCard(NearController value, dynamic item, {bool tight = false}) {
     return Container(
-      margin: const EdgeInsets.fromLTRB(16, 0, 16, 14),
+      margin: tight
+          ? EdgeInsets.zero
+          : const EdgeInsets.fromLTRB(16, 0, 16, 14),
       padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
         color: ThemeProvider.surface,

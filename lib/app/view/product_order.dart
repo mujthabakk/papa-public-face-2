@@ -44,34 +44,30 @@ class _ProductOrderScreenState extends State<ProductOrderScreen> {
           body: !c.parser.haveLoggedIn()
               ? Center(
                   child: Text('Please log in to view history'.tr,
-                      style: ThemeProvider.sans(size: 13, color: Colors.white70)),
+                      style:
+                          ThemeProvider.sans(size: 13, color: Colors.white70)),
                 )
-              : c.apiCalled == false
-                  ? const Center(
-                      child: CircularProgressIndicator(
-                          color: ThemeProvider.gold),
-                    )
-                  : Column(
-                      children: [
-                        Container(
-                          margin: const EdgeInsets.fromLTRB(16, 8, 16, 12),
-                          padding: const EdgeInsets.all(4),
-                          decoration: BoxDecoration(
-                            color: ThemeProvider.surface,
-                            borderRadius: BorderRadius.circular(24),
-                          ),
-                          child: Row(
-                            children: [
-                              _seg('Services', 0),
-                              _seg('Products', 1),
-                            ],
-                          ),
-                        ),
-                        Expanded(
-                          child: _tab == 0 ? _services() : _products(c),
-                        ),
-                      ],
+              : Column(
+                  children: [
+                    Container(
+                      margin: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+                      padding: const EdgeInsets.all(4),
+                      decoration: BoxDecoration(
+                        color: ThemeProvider.surface,
+                        borderRadius: BorderRadius.circular(24),
+                      ),
+                      child: Row(
+                        children: [
+                          _seg('Services', 0),
+                          _seg('Products', 1),
+                        ],
+                      ),
                     ),
+                    Expanded(
+                      child: _tab == 0 ? _services() : _products(c),
+                    ),
+                  ],
+                ),
         );
       },
     );
@@ -112,6 +108,11 @@ class _ProductOrderScreenState extends State<ProductOrderScreen> {
     return GetBuilder<BookingController>(
       builder: (b) {
         final list = [...b.appointmentList, ...b.appointmentListOld];
+        if (!b.apiCalled && list.isEmpty) {
+          return const Center(
+            child: CircularProgressIndicator(color: ThemeProvider.gold),
+          );
+        }
         if (list.isEmpty) {
           return const EliteApiUnavailable(
             minHeight: 180,
@@ -140,136 +141,151 @@ class _ProductOrderScreenState extends State<ProductOrderScreen> {
     final provider = a.salonInfo?.name ??
         '${a.ownerInfo?.firstName ?? ''} ${a.ownerInfo?.lastName ?? ''}'.trim();
     final reviewed = a.status == 4;
-    return EliteCard(
-      padding: EdgeInsets.zero,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Stack(
-            children: [
-              EliteNetworkImage(
-                url: '${Environments.imageURL}$cover',
-                height: 140,
-                width: double.infinity,
-                radius:
-                    const BorderRadius.vertical(top: Radius.circular(14)),
-              ),
-              Positioned(
-                top: 10,
-                right: 10,
-                child: Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  color: reviewed ? ThemeProvider.gold : Colors.black54,
-                  child: Text(
-                    (b.statusName[a.status ?? 0]).toUpperCase(),
-                    style: ThemeProvider.sans(
-                      size: 9,
-                      weight: FontWeight.w700,
-                      color: reviewed ? Colors.black : Colors.white,
+    return GestureDetector(
+      onTap: a.id == null ? null : () => b.onAppointment(a.id!),
+      child: EliteCard(
+        padding: EdgeInsets.zero,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Stack(
+              children: [
+                EliteNetworkImage(
+                  url: '${Environments.imageURL}$cover',
+                  height: 140,
+                  width: double.infinity,
+                  radius: const BorderRadius.vertical(top: Radius.circular(14)),
+                ),
+                Positioned(
+                  top: 10,
+                  right: 10,
+                  child: Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    color: reviewed ? ThemeProvider.gold : Colors.black54,
+                    child: Text(
+                      ((a.status != null &&
+                                  a.status! >= 0 &&
+                                  a.status! < b.statusName.length)
+                              ? b.statusName[a.status!]
+                              : b.statusName.first)
+                          .toUpperCase(),
+                      style: ThemeProvider.sans(
+                        size: 9,
+                        weight: FontWeight.w700,
+                        color: reviewed ? Colors.black : Colors.white,
+                      ),
                     ),
                   ),
                 ),
-              ),
-            ],
-          ),
-          Padding(
-            padding: const EdgeInsets.all(14),
-            child: Column(
-              children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: Text(title ?? 'Service',
-                          style: ThemeProvider.serif(
-                              size: 18, color: ThemeProvider.gold)),
-                    ),
-                    Text(
-                      elitePrice(b.currencySide, b.currencySymbol, a.grandTotal,
-                          digits: 0),
-                      style: ThemeProvider.serif(
-                          size: 18, color: ThemeProvider.gold),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 6),
-                Row(
-                  children: [
-                    const Icon(Icons.calendar_today,
-                        size: 12, color: ThemeProvider.greyColor),
-                    Text(' ${_fmt(a.saveDate)}',
-                        style: ThemeProvider.sans(
-                            size: 12, color: ThemeProvider.greyColor)),
-                    Text('  •  ',
-                        style: TextStyle(color: ThemeProvider.greyColor)),
-                    const Icon(Icons.person_outline,
-                        size: 12, color: ThemeProvider.greyColor),
-                    Expanded(
-                      child: Text(' $provider',
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: ThemeProvider.sans(
-                              size: 12, color: ThemeProvider.greyColor)),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 10),
-                Row(
-                  children: [
-                    ...List.generate(
-                      5,
-                      (i) => Icon(
-                        reviewed ? Icons.star : Icons.star_border,
-                        size: 16,
-                        color: reviewed
-                            ? ThemeProvider.gold
-                            : ThemeProvider.greyColor,
-                      ),
-                    ),
-                    const Spacer(),
-                    if (a.status == 4)
-                      TextButton(
-                        onPressed: () {
-                          Get.delete<AddReviewController>(force: true);
-                          Get.toNamed(AppRouter.getAddReviewsRoutes(),
-                              arguments: [
-                                'owner',
-                                cover ?? '',
-                                provider,
-                                ((a.salonId ?? 0) != 0
-                                        ? a.salonId
-                                        : a.freelancerId)
-                                    .toString(),
-                              ]);
-                        },
-                        style: TextButton.styleFrom(
-                          backgroundColor: ThemeProvider.gold,
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 10, vertical: 6),
-                        ),
-                        child: Text('WRITE REVIEW'.tr,
-                            style: ThemeProvider.sans(
-                              size: 10,
-                              weight: FontWeight.w700,
-                              color: ThemeProvider.blackColor,
-                            )),
-                      )
-                    else
-                      Text('Reviewed'.tr,
-                          style: ThemeProvider.sans(
-                              size: 12, color: ThemeProvider.greyColor)),
-                  ],
-                ),
               ],
             ),
-          ),
-        ],
+            Padding(
+              padding: const EdgeInsets.all(14),
+              child: Column(
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(title ?? 'Service',
+                            style: ThemeProvider.serif(
+                                size: 18, color: ThemeProvider.gold)),
+                      ),
+                      Text(
+                        elitePrice(
+                            b.currencySide, b.currencySymbol, a.grandTotal,
+                            digits: 0),
+                        style: ThemeProvider.serif(
+                            size: 18, color: ThemeProvider.gold),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                  Row(
+                    children: [
+                      const Icon(Icons.calendar_today,
+                          size: 12, color: ThemeProvider.greyColor),
+                      Text(' ${_fmt(a.saveDate)}',
+                          style: ThemeProvider.sans(
+                              size: 12, color: ThemeProvider.greyColor)),
+                      Text('  •  ',
+                          style: TextStyle(color: ThemeProvider.greyColor)),
+                      const Icon(Icons.person_outline,
+                          size: 12, color: ThemeProvider.greyColor),
+                      Expanded(
+                        child: Text(' $provider',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: ThemeProvider.sans(
+                                size: 12, color: ThemeProvider.greyColor)),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  Row(
+                    children: [
+                      ...List.generate(
+                        5,
+                        (i) => Icon(
+                          reviewed ? Icons.star : Icons.star_border,
+                          size: 16,
+                          color: reviewed
+                              ? ThemeProvider.gold
+                              : ThemeProvider.greyColor,
+                        ),
+                      ),
+                      const Spacer(),
+                      if (a.status == 4)
+                        TextButton(
+                          onPressed: () {
+                            Get.delete<AddReviewController>(force: true);
+                            Get.toNamed(AppRouter.getAddReviewsRoutes(),
+                                arguments: [
+                                  'owner',
+                                  cover ?? '',
+                                  provider,
+                                  ((a.salonId ?? 0) != 0
+                                          ? a.salonId
+                                          : a.freelancerId)
+                                      .toString(),
+                                ]);
+                          },
+                          style: TextButton.styleFrom(
+                            backgroundColor: ThemeProvider.gold,
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 10, vertical: 6),
+                          ),
+                          child: Text('WRITE REVIEW'.tr,
+                              style: ThemeProvider.sans(
+                                size: 10,
+                                weight: FontWeight.w700,
+                                color: ThemeProvider.blackColor,
+                              )),
+                        ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                EliteGoldButton(
+                  label: 'BOOK AGAIN'.tr,
+                  icon: Icons.replay,
+                  onTap: () => b.bookAgain(a),
+                ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
 
   Widget _products(ProductOrderController c) {
     final list = [...c.productSalonList, ...c.productSalonListOld];
+    if (!c.apiCalled && list.isEmpty) {
+      return const Center(
+        child: CircularProgressIndicator(color: ThemeProvider.gold),
+      );
+    }
     if (list.isEmpty) {
       return const EliteApiUnavailable(
         minHeight: 180,
@@ -285,13 +301,12 @@ class _ProductOrderScreenState extends State<ProductOrderScreen> {
   }
 
   Widget _productCard(ProductOrderController c, ProductSalonModel o) {
-    final name = o.orders?.isNotEmpty == true
-        ? o.orders!.first.name
-        : 'Product Order';
+    final name =
+        o.orders?.isNotEmpty == true ? o.orders!.first.name : 'Product Order';
     final cover = o.orders?.isNotEmpty == true ? o.orders!.first.cover : '';
     final done = o.status == 4;
     return GestureDetector(
-      onTap: () => c.onProductDetail(o.id as int),
+      onTap: o.id == null ? null : () => c.onProductDetail(o.id!),
       child: EliteCard(
         padding: EdgeInsets.zero,
         child: Column(
@@ -303,8 +318,7 @@ class _ProductOrderScreenState extends State<ProductOrderScreen> {
                   url: '${Environments.imageURL}$cover',
                   height: 140,
                   width: double.infinity,
-                  radius:
-                      const BorderRadius.vertical(top: Radius.circular(14)),
+                  radius: const BorderRadius.vertical(top: Radius.circular(14)),
                 ),
                 Positioned(
                   top: 10,
@@ -314,7 +328,7 @@ class _ProductOrderScreenState extends State<ProductOrderScreen> {
                         const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     color: done ? ThemeProvider.gold : Colors.black54,
                     child: Text(
-                      (c.statusName[o.status ?? 0]).toUpperCase(),
+                      c.statusLabel(o.status).toUpperCase(),
                       style: ThemeProvider.sans(
                         size: 9,
                         weight: FontWeight.w700,
@@ -327,18 +341,29 @@ class _ProductOrderScreenState extends State<ProductOrderScreen> {
             ),
             Padding(
               padding: const EdgeInsets.all(14),
-              child: Row(
+              child: Column(
                 children: [
-                  Expanded(
-                    child: Text(name ?? '',
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(name ?? '',
+                            style: ThemeProvider.serif(
+                                size: 18, color: ThemeProvider.gold)),
+                      ),
+                      Text(
+                        elitePrice(
+                            c.currencySide, c.currencySymbol, o.grandTotal,
+                            digits: 2),
                         style: ThemeProvider.serif(
-                            size: 18, color: ThemeProvider.gold)),
+                            size: 18, color: ThemeProvider.gold),
+                      ),
+                    ],
                   ),
-                  Text(
-                    elitePrice(c.currencySide, c.currencySymbol, o.grandTotal,
-                        digits: 2),
-                    style: ThemeProvider.serif(
-                        size: 18, color: ThemeProvider.gold),
+                  const SizedBox(height: 12),
+                  EliteGoldButton(
+                    label: 'BOOK AGAIN'.tr,
+                    icon: Icons.replay,
+                    onTap: () => c.bookAgain(o),
                   ),
                 ],
               ),
