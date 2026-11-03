@@ -25,9 +25,10 @@ void main() async {
     statusBarIconBrightness: Brightness.light,
   ));
   await dotenv.load(fileName: '.env');
-  await Firebase.initializeApp(
-      options: DefaultFirebaseOptions.currentPlatform,
-      name: 'papabear-public-app');
+  if (Firebase.apps.isEmpty) {
+    await Firebase.initializeApp(
+        options: DefaultFirebaseOptions.currentPlatform);
+  }
   await FacebookService.init();
   await MainBinding().dependencies();
   runApp(const MyApp());

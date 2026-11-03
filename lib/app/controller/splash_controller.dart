@@ -8,6 +8,7 @@ import 'package:salon_user/app/backend/models/settings_model.dart';
 import 'package:salon_user/app/backend/models/support_model.dart';
 import 'package:salon_user/app/backend/parse/pricing_parse.dart';
 import 'package:salon_user/app/backend/parse/splash_parse.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:salon_user/app/controller/languages_controller.dart';
 import 'package:salon_user/app/helper/locale_helper.dart';
@@ -27,10 +28,19 @@ class SplashController extends GetxController implements GetxService {
   @override
   void onInit() {
     super.onInit();
-    FirebaseMessaging.instance.getToken().then((value) {
-      debugPrint(value.toString());
-      parser.saveDeviceToken(value.toString());
-    }).catchError((_) {});
+    unawaited(_saveFcmToken());
+  }
+
+  Future<void> _saveFcmToken() async {
+    try {
+      if (Firebase.apps.isEmpty) return;
+      final token = await FirebaseMessaging.instance.getToken();
+      if (token == null || token.isEmpty) return;
+      debugPrint(token);
+      parser.saveDeviceToken(token);
+    } catch (e) {
+      debugPrint('FCM token skipped: $e');
+    }
   }
 
   Future<bool> initSharedData() {

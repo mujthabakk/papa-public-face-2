@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>PapaBear — Salon Open / Closed Timing API</title>
+<style>
+  @page { size: A4; margin: 16mm 14mm; }
+  * { box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+    color: #0D0D0D;
+    font-size: 11px;
+    line-height: 1.45;
+    margin: 0;
+  }
+  .bar {
+    background: #0D0D0D;
+    color: #fff;
+    padding: 10px 14px;
+    font-size: 11px;
+    letter-spacing: 0.3px;
+    margin-bottom: 16px;
+  }
+  .bar b { color: #F2D338; }
+  h1 { font-size: 20px; margin: 0 0 6px; }
+  .sub { color: #666; font-size: 12px; margin: 0 0 14px; }
+  hr.gold { border: none; border-top: 2px solid #D4AF37; margin: 0 0 14px; }
+  h2 {
+    font-size: 13px;
+    margin: 16px 0 8px;
+    padding-bottom: 3px;
+    border-bottom: 1px solid #eee;
+  }
+  p { margin: 0 0 8px; }
+  ul { margin: 0 0 8px; padding-left: 18px; }
+  li { margin-bottom: 3px; }
+  .note {
+    color: #555;
+    font-style: italic;
+    margin: 6px 0 10px;
+  }
+  pre {
+    background: #F2F2F2;
+    border: 1px solid #E5E5E5;
+    border-radius: 6px;
+    padding: 10px 12px;
+    font-family: ui-monospace, Menlo, Consolas, monospace;
+    font-size: 9.5px;
+    line-height: 1.4;
+    overflow: auto;
+    white-space: pre-wrap;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 8px 0 12px;
+    font-size: 10.5px;
+  }
+  th {
+    background: #0D0D0D;
+    color: #fff;
+    text-align: left;
+    padding: 7px 8px;
+  }
+  td {
+    background: #F7F5F0;
+    border: 1px solid #DDD;
+    padding: 7px 8px;
+    vertical-align: top;
+  }
+  code { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 10px; }
+  .footer {
+    margin-top: 22px;
+    padding-top: 10px;
+    border-top: 1px solid #CCC;
+    text-align: center;
+    color: #777;
+    font-size: 9px;
+  }
+  ol.checklist { padding-left: 20px; }
+  ol.checklist li { margin-bottom: 4px; }
+</style>
+</head>
+<body>
+  <div class="bar"><b>PAPA BEAR</b> · Public App → Backend Spec</div>
+
+  <h1>Salon Open / Closed Label — Timing API</h1>
+  <p class="sub">
+    How the public app shows <b>Open</b> / <b>Closed</b> on shop page &amp; Nearby.
+    Backend must send correct <b>timing</b> so labels work.
+  </p>
+  <hr class="gold" />
+
+  <h2>1. What the app shows</h2>
+  <p>On salon / shop detail page (and Nearby list cards):</p>
+  <ul>
+    <li><b>Badge</b> (top of hero): green <b>Open</b> or grey <b>Closed</b></li>
+    <li><b>Hours line</b>: <i>Open until 9:00 PM</i> or <i>Closed · Opens at 10:00 AM</i></li>
+  </ul>
+  <p class="note">
+    <b>Important:</b> The public app does <b>not</b> require a separate Open/Closed API flag on the shop page.
+    It calculates status from the salon <b>timing</b> array + the <b>device local clock</b>.
+  </p>
+
+  <h2>2. APIs that must return timing</h2>
+  <p>Send a <b>timing</b> field on these responses:</p>
+  <ul>
+    <li><code>api/v1/salon/salonDetails</code> — shop page</li>
+    <li><code>api/v1/salon/getHomeData</code> — home salon list</li>
+    <li>Nearby / search salon objects</li>
+  </ul>
+
+  <h2>3. Required timing format</h2>
+  <p>Accept either a JSON array or a JSON string. Preferred: array.</p>
+<pre>"timing": [
+  { "day": 0, "open_time": "10:00", "close_time": "21:00" },
+  { "day": 1, "open_time": "10:00", "close_time": "21:00" },
+  { "day": 2, "open_time": "10:00", "close_time": "21:00" },
+  { "day": 3, "open_time": "10:00", "close_time": "21:00" },
+  { "day": 4, "open_time": "10:00", "close_time": "21:00" },
+  { "day": 5, "open_time": "10:00", "close_time": "21:00" },
+  { "day": 6, "open_time": "10:00", "close_time": "21:00" }
+]</pre>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Field</th>
+        <th>Type</th>
+        <th>Rule</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><code>day</code></td>
+        <td>int</td>
+        <td><b>0 = Sunday, 1 = Monday … 6 = Saturday</b></td>
+      </tr>
+      <tr>
+        <td><code>open_time</code></td>
+        <td>string</td>
+        <td>24-hour <code>HH:mm</code> e.g. <code>"10:00"</code> (not <code>"10:00 AM"</code>)</td>
+      </tr>
+      <tr>
+        <td><code>close_time</code></td>
+        <td>string</td>
+        <td>24-hour <code>HH:mm</code> e.g. <code>"21:00"</code></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p><b>Overnight hours</b> (e.g. 20:00 → 02:00): <code>close_time</code> may be earlier than <code>open_time</code>. App adds 24 hours.</p>
+  <p><b>Closed all day:</b> omit that day’s row, or do not send times for that day.</p>
+
+  <h2>4. Optional helper fields (Nearby fallback)</h2>
+  <p>If <code>timing</code> is empty, Nearby may fall back to:</p>
+<pre>"is_open": true,
+"open_now": 1</pre>
+  <p><code>true</code> / <code>"1"</code> = open. Shop detail page still prefers <code>timing</code>.</p>
+
+  <h2>5. How the public app decides Open vs Closed</h2>
+  <ol>
+    <li>Pick today’s day with Dart: <code>DateTime.now().weekday % 7</code><br />
+        Monday=1 … Sunday=7 → Sunday becomes <b>0</b>.</li>
+    <li>Find the <code>timing</code> row where <code>day</code> matches today.</li>
+    <li>If no row for today → <b>Closed</b>.</li>
+    <li>If now is between <code>open_time</code> and <code>close_time</code> → <b>Open</b>.</li>
+    <li>Else → <b>Closed · Opens at {today open_time in 12-hour}</b>.</li>
+  </ol>
+  <p>
+    <b>Example:</b> today Saturday (<code>day: 6</code>), open 10:00, phone 7:07 AM →
+    <b>Closed · Opens at 10:00 AM</b>. After 10:00 AM → <b>Open</b> / <b>Open until …</b>.
+  </p>
+  <p class="note">Uses <b>device local time</b>, not salon timezone.</p>
+
+  <h2>6. Checklist for backend team</h2>
+  <ol class="checklist">
+    <li>Always send a full 7-day timing array (or only open days).</li>
+    <li>Use day map 0–6 (Sunday=0). Do not use 1–7 Monday-first unless the app is changed.</li>
+    <li>Times must be <code>HH:mm</code> (24-hour), not <code>10:00 AM</code>.</li>
+    <li>Optional: also send <code>is_open</code> / <code>open_now</code> in sync with those hours for list screens.</li>
+    <li>If salon is closed today: omit that day — do not send <code>00:00–00:00</code> unless it means open midnight–midnight.</li>
+    <li>Keep partner/admin UI day map identical so saved hours match what the public app expects.</li>
+  </ol>
+
+  <div class="footer">
+    PapaBear Public App · Open/Closed Timing Spec · for Backend Team<br />
+    Source: lib/app/util/open_hours.dart · lib/app/view/shop_page.dart · lib/app/view/near.dart
+  </div>
+</body>
+</html>
