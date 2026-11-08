@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base href="/papa-public-face-2/">
+
+  <meta charset="UTF-8">
+  <meta content="IE=Edge" http-equiv="X-UA-Compatible">
+  <meta name="description" content="PapaBear — book salons, specialists, and shop products.">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#0D0D0D">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="PapaBear">
+
+  <link rel="apple-touch-icon" href="icons/Icon-192.png">
+  <link rel="icon" type="image/png" href="favicon.png"/>
+  <link rel="manifest" href="manifest.json">
+
+  <title>PapaBear</title>
+  <style>
+    html, body {
+      height: 100%;
+      margin: 0;
+      background: #0D0D0D;
+      color: #F2D338;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+    #pwa-splash {
+      position: fixed;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      gap: 16px;
+      z-index: 9999;
+    }
+    #pwa-splash .mark {
+      width: 72px;
+      height: 72px;
+      border-radius: 16px;
+      background: #F2D338;
+      color: #0D0D0D;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 28px;
+    }
+    #pwa-splash .label { letter-spacing: 2px; font-size: 13px; }
+  </style>
+  <script>
+    window.papaMapsReady = false;
+    window.__papaMapsWaiters = [];
+    window.papaInitMaps = function () {
+      window.papaMapsReady = true;
+      (window.__papaMapsWaiters || []).forEach(function (fn) { fn(); });
+      window.__papaMapsWaiters = [];
+    };
+    function papaWhenMapsReady() {
+      return new Promise(function (resolve) {
+        if (window.google && google.maps && google.maps.places) {
+          resolve();
+          return;
+        }
+        window.__papaMapsWaiters.push(resolve);
+        setTimeout(resolve, 8000);
+      });
+    }
+    window.papaMapsAutocomplete = function (input) {
+      return papaWhenMapsReady().then(function () {
+        if (!window.google || !google.maps || !google.maps.places) return [];
+        return new Promise(function (resolve) {
+          var svc = new google.maps.places.AutocompleteService();
+          svc.getPlacePredictions({ input: input }, function (preds) {
+            if (!preds) { resolve([]); return; }
+            resolve(preds.map(function (p) {
+              return { description: p.description, place_id: p.place_id };
+            }));
+          });
+        });
+      });
+    };
+    window.papaMapsDetails = function (placeId) {
+      return papaWhenMapsReady().then(function () {
+        if (!window.google || !google.maps || !google.maps.places) return null;
+        return new Promise(function (resolve) {
+          var el = document.createElement('div');
+          var svc = new google.maps.places.PlacesService(el);
+          svc.getDetails({
+            placeId: placeId,
+            fields: ['geometry', 'formatted_address', 'address_components']
+          }, function (place) {
+            if (!place || !place.geometry || !place.geometry.location) {
+              resolve(null);
+              return;
+            }
+            var iso = '', country = '';
+            (place.address_components || []).forEach(function (c) {
+              if (c.types.indexOf('country') >= 0) {
+                iso = c.short_name;
+                country = c.long_name;
+              }
+            });
+            resolve({
+              lat: place.geometry.location.lat(),
+              lng: place.geometry.location.lng(),
+              address: place.formatted_address || '',
+              iso: iso,
+              country: country
+            });
+          });
+        });
+      });
+    };
+    window.papaMapsGeocode = function (lat, lng) {
+      return papaWhenMapsReady().then(function () {
+        if (!window.google || !google.maps || !google.maps.Geocoder) return null;
+        return new Promise(function (resolve) {
+          var geocoder = new google.maps.Geocoder();
+          geocoder.geocode({ location: { lat: lat, lng: lng } }, function (results) {
+            if (!results || !results[0]) { resolve(null); return; }
+            var r = results[0];
+            var iso = '', country = '';
+            (r.address_components || []).forEach(function (c) {
+              if (c.types.indexOf('country') >= 0) {
+                iso = c.short_name;
+                country = c.long_name;
+              }
+            });
+            resolve({
+              address: r.formatted_address || '',
+              iso: iso,
+              country: country
+            });
+          });
+        });
+      });
+    };
+  </script>
+  <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAm5bmta_KNZlZBGUlmpmrr-oWP1QYI4_I&libraries=places&callback=papaInitMaps"></script>
+  <script>
+    if (navigator.vendor === 'Apple Computer, Inc.' && 'serviceWorker' in navigator) {
+      navigator.serviceWorker.getRegistrations().then(function (regs) {
+        regs.forEach(function (r) { r.unregister(); });
+      });
+    }
+    window.__pwaDeferred = null;
+    window.__pwaCanInstall = function () { return !!window.__pwaDeferred; };
+    window.__pwaStandalone = function () {
+      return window.matchMedia('(display-mode: standalone)').matches
+        || window.navigator.standalone === true;
+    };
+    window.__pwaInstall = async function () {
+      if (!window.__pwaDeferred) return false;
+      window.__pwaDeferred.prompt();
+      var choice = await window.__pwaDeferred.userChoice;
+      window.__pwaDeferred = null;
+      return choice.outcome === 'accepted';
+    };
+    window.addEventListener('beforeinstallprompt', function (e) {
+      e.preventDefault();
+      window.__pwaDeferred = e;
+    });
+    window.addEventListener('appinstalled', function () {
+      window.__pwaDeferred = null;
+    });
+    window.addEventListener('flutter-first-frame', function () {
+      var el = document.getElementById('pwa-splash');
+      if (el) el.remove();
+    });
+    function showRetry() {
+      var el = document.getElementById('pwa-splash');
+      if (!el) return;
+      var label = el.querySelector('.label');
+      if (label) label.textContent = 'TAP TO RETRY';
+      el.style.cursor = 'pointer';
+      el.onclick = function () { location.reload(); };
+    }
+    window.addEventListener('error', showRetry);
+    window.addEventListener('unhandledrejection', showRetry);
+    setTimeout(showRetry, 8000);
+  </script>
+</head>
+<body>
+  <div id="pwa-splash">
+    <div class="mark">P</div>
+    <div class="label">PAPABEAR</div>
+  </div>
+  <script src="flutter_bootstrap.js"></script>
+</body>
+</html>
